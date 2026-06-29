@@ -12,27 +12,46 @@ import {
   Star
 } from "lucide-react";
 import { CreativeBriefBuilder } from "@/components/creative-brief-builder";
+import { DashboardState } from "@/components/dashboard-state";
 import { SectionHeading } from "@/components/section-heading";
 import { ShortlistButton } from "@/components/shortlist-button";
 import { StatCard } from "@/components/stat-card";
 import { useI18n } from "@/components/language-provider";
-import { creators, listings, orderRequests } from "@/lib/data";
 import { currency, shortDate } from "@/lib/format";
 import { deliverySpeedLabel, orderStatusLabel } from "@/lib/labels";
-import { localizeCreator, localizeListing, localizeOrder } from "@/lib/i18n";
+import { localizeListing, localizeOrder } from "@/lib/i18n";
 import { useShortlist } from "@/lib/use-shortlist";
+import { useDashboardData } from "@/lib/use-dashboard-data";
 
 const DEFAULT_SHORTLIST = ["night-shift-bounce", "velvet-hook-package"];
 
 export default function BuyerDashboardPage() {
   const { currencyCode, language, t, usdTryRate } = useI18n();
   const shortlist = useShortlist(DEFAULT_SHORTLIST);
-  const buyerOrders = orderRequests.map((order) => localizeOrder(order, language));
-  const localizedListings = listings.map((listing) => localizeListing(listing, language));
+  const dashboard = useDashboardData("buyer");
+
+  if (dashboard.state.status !== "ready") {
+    return (
+      <DashboardState
+        status={dashboard.state.status}
+        actualRole={dashboard.state.status === "wrong-role" ? dashboard.state.actualRole : undefined}
+        message={dashboard.state.status === "error" ? dashboard.state.message : undefined}
+        onRetry={dashboard.retry}
+      />
+    );
+  }
+
+  const buyerOrders = dashboard.state.orders.map((order) => localizeOrder(order, language));
+  const localizedListings = dashboard.state.listings.map((listing) => localizeListing(listing, language));
   const savedListings = localizedListings.filter((listing) =>
     shortlist.ids.includes(listing.id)
   );
-  const localizedCreators = creators.map((creator) => localizeCreator(creator, language));
+  const creatorsToWatch = Array.from(
+    new Map(localizedListings.map((listing) => [listing.creatorId, listing])).values()
+  ).slice(0, 4);
+  const pendingReplies = buyerOrders.filter((order) => order.status !== "Delivered").length;
+  const spendPreview = buyerOrders.reduce((sum, order) => sum + order.price, 0);
+  const isDemo = dashboard.state.isDemo;
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -51,19 +70,23 @@ export default function BuyerDashboardPage() {
         </Link>
       </div>
 
+      <p className="mt-5 text-xs font-semibold uppercase tracking-[0.2em] text-white/38">
+        {isDemo ? t("demoData") : t("liveData")}
+      </p>
+
       <div className="mt-10 grid gap-4 md:grid-cols-4">
         <StatCard label={t("openRequests")} value={buyerOrders.length.toString()} detail={t("demoOrderFlow")} />
         <StatCard label={t("savedListings")} value={savedListings.length.toString()} detail={t("readyCompare")} />
-        <StatCard label={t("savedSearches")} value="3" detail={t("jamMatchTitle")} />
-        <StatCard label={t("pendingReplies")} value="2" detail={t("avgResponse")} />
+        <StatCard label={t("savedSearches")} value={isDemo ? "3" : "0"} detail={t("jamMatchTitle")} />
+        <StatCard label={t("pendingReplies")} value={pendingReplies.toString()} detail={t("avgResponse")} />
       </div>
 
       <div className="mt-4 grid gap-4 md:grid-cols-4">
         <StatCard label={t("avgResponse")} value={language === "tr" ? "2 saat" : "2 hours"} detail={t("premiumStandard")} />
-        <StatCard label={t("sentBriefs")} value="4" detail={t("briefBuilderTitle")} />
+        <StatCard label={t("sentBriefs")} value={buyerOrders.length.toString()} detail={t("briefBuilderTitle")} />
         <StatCard
           label={t("spendPreview")}
-          value={currency(499, language, currencyCode, usdTryRate)}
+          value={currency(spendPreview, language, currencyCode, usdTryRate)}
           detail={t("noRealPayment")}
         />
         <StatCard label={t("compareQueue")} value={savedListings.length.toString()} detail={t("buyerComparison")} />
@@ -80,10 +103,10 @@ export default function BuyerDashboardPage() {
               <PackageCheck size={20} className="text-jam-mint" />
             </div>
             <div className="divide-y divide-white/8">
-              {buyerOrders.map((order) => (
+              {buyerOrders.length > 0 ? buyerOrders.map((order) => (
                 <Link
                   key={order.id}
-                  href={`/listing/${order.listingId}`}
+                  href={isDemo ? `/listing/${order.listingId}` : `/orders/${order.id}`}
                   className="block p-5 transition hover:bg-white/[0.035]"
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -105,7 +128,12 @@ export default function BuyerDashboardPage() {
                     </span>
                   </div>
                 </Link>
-              ))}
+              )) : (
+                <div className="p-6 text-center">
+                  <p className="font-semibold text-white">{t("noOrderRequests")}</p>
+                  <p className="mt-2 text-sm leading-6 text-white/48">{t("noOrderRequestsCopy")}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -195,29 +223,26 @@ export default function BuyerDashboardPage() {
           <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5">
             <h2 className="text-xl font-semibold text-white">{t("creatorsToWatch")}</h2>
             <div className="mt-4 grid gap-3">
-              {localizedCreators.map((creator) => (
+              {creatorsToWatch.map((listing) => (
                 <Link
-                  key={creator.id}
-                  href={`/creators/${creator.handle}`}
+                  key={listing.creatorId}
+                  href={`/creators/${listing.creatorHandle}`}
                   className="flex items-center justify-between rounded-lg bg-black/24 p-3 transition hover:bg-white/[0.035]"
                 >
                   <div className="flex items-center gap-3">
                     <Image
-                      src={creator.avatarUrl}
-                      alt={creator.name}
+                      src={listing.creatorAvatarUrl}
+                      alt={listing.creatorName}
                       width={42}
                       height={42}
                       className="h-[42px] w-[42px] rounded-full object-cover"
                     />
                     <div>
-                      <p className="font-semibold text-white">{creator.name}</p>
-                      <p className="text-sm text-white/48">{creator.specialties[0]}</p>
+                      <p className="font-semibold text-white">{listing.creatorName}</p>
+                      <p className="text-sm text-white/48">{listing.genre}</p>
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-sm text-jam-gold">
-                    <Star size={14} />
-                    {creator.rating}
-                  </span>
+                  <Star size={14} className="text-jam-gold" />
                 </Link>
               ))}
             </div>
@@ -227,12 +252,12 @@ export default function BuyerDashboardPage() {
             <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5">
               <BookmarkCheck size={20} className="text-jam-mint" />
               <p className="mt-3 text-sm font-semibold text-white">{t("savedSearches")}</p>
-              <p className="mt-1 text-2xl font-semibold text-white">3</p>
+              <p className="mt-1 text-2xl font-semibold text-white">{isDemo ? 3 : 0}</p>
             </div>
             <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5">
               <MessageCircle size={20} className="text-jam-blue" />
               <p className="mt-3 text-sm font-semibold text-white">{t("pendingReplies")}</p>
-              <p className="mt-1 text-2xl font-semibold text-white">2</p>
+              <p className="mt-1 text-2xl font-semibold text-white">{pendingReplies}</p>
             </div>
           </div>
         </div>

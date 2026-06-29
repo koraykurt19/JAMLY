@@ -14,7 +14,9 @@ import {
   XCircle
 } from "lucide-react";
 import { ListingCard } from "@/components/listing-card";
+import { SocialLinkList } from "@/components/social-link-list";
 import { StatCard } from "@/components/stat-card";
+import { StartConversationButton } from "@/components/start-conversation-button";
 import { useI18n } from "@/components/language-provider";
 import { localizeCreator, localizeListing } from "@/lib/i18n";
 import type { Creator, Listing } from "@/lib/types";
@@ -86,15 +88,24 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
                     {t("respondsIn")}: {localizedCreator.responseTime}
                   </span>
                 </div>
+                <div className="mt-4">
+                  <SocialLinkList links={localizedCreator.socialLinks} />
+                </div>
               </div>
             </div>
-            <Link
-              href="/marketplace"
-              className="focus-ring inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-jam-mint"
-            >
-              {t("creatorProfileWork")}
-              <ArrowRight size={17} />
-            </Link>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <StartConversationButton
+                artistId={localizedCreator.id}
+                variant="secondary"
+              />
+              <Link
+                href="/marketplace"
+                className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-jam-mint"
+              >
+                {t("creatorProfileWork")}
+                <ArrowRight size={17} />
+              </Link>
+            </div>
           </div>
         </div>
       </section>

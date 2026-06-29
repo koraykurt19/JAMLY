@@ -20,11 +20,15 @@ export const languageNames: Record<Language, string> = {
 export const messages = {
   tr: {
     navMarketplace: "Jam Alanı",
+    navMessages: "Mesajlar",
     navCreator: "Üretici",
     navBuyer: "Alıcı",
     navUpload: "İş yayınla",
     navSignIn: "Giriş yap",
     navDashboard: "Paneli aç",
+    openMenu: "Menüyü aç",
+    closeMenu: "Menüyü kapat",
+    mobileNavigation: "Mobil navigasyon",
     searchMarketplace: "Jam Alanı'nda ara",
     footerText:
       "Beat lisansları, miks/master işleri ve özel prodüksiyon talepleri için seçilmiş Jam Alanı.",
@@ -92,6 +96,7 @@ export const messages = {
     marketplaceHint: "Ödeme kapalı; şu an yalnızca talep oluşturuluyor.",
     noListings: "Eşleşen iş bulunamadı",
     noListingsHint: "Aramayı biraz genişletin veya aktif hızlı filtreleri kaldırın.",
+    noLiveListingsCopy: "Henüz canlı ilan yok. Üreticiler yeni işler yayınladığında burada görünecek.",
     clearQuickFilters: "Filtreleri temizle",
     backMarketplace: "Jam Alanı'na dön",
     startingAt: "Başlangıç fiyatı",
@@ -107,9 +112,36 @@ export const messages = {
     similarItems: "Benzer portföy işleri",
     requestOrder: "Sipariş talep et",
     requestSent: "Talep gönderildi",
-    orderMessage: "Talebiniz üreticiye iletildi. Bu sürümde ödeme alınmaz.",
+    orderMessage: "Talebiniz üreticiye kaydedildi. Sipariş sayfasından konuşmayı sürdürebilirsiniz.",
+    orderRequestError: "Talep kaydedilemedi",
+    signInToRequest: "Talep göndermek için giriş yap",
+    demoOrderOnly: "Bu örnek ilan demo verisidir; veritabanına sipariş kaydı oluşturulmaz.",
+    buyerOnlyOrder: "Sipariş taleplerini yalnızca alıcı hesapları gönderebilir.",
     orderHelp:
       "Bu buton yalnızca ön talep oluşturur. Ödeme, üretici ödemesi ve dosya teslimi sonraki geliştirme katmanında açılacak.",
+    messageArtist: "Üreticiye mesaj gönder",
+    requestOffer: "Teklif iste",
+    startingConversation: "Konuşma açılıyor...",
+    conversationStartError: "Konuşma başlatılamadı",
+    buyerOnlyMessaging: "Yeni bir Jam Alanı konuşmasını yalnızca alıcı hesabı başlatabilir.",
+    messagesEyebrow: "Jamly mesajları",
+    messagesTitle: "Projeyi konuşmaya taşı.",
+    messagesDescription:
+      "İlan ayrıntılarını, özel teklifleri ve proje kararlarını üreticiyle aynı konuşmada tut.",
+    conversations: "Konuşmalar",
+    searchConversations: "Konuşmalarda ara",
+    noConversations: "Henüz konuşma yok",
+    noConversationsCopy: "Bir ilan veya üretici profilinden mesaj göndererek ilk konuşmayı başlat.",
+    selectConversation: "Bir konuşma seç",
+    selectConversationCopy: "Mesajları ve proje bağlamını burada görmek için soldan bir konuşma aç.",
+    relatedListing: "İlgili ilan",
+    backToConversations: "Konuşmalara dön",
+    messagesLoading: "Konuşmalar yükleniyor...",
+    messagesSignInTitle: "Mesajlarını görmek için giriş yap",
+    messagesSignInCopy: "Canlı konuşmalar yalnızca ilgili alıcı ve üretici hesabına görünür.",
+    demoMessages: "Demo konuşmaları",
+    unreadMessages: "okunmamış mesaj",
+    typeMessage: "Mesajını yaz...",
     creatorProfileWork: "İşlerini incele",
     respondsIn: "Ortalama yanıt",
     ratingSuffix: "puan",
@@ -179,6 +211,46 @@ export const messages = {
     signedIn: "Giriş yapıldı. Artık iş yayınlayabilir veya sipariş talep edebilirsiniz.",
     accountCreated: "Hesap oluşturuldu. E-posta doğrulaması açıksa gelen kutunuzu kontrol edin.",
     authError: "İşlem tamamlanamadı",
+    profileMissing: "Hesap profili bulunamadı. Lütfen tekrar giriş yapın.",
+    checkingAccount: "Hesabınız kontrol ediliyor...",
+    uploadSignInTitle: "İlan yayınlamak için giriş yapın",
+    uploadSignInCopy: "Jamly, ilanları doğru üretici hesabına bağlamak için oturum açmanızı ister.",
+    creatorOnlyTitle: "Bu alan yalnızca üreticilere açık",
+    creatorOnlyCopy: "Alıcı hesabınızla ilan yükleyemezsiniz. Alıcı panelinizden üreticileri keşfedip talep oluşturabilirsiniz.",
+    creatorSessionRequired: "İlanı kaydetmek için doğrulanmış bir üretici oturumu gerekir.",
+    dashboardLoading: "Çalışma alanınız hazırlanıyor...",
+    dashboardErrorTitle: "Çalışma alanı yüklenemedi",
+    dashboardRetry: "Tekrar dene",
+    dashboardSignInTitle: "Panelinizi görmek için giriş yapın",
+    dashboardSignInCopy: "İlanlarınız ve sipariş talepleriniz hesabınıza özel olarak gösterilir.",
+    wrongDashboardTitle: "Bu panel diğer hesap rolüne ait",
+    wrongDashboardCreator: "Üretici hesabınız için üretici panelini açın.",
+    wrongDashboardBuyer: "Alıcı hesabınız için alıcı panelini açın.",
+    openCorrectDashboard: "Doğru paneli aç",
+    noCreatorListings: "Henüz yayınlanmış ilanınız yok.",
+    noCreatorListingsCopy: "İlk beat veya müzik hizmetinizi yayınlayarak vitrininizi oluşturun.",
+    noOrderRequests: "Henüz sipariş talebi yok.",
+    noOrderRequestsCopy: "Yeni talepler geldiğinde burada görünecek ve sipariş konuşmasına dönüşecek.",
+    liveData: "Canlı hesap verisi",
+    demoData: "Demo önizleme verisi",
+    orderDetailEyebrow: "Sipariş çalışma alanı",
+    orderDetailTitle: "Proje özeti ve konuşma",
+    orderBrief: "Proje özeti",
+    orderStatus: "Sipariş durumu",
+    orderConversation: "Mesajlar",
+    orderConversationCopy: "Proje kararlarını ve sonraki adımları sipariş içinde kayıtlı tutun.",
+    noMessages: "Henüz mesaj yok. Projenin ilk ayrıntısını paylaşarak konuşmayı başlatın.",
+    messagePlaceholder: "Proje, referans veya teslim beklentisi hakkında yazın...",
+    sendMessage: "Mesaj gönder",
+    messageError: "Mesaj gönderilemedi",
+    orderNotAvailable: "Bu sipariş bulunamadı veya görüntüleme yetkiniz yok.",
+    orderSignInCopy: "Sipariş ayrıntıları yalnızca alıcı ve üretici tarafından görülebilir.",
+    backToDashboard: "Panele dön",
+    projectValue: "Proje bütçesi",
+    participantBuyer: "Alıcı",
+    participantCreator: "Üretici",
+    noBriefProvided: "Talep oluşturulurken ek bir proje özeti paylaşılmadı.",
+    creatorNotFound: "Bu üretici profili bulunamadı.",
     formDemoMode:
       "Form hazır; Supabase bilgileri eksik olduğu için .env.local yapılandırılana kadar dosyalar yalnızca bu oturumda yerel önizleme olarak çalışır.",
     title: "Başlık",
@@ -306,11 +378,15 @@ export const messages = {
   },
   en: {
     navMarketplace: "Jam Place",
+    navMessages: "Messages",
     navCreator: "Creator",
     navBuyer: "Buyer",
     navUpload: "Upload",
     navSignIn: "Sign in",
     navDashboard: "Open dashboard",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
+    mobileNavigation: "Mobile navigation",
     searchMarketplace: "Search Jam Place",
     footerText:
       "Jamly MVP. A premium Jam Place for beat licenses, music services, and demo order flows.",
@@ -378,6 +454,7 @@ export const messages = {
     marketplaceHint: "Checkout is disabled; requests run in demo mode.",
     noListings: "No matching listings",
     noListingsHint: "Broaden your search or clear quick filters.",
+    noLiveListingsCopy: "There are no live listings yet. New creator work will appear here.",
     clearQuickFilters: "Clear filters",
     backMarketplace: "Back to Jam Place",
     startingAt: "Starting at",
@@ -393,9 +470,36 @@ export const messages = {
     similarItems: "Similar portfolio items",
     requestOrder: "Request order",
     requestSent: "Request sent",
-    orderMessage: "Demo order request sent. Payments remain off for this MVP.",
+    orderMessage: "Your request was saved for the creator. Continue the conversation from the order page.",
+    orderRequestError: "Could not save request",
+    signInToRequest: "Sign in to request",
+    demoOrderOnly: "This is a demo listing, so no order is written to the database.",
+    buyerOnlyOrder: "Only buyer accounts can send order requests.",
     orderHelp:
       "This only creates a demo order request. Payments, payouts, and file delivery are planned for the next layer.",
+    messageArtist: "Message Artist",
+    requestOffer: "Request Offer",
+    startingConversation: "Opening conversation...",
+    conversationStartError: "Could not start conversation",
+    buyerOnlyMessaging: "Only a buyer account can start a new Jam Place conversation.",
+    messagesEyebrow: "Jamly messages",
+    messagesTitle: "Move the project into conversation.",
+    messagesDescription:
+      "Keep listing details, custom offers, and project decisions in one conversation with the artist.",
+    conversations: "Conversations",
+    searchConversations: "Search conversations",
+    noConversations: "No conversations yet",
+    noConversationsCopy: "Start your first conversation from a listing or artist profile.",
+    selectConversation: "Select a conversation",
+    selectConversationCopy: "Open a conversation on the left to see messages and project context here.",
+    relatedListing: "Related listing",
+    backToConversations: "Back to conversations",
+    messagesLoading: "Loading conversations...",
+    messagesSignInTitle: "Sign in to see your messages",
+    messagesSignInCopy: "Live conversations are only visible to the participating buyer and artist.",
+    demoMessages: "Demo conversations",
+    unreadMessages: "unread messages",
+    typeMessage: "Write a message...",
     creatorProfileWork: "Browse work",
     respondsIn: "Avg. response",
     ratingSuffix: "rating",
@@ -465,6 +569,46 @@ export const messages = {
     signedIn: "Signed in. You can now upload listings or request orders.",
     accountCreated: "Account created. Check your inbox if email confirmation is enabled.",
     authError: "Could not complete action",
+    profileMissing: "No account profile was found. Please sign in again.",
+    checkingAccount: "Checking your account...",
+    uploadSignInTitle: "Sign in to publish a listing",
+    uploadSignInCopy: "Jamly requires a session so every listing is connected to the correct creator account.",
+    creatorOnlyTitle: "This area is for creators only",
+    creatorOnlyCopy: "Buyer accounts cannot upload listings. Use your buyer dashboard to discover creators and send requests.",
+    creatorSessionRequired: "A verified creator session is required to save this listing.",
+    dashboardLoading: "Preparing your workspace...",
+    dashboardErrorTitle: "Could not load your workspace",
+    dashboardRetry: "Try again",
+    dashboardSignInTitle: "Sign in to view your dashboard",
+    dashboardSignInCopy: "Your listings and order requests are shown only for your account.",
+    wrongDashboardTitle: "This dashboard belongs to the other account role",
+    wrongDashboardCreator: "Open the creator dashboard for your creator account.",
+    wrongDashboardBuyer: "Open the buyer dashboard for your buyer account.",
+    openCorrectDashboard: "Open correct dashboard",
+    noCreatorListings: "You have not published a listing yet.",
+    noCreatorListingsCopy: "Publish your first beat or music service to build your storefront.",
+    noOrderRequests: "No order requests yet.",
+    noOrderRequestsCopy: "New requests will appear here and open into an order conversation.",
+    liveData: "Live account data",
+    demoData: "Demo preview data",
+    orderDetailEyebrow: "Order workspace",
+    orderDetailTitle: "Project brief and conversation",
+    orderBrief: "Project brief",
+    orderStatus: "Order status",
+    orderConversation: "Messages",
+    orderConversationCopy: "Keep project decisions and next steps recorded inside the order.",
+    noMessages: "No messages yet. Start the conversation with the first project detail.",
+    messagePlaceholder: "Write about the project, references, or delivery expectations...",
+    sendMessage: "Send message",
+    messageError: "Could not send message",
+    orderNotAvailable: "This order was not found or you do not have permission to view it.",
+    orderSignInCopy: "Order details are visible only to the buyer and creator.",
+    backToDashboard: "Back to dashboard",
+    projectValue: "Project budget",
+    participantBuyer: "Buyer",
+    participantCreator: "Creator",
+    noBriefProvided: "No additional project brief was included with this request.",
+    creatorNotFound: "This creator profile could not be found.",
     formDemoMode:
       "The form is fully wired, but Supabase credentials are missing. Files run as local previews in this session until .env.local is configured.",
     title: "Title",
@@ -757,6 +901,138 @@ const creatorCopies: Record<string, Record<Language, CreatorCopy>> = {
         }
       ]
     }
+  },
+  "creator-dex": {
+    tr: {
+      headline: "R&B, pop ve indie kayıtlar için temiz gitar partileri",
+      responseTime: "4 saat",
+      specialties: ["Gitar", "R&B", "Canlı loop"],
+      about:
+        "Dex; single, demo ve reklam projeleri için DI + amfi tonlu gitar stemleri, temiz ritim katmanları ve hook'u taşıyan melodik cevaplar kaydeder.",
+      bestFor: ["Gitar stem", "Pop/R&B single", "Canlı dokunuş"],
+      notBestFor: ["Metal solo", "Tam grup prodüksiyonu"],
+      workflow: ["Referans tonu dinler", "Ritim ve lead yönünü ayırır", "Temiz stem paketi teslim eder"],
+      requirements: ["Demo veya akor yürüyüşü", "BPM", "Referans gitar tonu"],
+      faq: [
+        {
+          question: "DI stem veriyor musun?",
+          answer: "Evet, DI stem ve işlenmiş gitar kanalları birlikte teslim edilir."
+        },
+        {
+          question: "Loop mu tam aranjman mı?",
+          answer: "Paket kısa loop ya da tam şarkı aranjmanı olarak brief'e göre netleşir."
+        }
+      ]
+    },
+    en: {
+      headline: "Clean guitar parts for R&B, pop, and indie records",
+      responseTime: "4 hours",
+      specialties: ["Guitar", "R&B", "Live loops"],
+      about:
+        "Dex records DI and amp-toned guitar stems for singles, demos, and ad projects: clean rhythm layers, melodic replies, and hook-supporting loops.",
+      bestFor: ["Guitar stems", "Pop/R&B singles", "Live texture"],
+      notBestFor: ["Metal solos", "Full-band production"],
+      workflow: ["Studies the reference tone", "Splits rhythm and lead direction", "Delivers a clean stem package"],
+      requirements: ["Demo or chord progression", "BPM", "Reference guitar tone"],
+      faq: [
+        {
+          question: "Do you deliver DI stems?",
+          answer: "Yes, DI stems and processed guitar channels are delivered together."
+        },
+        {
+          question: "Loop or full arrangement?",
+          answer: "The package can be scoped as a short loop or full-song arrangement based on the brief."
+        }
+      ]
+    }
+  },
+  "creator-rhea": {
+    tr: {
+      headline: "Söz, jingle ve kısa marka hook'larında hızlı konsept yazarı",
+      responseTime: "2 saat",
+      specialties: ["Söz", "Jingle", "Topline"],
+      about:
+        "Rhea, şarkı fikrini hızlıca mesajı net bir hook'a dönüştürür; marka jingle'larında akılda kalan kısa melodiler ve kullanılabilir söz alternatifleri üretir.",
+      bestFor: ["Söz sprint'i", "Jingle hook", "Kampanya melodisi"],
+      notBestFor: ["Tam prodüksiyon", "Anonim ghost vocal"],
+      workflow: ["Mesajı çıkarır", "3 hook yönü yazar", "Seçilen yönü söz dosyasına işler"],
+      requirements: ["Tema veya marka mesajı", "Hedef kitle", "Referans tempo"],
+      faq: [
+        {
+          question: "Kaç alternatif veriyorsun?",
+          answer: "Standart pakette üç hook yönü, seçilen yönde bir revizyon dahildir."
+        },
+        {
+          question: "Türkçe söz yazıyor musun?",
+          answer: "Evet, İngilizce ve Türkçe brief'lerde çalışabilir."
+        }
+      ]
+    },
+    en: {
+      headline: "Fast concept writer for lyrics, jingles, and short brand hooks",
+      responseTime: "2 hours",
+      specialties: ["Lyrics", "Jingle", "Topline"],
+      about:
+        "Rhea turns song ideas into clear, memorable hooks and creates short, usable lyric options for brand jingles and social campaigns.",
+      bestFor: ["Lyric sprint", "Jingle hooks", "Campaign melodies"],
+      notBestFor: ["Full production", "Anonymous ghost vocals"],
+      workflow: ["Extracts the message", "Writes 3 hook directions", "Develops the selected direction into a lyric file"],
+      requirements: ["Theme or brand message", "Target audience", "Tempo reference"],
+      faq: [
+        {
+          question: "How many alternatives are included?",
+          answer: "The standard package includes three hook directions and one revision on the selected direction."
+        },
+        {
+          question: "Can you write in Turkish?",
+          answer: "Yes, English and Turkish briefs are supported."
+        }
+      ]
+    }
+  },
+  "creator-atlas": {
+    tr: {
+      headline: "Single ve EP çıkışları için premium kapak görseli sistemi",
+      responseTime: "5 saat",
+      specialties: ["Kapak görseli", "Release branding", "Motion teaser"],
+      about:
+        "Atlas, şarkı evrenini görsel dile çeviren kapak sistemleri hazırlar: streaming kapak, sosyal kırpımlar ve release duyuru şablonları birlikte düşünülür.",
+      bestFor: ["Single kapağı", "EP görsel kimliği", "Sosyal teaser"],
+      notBestFor: ["Logo tasarımı", "Aynı gün çizim"],
+      workflow: ["Şarkı moodboard'u çıkarır", "İki kreatif yön önerir", "Final dosyaları platform ölçülerinde teslim eder"],
+      requirements: ["Şarkı adı", "Referans görsel", "Artist fotoğrafı veya yön tarifi"],
+      faq: [
+        {
+          question: "Streaming ölçüleri dahil mi?",
+          answer: "Evet, 3000x3000 kapak ve sosyal medya kırpımları teslim edilir."
+        },
+        {
+          question: "Motion teaser eklenir mi?",
+          answer: "Kısa motion teaser ek hizmet olarak brief'e eklenebilir."
+        }
+      ]
+    },
+    en: {
+      headline: "Premium cover-art systems for single and EP releases",
+      responseTime: "5 hours",
+      specialties: ["Cover art", "Release branding", "Motion teaser"],
+      about:
+        "Atlas translates a song world into visual language with streaming covers, social crops, and release announcement templates planned together.",
+      bestFor: ["Single covers", "EP visual identity", "Social teasers"],
+      notBestFor: ["Logo design", "Same-day illustration"],
+      workflow: ["Builds a song moodboard", "Presents two creative directions", "Delivers final files in platform sizes"],
+      requirements: ["Song title", "Visual reference", "Artist photo or direction"],
+      faq: [
+        {
+          question: "Are streaming sizes included?",
+          answer: "Yes, a 3000x3000 cover and social media crops are delivered."
+        },
+        {
+          question: "Can a motion teaser be added?",
+          answer: "A short motion teaser can be added as an extra service."
+        }
+      ]
+    }
   }
 };
 
@@ -964,6 +1240,142 @@ const listingCopies: Record<string, Record<Language, ListingCopy>> = {
         { label: "Final lift", time: 96 }
       ]
     }
+  },
+  "neon-session-guitar": {
+    tr: {
+      title: "Neon Session Guitar",
+      genre: "Pop/R&B",
+      description:
+        "Single'ınız için temiz DI ve işlenmiş gitar stemleri: parlak ritim katmanı, kısa lead cevapları ve hook'u dolduran canlı loop seçenekleri.",
+      turnaround: "3 gün",
+      tags: ["Gitar", "R&B", "DI stem", "Canlı loop"],
+      deliverables: ["DI gitar", "İşlenmiş gitar stemleri", "Kısa aranjman notu"],
+      filesIncluded: ["DI WAV", "Amp WAV", "Loop referansları"],
+      revisionPolicy: "Bir ton ve performans notu turu dahildir.",
+      markers: [
+        { label: "Ritim", time: 12 },
+        { label: "Lead cevap", time: 48 },
+        { label: "Hook loop", time: 83 }
+      ]
+    },
+    en: {
+      title: "Neon Session Guitar",
+      genre: "Pop/R&B",
+      description:
+        "Clean DI and processed guitar stems for your single: bright rhythm layers, short lead replies, and live loop options that support the hook.",
+      turnaround: "3 days",
+      tags: ["Guitar", "R&B", "DI stem", "Live loop"],
+      deliverables: ["DI guitar", "Processed guitar stems", "Short arrangement note"],
+      filesIncluded: ["DI WAV", "Amp WAV", "Loop refs"],
+      revisionPolicy: "One tone and performance note round is included.",
+      markers: [
+        { label: "Rhythm", time: 12 },
+        { label: "Lead reply", time: 48 },
+        { label: "Hook loop", time: 83 }
+      ]
+    }
+  },
+  "lyrics-hook-sprint": {
+    tr: {
+      title: "Lyrics & Hook Sprint",
+      genre: "Pop",
+      description:
+        "Şarkı fikriniz için üç güçlü hook yönü, söz dosyası ve seçilen yöne göre kısa topline notları. Özellikle hızlı single yazım seansları için.",
+      turnaround: "48 saat",
+      tags: ["Söz", "Hook", "Topline", "Türkçe/İngilizce"],
+      deliverables: ["3 hook yönü", "Söz dosyası", "Topline notu"],
+      filesIncluded: ["Söz PDF", "Melodi notu", "Referans notları"],
+      revisionPolicy: "Seçilen hook yönünde bir revizyon turu dahildir.",
+      markers: [
+        { label: "Hook A", time: 18 },
+        { label: "Hook B", time: 46 },
+        { label: "Final not", time: 74 }
+      ]
+    },
+    en: {
+      title: "Lyrics & Hook Sprint",
+      genre: "Pop",
+      description:
+        "Three strong hook directions, a lyric file, and short topline notes for your song idea. Built for fast single-writing sessions.",
+      turnaround: "48 hours",
+      tags: ["Lyrics", "Hook", "Topline", "Turkish/English"],
+      deliverables: ["3 hook directions", "Lyric file", "Topline note"],
+      filesIncluded: ["Lyrics PDF", "Melody memo", "Reference notes"],
+      revisionPolicy: "One revision round is included on the selected hook direction.",
+      markers: [
+        { label: "Hook A", time: 18 },
+        { label: "Hook B", time: 46 },
+        { label: "Final note", time: 74 }
+      ]
+    }
+  },
+  "brand-jingle-hook": {
+    tr: {
+      title: "Brand Jingle Hook",
+      genre: "Brand Jingle",
+      description:
+        "Reklam, podcast intro veya sosyal kampanya için akılda kalan kısa jingle melodisi, söz yönü ve iki alternatif slogan fikri.",
+      turnaround: "1 hafta",
+      tags: ["Jingle", "Marka", "Slogan", "Kısa hook"],
+      deliverables: ["Jingle melodisi", "Söz/slogan önerileri", "Kullanım notu"],
+      filesIncluded: ["Demo WAV", "Söz PDF", "Marka notları"],
+      revisionPolicy: "Bir konsept revizyonu dahildir; yeni kampanya mesajı yeni kapsam sayılır.",
+      markers: [
+        { label: "Logo hook", time: 8 },
+        { label: "Tagline", time: 27 },
+        { label: "Alt slogan", time: 51 }
+      ]
+    },
+    en: {
+      title: "Brand Jingle Hook",
+      genre: "Brand Jingle",
+      description:
+        "A memorable short jingle melody, lyric direction, and two alternate tagline ideas for ads, podcast intros, or social campaigns.",
+      turnaround: "1 week",
+      tags: ["Jingle", "Brand", "Slogan", "Short hook"],
+      deliverables: ["Jingle melody", "Lyric/tagline ideas", "Usage note"],
+      filesIncluded: ["Demo WAV", "Lyrics PDF", "Brand notes"],
+      revisionPolicy: "One concept revision is included; a new campaign message is a new scope.",
+      markers: [
+        { label: "Logo hook", time: 8 },
+        { label: "Tagline", time: 27 },
+        { label: "Alt slogan", time: 51 }
+      ]
+    }
+  },
+  "launch-cover-system": {
+    tr: {
+      title: "Launch Cover System",
+      genre: "Kapak Görseli",
+      description:
+        "Single veya EP için premium kapak görseli, sosyal medya kırpımları ve release duyuru görselleri. Şarkı mood'una göre iki kreatif yön hazırlanır.",
+      turnaround: "5 gün",
+      tags: ["Kapak görseli", "Release", "Sosyal medya", "Moodboard"],
+      deliverables: ["3000x3000 kapak", "Sosyal kırpımlar", "Release duyuru görseli"],
+      filesIncluded: ["PNG kapak", "JPG varyantlar", "Sosyal kırpımlar"],
+      revisionPolicy: "Seçilen kreatif yönde iki görsel revizyon turu dahildir.",
+      markers: [
+        { label: "Mood", time: 0 },
+        { label: "Yön A", time: 32 },
+        { label: "Launch kit", time: 68 }
+      ]
+    },
+    en: {
+      title: "Launch Cover System",
+      genre: "Cover Art",
+      description:
+        "Premium cover art, social crops, and release announcement visuals for a single or EP. Two creative directions are prepared around the song mood.",
+      turnaround: "5 days",
+      tags: ["Cover art", "Release", "Social media", "Moodboard"],
+      deliverables: ["3000x3000 cover", "Social crops", "Release announcement visual"],
+      filesIncluded: ["PNG cover", "JPG variants", "Social crops"],
+      revisionPolicy: "Two visual revision rounds are included on the selected creative direction.",
+      markers: [
+        { label: "Mood", time: 0 },
+        { label: "Direction A", time: 32 },
+        { label: "Launch kit", time: 68 }
+      ]
+    }
   }
 };
 
@@ -990,7 +1402,11 @@ export function categoryLabel(category: ListingCategory, language: Language) {
       Mastering: "Mastering",
       Songwriting: "Şarkı Yazımı",
       "Vocal Feature": "Vokal Katkı",
-      "Custom Production": "Özel Prodüksiyon"
+      "Custom Production": "Özel Prodüksiyon",
+      Guitar: "Gitar",
+      Lyrics: "Söz",
+      Jingle: "Jingle",
+      "Cover Art": "Kapak Görseli"
     },
     en: {
       Beat: "Beat",
@@ -998,7 +1414,11 @@ export function categoryLabel(category: ListingCategory, language: Language) {
       Mastering: "Mastering",
       Songwriting: "Songwriting",
       "Vocal Feature": "Vocal Feature",
-      "Custom Production": "Custom Production"
+      "Custom Production": "Custom Production",
+      Guitar: "Guitar",
+      Lyrics: "Lyrics",
+      Jingle: "Jingle",
+      "Cover Art": "Cover Art"
     }
   };
 
@@ -1123,6 +1543,26 @@ export function deliverySpeedLabel(deliverySpeed: DeliverySpeed, language: Langu
 
 export function localizedGenres(language: Language) {
   return language === "tr"
-    ? ["Trap Soul", "Pop", "Hip-Hop", "Afrobeats", "Indie Pop", "Tüm türler"]
-    : ["Trap Soul", "Pop", "Hip-Hop", "Afrobeats", "Indie Pop", "Any Genre"];
+    ? [
+        "Trap Soul",
+        "Pop",
+        "Hip-Hop",
+        "Afrobeats",
+        "Indie Pop",
+        "Pop/R&B",
+        "Brand Jingle",
+        "Cover Art",
+        "Tüm türler"
+      ]
+    : [
+        "Trap Soul",
+        "Pop",
+        "Hip-Hop",
+        "Afrobeats",
+        "Indie Pop",
+        "Pop/R&B",
+        "Brand Jingle",
+        "Cover Art",
+        "Any Genre"
+      ];
 }

@@ -1,4 +1,5 @@
 import type { Creator, Listing, ListingCategory, OrderRequest } from "@/lib/types";
+import { socialLinksFromRecord } from "@/lib/social-links";
 
 export const creators: Creator[] = [
   {
@@ -35,7 +36,12 @@ export const creators: Creator[] = [
     ],
     repeatBuyerRate: 64,
     responseRate: 96,
-    profileStrength: 92
+    profileStrength: 92,
+    socialLinks: socialLinksFromRecord({
+      spotify: "https://open.spotify.com/",
+      instagram: "https://instagram.com/miravoss",
+      youtube: "https://youtube.com/@miravoss"
+    })
   },
   {
     id: "creator-kairo",
@@ -71,7 +77,12 @@ export const creators: Creator[] = [
     ],
     repeatBuyerRate: 71,
     responseRate: 94,
-    profileStrength: 89
+    profileStrength: 89,
+    socialLinks: socialLinksFromRecord({
+      spotify: "https://open.spotify.com/",
+      instagram: "https://instagram.com/kairovale",
+      soundcloud: "https://soundcloud.com/kairovale"
+    })
   },
   {
     id: "creator-sola",
@@ -107,7 +118,134 @@ export const creators: Creator[] = [
     ],
     repeatBuyerRate: 58,
     responseRate: 91,
-    profileStrength: 84
+    profileStrength: 84,
+    socialLinks: socialLinksFromRecord({
+      instagram: "https://instagram.com/solagrey",
+      youtube: "https://youtube.com/@solagrey",
+      website: "https://example.com/solagrey"
+    })
+  },
+  {
+    id: "creator-dex",
+    handle: "dex",
+    name: "Dex Monroe",
+    role: "creator",
+    headline: "R&B, pop ve indie kayıtlar için temiz gitar partileri",
+    location: "Nashville, TN",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=500&q=80",
+    coverUrl:
+      "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?auto=format&fit=crop&w=1600&q=80",
+    rating: 4.93,
+    completedOrders: 98,
+    responseTime: "4 saat",
+    verified: true,
+    specialties: ["Gitar", "R&B", "Canlı loop"],
+    about:
+      "Dex; single, demo ve reklam projeleri için DI + amfi tonlu gitar stemleri, temiz ritim katmanları ve hook'u taşıyan melodik cevaplar kaydeder.",
+    bestFor: ["Gitar stem", "Pop/R&B single", "Canlı dokunuş"],
+    notBestFor: ["Metal solo", "Tam grup prodüksiyonu"],
+    workflow: ["Referans tonu dinler", "Ritim ve lead yönünü ayırır", "Temiz stem paketi teslim eder"],
+    requirements: ["Demo veya akor yürüyüşü", "BPM", "Referans gitar tonu"],
+    faq: [
+      {
+        question: "DI stem veriyor musun?",
+        answer: "Evet, DI stem ve işlenmiş gitar kanalları birlikte teslim edilir."
+      },
+      {
+        question: "Loop mu tam aranjman mı?",
+        answer: "Paket kısa loop ya da tam şarkı aranjmanı olarak brief'e göre netleşir."
+      }
+    ],
+    repeatBuyerRate: 62,
+    responseRate: 92,
+    profileStrength: 87,
+    socialLinks: socialLinksFromRecord({
+      instagram: "https://instagram.com/dexmonroe",
+      spotify: "https://open.spotify.com/",
+      website: "https://example.com/dexmonroe"
+    })
+  },
+  {
+    id: "creator-rhea",
+    handle: "rhea",
+    name: "Rhea Lin",
+    role: "creator",
+    headline: "Söz, jingle ve kısa marka hook'larında hızlı konsept yazarı",
+    location: "Austin, TX",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=500&q=80",
+    coverUrl:
+      "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1600&q=80",
+    rating: 4.97,
+    completedOrders: 156,
+    responseTime: "2 saat",
+    verified: true,
+    specialties: ["Söz", "Jingle", "Topline"],
+    about:
+      "Rhea, şarkı fikrini hızlıca mesajı net bir hook'a dönüştürür; marka jingle'larında akılda kalan kısa melodiler ve kullanılabilir söz alternatifleri üretir.",
+    bestFor: ["Söz sprint'i", "Jingle hook", "Kampanya melodisi"],
+    notBestFor: ["Tam prodüksiyon", "Anonim ghost vocal"],
+    workflow: ["Mesajı çıkarır", "3 hook yönü yazar", "Seçilen yönü söz dosyasına işler"],
+    requirements: ["Tema veya marka mesajı", "Hedef kitle", "Referans tempo"],
+    faq: [
+      {
+        question: "Kaç alternatif veriyorsun?",
+        answer: "Standart pakette üç hook yönü, seçilen yönde bir revizyon dahildir."
+      },
+      {
+        question: "Türkçe söz yazıyor musun?",
+        answer: "Evet, İngilizce ve Türkçe brief'lerde çalışabilir."
+      }
+    ],
+    repeatBuyerRate: 69,
+    responseRate: 95,
+    profileStrength: 90,
+    socialLinks: socialLinksFromRecord({
+      instagram: "https://instagram.com/rhealin",
+      tiktok: "https://tiktok.com/@rhealin",
+      youtube: "https://youtube.com/@rhealin"
+    })
+  },
+  {
+    id: "creator-atlas",
+    handle: "atlas",
+    name: "Atlas Row",
+    role: "creator",
+    headline: "Single ve EP çıkışları için premium kapak görseli sistemi",
+    location: "Brooklyn, NY",
+    avatarUrl:
+      "https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&w=500&q=80",
+    coverUrl:
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80",
+    rating: 4.9,
+    completedOrders: 74,
+    responseTime: "5 saat",
+    verified: false,
+    specialties: ["Kapak görseli", "Release branding", "Motion teaser"],
+    about:
+      "Atlas, şarkı evrenini görsel dile çeviren kapak sistemleri hazırlar: streaming kapak, sosyal kırpımlar ve release duyuru şablonları birlikte düşünülür.",
+    bestFor: ["Single kapağı", "EP görsel kimliği", "Sosyal teaser"],
+    notBestFor: ["Logo tasarımı", "Aynı gün çizim"],
+    workflow: ["Şarkı moodboard'u çıkarır", "İki kreatif yön önerir", "Final dosyaları platform ölçülerinde teslim eder"],
+    requirements: ["Şarkı adı", "Referans görsel", "Artist fotoğrafı veya yön tarifi"],
+    faq: [
+      {
+        question: "Streaming ölçüleri dahil mi?",
+        answer: "Evet, 3000x3000 kapak ve sosyal medya kırpımları teslim edilir."
+      },
+      {
+        question: "Motion teaser eklenir mi?",
+        answer: "Kısa motion teaser ek hizmet olarak brief'e eklenebilir."
+      }
+    ],
+    repeatBuyerRate: 55,
+    responseRate: 88,
+    profileStrength: 82,
+    socialLinks: socialLinksFromRecord({
+      instagram: "https://instagram.com/atlasrow",
+      website: "https://example.com/atlasrow"
+    })
   }
 ];
 
@@ -336,6 +474,155 @@ export const listings: Listing[] = [
     analytics: { views: 1490, saves: 131, plays: 802, conversionRate: 11.4 },
     createdAt: "2026-06-12T12:00:00.000Z",
     featured: true
+  },
+  {
+    id: "neon-session-guitar",
+    creatorId: "creator-dex",
+    creatorHandle: "dex",
+    creatorName: "Dex Monroe",
+    creatorAvatarUrl:
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=500&q=80",
+    title: "Neon Session Guitar",
+    category: "Guitar",
+    genre: "Pop/R&B",
+    bpm: null,
+    price: 120,
+    description:
+      "Single'ınız için temiz DI ve işlenmiş gitar stemleri: parlak ritim katmanı, kısa lead cevapları ve hook'u dolduran canlı loop seçenekleri.",
+    audioPreviewUrl:
+      "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+    coverImageUrl:
+      "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?auto=format&fit=crop&w=1000&q=80",
+    licenseType: "Service",
+    turnaround: "3 gün",
+    tags: ["Gitar", "R&B", "DI stem", "Canlı loop"],
+    moods: ["Warm", "Smooth"],
+    useCases: ["Single", "Sync"],
+    deliverySpeed: "fast",
+    deliverables: ["DI gitar", "İşlenmiş gitar stemleri", "Kısa aranjman notu"],
+    filesIncluded: ["DI WAV", "Amp WAV", "Loop refs"],
+    revisionPolicy: "Bir ton ve performans notu turu dahildir.",
+    markers: [
+      { label: "Ritim", time: 12 },
+      { label: "Lead cevap", time: 48 },
+      { label: "Hook loop", time: 83 }
+    ],
+    exclusiveAvailable: false,
+    commercialUse: true,
+    analytics: { views: 680, saves: 54, plays: 342, conversionRate: 8.8 },
+    createdAt: "2026-06-13T12:00:00.000Z"
+  },
+  {
+    id: "lyrics-hook-sprint",
+    creatorId: "creator-rhea",
+    creatorHandle: "rhea",
+    creatorName: "Rhea Lin",
+    creatorAvatarUrl:
+      "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=500&q=80",
+    title: "Lyrics & Hook Sprint",
+    category: "Lyrics",
+    genre: "Pop",
+    bpm: null,
+    price: 150,
+    description:
+      "Şarkı fikriniz için üç güçlü hook yönü, söz dosyası ve seçilen yöne göre kısa topline notları. Özellikle hızlı single yazım seansları için.",
+    audioPreviewUrl:
+      "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+    coverImageUrl:
+      "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1000&q=80",
+    licenseType: "Service",
+    turnaround: "48 saat",
+    tags: ["Söz", "Hook", "Topline", "Türkçe/İngilizce"],
+    moods: ["Bright", "Warm"],
+    useCases: ["Single", "TikTok"],
+    deliverySpeed: "fast",
+    deliverables: ["3 hook yönü", "Söz dosyası", "Topline notu"],
+    filesIncluded: ["Lyrics PDF", "Melody memo", "Reference notes"],
+    revisionPolicy: "Seçilen hook yönünde bir revizyon turu dahildir.",
+    markers: [
+      { label: "Hook A", time: 18 },
+      { label: "Hook B", time: 46 },
+      { label: "Final note", time: 74 }
+    ],
+    exclusiveAvailable: false,
+    commercialUse: true,
+    analytics: { views: 1030, saves: 104, plays: 590, conversionRate: 12.1 },
+    createdAt: "2026-06-14T12:00:00.000Z",
+    featured: true
+  },
+  {
+    id: "brand-jingle-hook",
+    creatorId: "creator-rhea",
+    creatorHandle: "rhea",
+    creatorName: "Rhea Lin",
+    creatorAvatarUrl:
+      "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=500&q=80",
+    title: "Brand Jingle Hook",
+    category: "Jingle",
+    genre: "Brand Jingle",
+    bpm: null,
+    price: 320,
+    description:
+      "Reklam, podcast intro veya sosyal kampanya için akılda kalan kısa jingle melodisi, söz yönü ve iki alternatif slogan fikri.",
+    audioPreviewUrl:
+      "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+    coverImageUrl:
+      "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1000&q=80",
+    licenseType: "Service",
+    turnaround: "1 hafta",
+    tags: ["Jingle", "Marka", "Slogan", "Kısa hook"],
+    moods: ["Bright", "Club"],
+    useCases: ["Ad", "Podcast"],
+    deliverySpeed: "standard",
+    deliverables: ["Jingle melodisi", "Söz/slogan önerileri", "Kullanım notu"],
+    filesIncluded: ["Demo WAV", "Lyrics PDF", "Brand notes"],
+    revisionPolicy: "Bir konsept revizyonu dahildir; yeni kampanya mesajı yeni kapsam sayılır.",
+    markers: [
+      { label: "Logo hook", time: 8 },
+      { label: "Tagline", time: 27 },
+      { label: "Alt slogan", time: 51 }
+    ],
+    exclusiveAvailable: false,
+    commercialUse: true,
+    analytics: { views: 540, saves: 48, plays: 270, conversionRate: 7.9 },
+    createdAt: "2026-06-15T12:00:00.000Z"
+  },
+  {
+    id: "launch-cover-system",
+    creatorId: "creator-atlas",
+    creatorHandle: "atlas",
+    creatorName: "Atlas Row",
+    creatorAvatarUrl:
+      "https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&w=500&q=80",
+    title: "Launch Cover System",
+    category: "Cover Art",
+    genre: "Cover Art",
+    bpm: null,
+    price: 220,
+    description:
+      "Single veya EP için premium kapak görseli, sosyal medya kırpımları ve release duyuru görselleri. Şarkı mood'una göre iki kreatif yön hazırlanır.",
+    audioPreviewUrl:
+      "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+    coverImageUrl:
+      "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1000&q=80",
+    licenseType: "Service",
+    turnaround: "5 gün",
+    tags: ["Kapak görseli", "Release", "Sosyal medya", "Moodboard"],
+    moods: ["Cinematic", "Dark"],
+    useCases: ["Single", "Ad"],
+    deliverySpeed: "standard",
+    deliverables: ["3000x3000 kapak", "Sosyal kırpımlar", "Release duyuru görseli"],
+    filesIncluded: ["PNG cover", "JPG variants", "Social crops"],
+    revisionPolicy: "Seçilen kreatif yönde iki görsel revizyon turu dahildir.",
+    markers: [
+      { label: "Mood", time: 0 },
+      { label: "Direction A", time: 32 },
+      { label: "Launch kit", time: 68 }
+    ],
+    exclusiveAvailable: false,
+    commercialUse: true,
+    analytics: { views: 790, saves: 82, plays: 210, conversionRate: 9.4 },
+    createdAt: "2026-06-16T12:00:00.000Z"
   }
 ];
 
@@ -378,7 +665,11 @@ export const listingCategories: ListingCategory[] = [
   "Mastering",
   "Songwriting",
   "Vocal Feature",
-  "Custom Production"
+  "Custom Production",
+  "Guitar",
+  "Lyrics",
+  "Jingle",
+  "Cover Art"
 ];
 
 export const genres = [
@@ -387,6 +678,9 @@ export const genres = [
   "Hip-Hop",
   "Afrobeats",
   "Indie Pop",
+  "Pop/R&B",
+  "Brand Jingle",
+  "Cover Art",
   "Her Tür"
 ];
 

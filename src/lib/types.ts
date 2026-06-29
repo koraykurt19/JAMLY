@@ -1,3 +1,5 @@
+import type { SocialLink } from "@/lib/social-links";
+
 export type Role = "creator" | "buyer";
 
 export type ListingCategory =
@@ -6,7 +8,11 @@ export type ListingCategory =
   | "Mastering"
   | "Songwriting"
   | "Vocal Feature"
-  | "Custom Production";
+  | "Custom Production"
+  | "Guitar"
+  | "Lyrics"
+  | "Jingle"
+  | "Cover Art";
 
 export type LicenseType =
   | "Basic Lease"
@@ -70,6 +76,7 @@ export type Creator = {
   repeatBuyerRate: number;
   responseRate: number;
   profileStrength: number;
+  socialLinks: SocialLink[];
 };
 
 export type Listing = {

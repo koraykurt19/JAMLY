@@ -64,7 +64,11 @@ const initialMediaState: MediaState = {
   coverPreviewUrl: ""
 };
 
-export function UploadListingForm() {
+type UploadListingFormProps = {
+  creatorId?: string;
+};
+
+export function UploadListingForm({ creatorId }: UploadListingFormProps) {
   const { language, t } = useI18n();
   const [form, setForm] = useState<FormState>(initialState);
   const [media, setMedia] = useState<MediaState>(initialMediaState);
@@ -154,14 +158,10 @@ export function UploadListingForm() {
       let coverImageUrl = media.coverPreviewUrl;
 
       if (supabase) {
-        const {
-          data: { user }
-        } = await supabase.auth.getUser();
-
-        if (user) {
+        if (creatorId) {
           const uploadedMedia = await uploadListingMedia(
             supabase,
-            user.id,
+            creatorId,
             media.audioFile,
             media.coverFile
           );
@@ -170,7 +170,7 @@ export function UploadListingForm() {
           coverImageUrl = uploadedMedia.coverImageUrl;
 
           const { error } = await supabase.from("listings").insert({
-            creator_id: user.id,
+            creator_id: creatorId,
             title: form.title,
             category: form.category,
             genre: form.genre,
@@ -192,6 +192,8 @@ export function UploadListingForm() {
           }
 
           savedRemotely = true;
+        } else {
+          throw new Error(t("creatorSessionRequired"));
         }
       }
 

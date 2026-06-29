@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import { getCurrentProfile } from "@/lib/supabase-data";
 import { roleLabel } from "@/lib/labels";
 import type { Role } from "@/lib/types";
 import { useI18n } from "@/components/language-provider";
@@ -14,6 +16,7 @@ type AuthFormProps = {
 };
 
 export function AuthForm({ mode }: AuthFormProps) {
+  const router = useRouter();
   const { language, t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,18 +55,34 @@ export function AuthForm({ mode }: AuthFormProps) {
             }
           });
 
-    setLoading(false);
-
     if (result.error) {
+      setLoading(false);
       setMessage(`${t("authError")}: ${result.error.message}`);
       return;
     }
 
-    setMessage(
-      mode === "sign-in"
-        ? t("signedIn")
-        : t("accountCreated")
-    );
+    if (!result.data.session) {
+      setLoading(false);
+      setMessage(t("accountCreated"));
+      return;
+    }
+
+    try {
+      const { profile } = await getCurrentProfile(supabase);
+      const destinationRole = profile?.role ?? (mode === "sign-up" ? role : null);
+
+      if (!destinationRole) {
+        throw new Error(t("profileMissing"));
+      }
+
+      router.replace(`/dashboard/${destinationRole}`);
+      router.refresh();
+    } catch (error) {
+      setLoading(false);
+      setMessage(
+        `${t("authError")}: ${error instanceof Error ? error.message : t("unknownError")}`
+      );
+    }
   }
 
   return (
