@@ -40,7 +40,7 @@ export function MobileNavigationDrawer({
     }
 
     setVisible(false);
-    timer = window.setTimeout(() => setPresent(false), 260);
+    timer = window.setTimeout(() => setPresent(false), 440);
     return () => window.clearTimeout(timer);
   }, [open]);
 
@@ -99,7 +99,7 @@ export function MobileNavigationDrawer({
         data-testid="mobile-navigation-overlay"
         onClick={onClose}
         className={cn(
-          "absolute inset-0 cursor-default bg-black/72 backdrop-blur-[2px] transition-opacity duration-200",
+          "absolute inset-0 cursor-default bg-black/72 backdrop-blur-[2px] transition-opacity duration-300 ease-out motion-reduce:duration-0",
           visible ? "opacity-100" : "opacity-0"
         )}
         aria-hidden="true"
@@ -113,7 +113,7 @@ export function MobileNavigationDrawer({
         aria-label={t("mobileNavigation")}
         onKeyDown={keepFocusInside}
         className={cn(
-          "absolute right-0 top-0 flex h-[100dvh] w-[min(22rem,90vw)] flex-col border-l border-white/10 bg-jam-panel shadow-soft transition-transform duration-300 ease-out",
+          "absolute right-0 top-0 flex h-[100dvh] w-[min(22rem,90vw)] transform-gpu flex-col border-l border-white/10 bg-jam-panel shadow-soft transition-transform duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:duration-0",
           visible ? "translate-x-0" : "translate-x-full"
         )}
       >
