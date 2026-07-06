@@ -11,8 +11,13 @@ const languages: Language[] = ["tr", "en"];
 const currencies: DisplayCurrency[] = ["USD", "TRY"];
 
 type OpenMenu = "language" | "currency" | null;
+type MenuPlacement = "top" | "bottom";
 
-export function LanguageToggle() {
+export function LanguageToggle({
+  menuPlacement = "bottom"
+}: {
+  menuPlacement?: MenuPlacement;
+}) {
   const {
     language,
     setLanguage,
@@ -44,6 +49,7 @@ export function LanguageToggle() {
         label={t("language")}
         value={languageNames[language]}
         shortValue={language.toUpperCase()}
+        placement={menuPlacement}
         open={openMenu === "language"}
         onToggle={() => setOpenMenu(openMenu === "language" ? null : "language")}
       >
@@ -66,6 +72,7 @@ export function LanguageToggle() {
         label={t("currency")}
         value={currencyCode === "USD" ? t("currencyUsd") : t("currencyTry")}
         shortValue={currencyCode}
+        placement={menuPlacement}
         open={openMenu === "currency"}
         onToggle={() => setOpenMenu(openMenu === "currency" ? null : "currency")}
       >
@@ -91,6 +98,7 @@ function PreferenceDropdown({
   label,
   value,
   shortValue,
+  placement,
   open,
   onToggle,
   children
@@ -99,10 +107,13 @@ function PreferenceDropdown({
   label: string;
   value: string;
   shortValue: string;
+  placement: MenuPlacement;
   open: boolean;
   onToggle: () => void;
   children: ReactNode;
 }) {
+  const chevronPointsUp = placement === "top" ? !open : open;
+
   return (
     <div className="relative">
       <button
@@ -116,12 +127,19 @@ function PreferenceDropdown({
         <span>{shortValue}</span>
         <ChevronDown
           size={14}
-          className={`text-white/42 transition ${open ? "rotate-180" : ""}`}
+          className={`text-white/42 transition ${chevronPointsUp ? "rotate-180" : ""}`}
         />
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-12 z-50 min-w-44 overflow-hidden rounded-lg border border-white/10 bg-jam-panel/95 p-1 shadow-soft backdrop-blur-xl">
+        <div
+          role="menu"
+          aria-label={label}
+          data-placement={placement}
+          className={`absolute right-0 z-50 max-h-64 min-w-44 overflow-y-auto overscroll-contain rounded-lg border border-white/10 bg-jam-panel/95 p-1 shadow-soft backdrop-blur-xl ${
+            placement === "top" ? "bottom-12" : "top-12"
+          }`}
+        >
           <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">
             {label}
           </p>
