@@ -5,11 +5,15 @@ export type JamMatchBudget = {
   max?: number;
 };
 
+export type JamMatchWorkType = "ready" | "custom";
+
 export type JamMatchInput = {
   prompt: string;
   categoryIds: string[];
+  genreId?: string;
   budget: JamMatchBudget;
   deadlineId: string;
+  workType?: JamMatchWorkType;
   language: "tr" | "en";
 };
 
@@ -18,14 +22,33 @@ export type JamMatchResultKind = "artist" | "listing" | "service";
 export type JamMatchResult = {
   kind: JamMatchResultKind;
   match: number;
-  title: string;
+  artistId: string;
+  listingId: string;
+  artistName: string;
+  artistAvatarUrl: string;
+  listingTitle: string;
+  coverImageUrl: string;
   category: string;
+  genre: string;
   price: number;
   startsAt: boolean;
   rating: number;
+  deliveryTime: string;
   description: string;
-  href: string;
+  artistHref: string;
+  listingHref: string;
   reasons: string[];
+};
+
+type MatchSignal = {
+  categories: ListingCategory[];
+  tokens: string[];
+  label: Record<JamMatchInput["language"], string>;
+};
+
+type GenreSignal = {
+  tokens: string[];
+  label: Record<JamMatchInput["language"], string>;
 };
 
 type ScoredListing = {
@@ -34,26 +57,34 @@ type ScoredListing = {
   score: number;
   searchHits: number;
   semanticHits: number;
+  categoryMatch: boolean;
+  genreMatch: boolean;
+  budgetMatch: boolean;
+  deadlineMatch: boolean;
+  workTypeMatch: boolean;
   reasons: string[];
 };
 
-const categorySignals: Record<
-  string,
-  {
-    categories: ListingCategory[];
-    tokens: string[];
-    label: Record<JamMatchInput["language"], string>;
-  }
-> = {
+const categorySignals: Record<string, MatchSignal> = {
   beat: {
-    categories: ["Beat", "Custom Production"],
-    tokens: ["beat", "trap", "drill", "instrumental", "808", "prodüksiyon", "production"],
-    label: { tr: "Beat", en: "Beat" }
+    categories: ["Beat"],
+    tokens: ["beat", "instrumental", "808"],
+    label: { tr: "Beat ihtiyacı", en: "Beat fit" }
   },
   vocal: {
-    categories: ["Vocal Feature", "Songwriting"],
-    tokens: ["vocal", "vokal", "hook", "topline", "female", "kadın", "armon", "demo"],
-    label: { tr: "Vokal", en: "Vocal" }
+    categories: ["Vocal Feature"],
+    tokens: ["vocal", "vokal", "singer", "şarkıcı", "harmon", "armon"],
+    label: { tr: "Vokal ihtiyacı", en: "Vocal fit" }
+  },
+  lyrics: {
+    categories: ["Lyrics", "Songwriting"],
+    tokens: ["lyrics", "lyric", "söz", "hook", "topline", "chorus"],
+    label: { tr: "Söz yazımı", en: "Lyrics fit" }
+  },
+  "mixing-mastering": {
+    categories: ["Mixing", "Mastering"],
+    tokens: ["mix", "miks", "master", "mastering", "loudness", "stem"],
+    label: { tr: "Miks/master", en: "Mix/master fit" }
   },
   mix: {
     categories: ["Mixing"],
@@ -65,25 +96,70 @@ const categorySignals: Record<
     tokens: ["master", "mastering", "loudness", "spotify", "release", "yayın"],
     label: { tr: "Master", en: "Master" }
   },
+  "guitar-riff": {
+    categories: ["Guitar"],
+    tokens: ["guitar", "gitar", "riff", "session", "akustik", "electric"],
+    label: { tr: "Enstrüman/riff", en: "Instrument riff" }
+  },
   guitar: {
     categories: ["Guitar"],
-    tokens: ["guitar", "gitar", "riff", "session", "di", "akustik", "electric"],
+    tokens: ["guitar", "gitar", "riff", "session", "akustik", "electric"],
     label: { tr: "Gitar", en: "Guitar" }
-  },
-  lyrics: {
-    categories: ["Lyrics", "Songwriting"],
-    tokens: ["lyrics", "lyric", "söz", "şarkı sözü", "hook", "topline", "chorus"],
-    label: { tr: "Söz", en: "Lyrics" }
   },
   jingle: {
     categories: ["Jingle"],
     tokens: ["jingle", "brand", "marka", "slogan", "podcast intro", "reklam"],
     label: { tr: "Jingle", en: "Jingle" }
   },
+  "sample-pack": {
+    categories: ["Beat"],
+    tokens: ["sample pack", "sample", "paket", "pack", "loop", "one-shot", "oneshot"],
+    label: { tr: "Sample paketi", en: "Sample pack" }
+  },
+  "custom-producer": {
+    categories: ["Custom Production"],
+    tokens: ["custom production", "custom producer", "özel prodüksiyon", "prodüksiyon", "producer"],
+    label: { tr: "Özel prodüksiyon", en: "Custom production" }
+  },
   "cover-art": {
     categories: ["Cover Art"],
     tokens: ["cover art", "kapak", "görsel", "artwork", "release kit", "tasarım"],
-    label: { tr: "Kapak görseli", en: "Cover Art" }
+    label: { tr: "Kapak görseli", en: "Cover art" }
+  }
+};
+
+const genreSignals: Record<string, GenreSignal> = {
+  "hip-hop": {
+    tokens: ["hip-hop", "hip hop", "hiphop", "rap"],
+    label: { tr: "Hip-Hop türü", en: "Hip-Hop genre" }
+  },
+  trap: {
+    tokens: ["trap", "trap soul", "808"],
+    label: { tr: "Trap türü", en: "Trap genre" }
+  },
+  drill: {
+    tokens: ["drill"],
+    label: { tr: "Drill türü", en: "Drill genre" }
+  },
+  "r-and-b": {
+    tokens: ["r&b", "rnb", "rhythm and blues", "trap soul"],
+    label: { tr: "R&B türü", en: "R&B genre" }
+  },
+  pop: {
+    tokens: ["pop", "indie pop", "pop/r&b"],
+    label: { tr: "Pop türü", en: "Pop genre" }
+  },
+  afrobeat: {
+    tokens: ["afrobeat", "afrobeats", "afro"],
+    label: { tr: "Afrobeat türü", en: "Afrobeat genre" }
+  },
+  rock: {
+    tokens: ["rock", "alternative rock", "indie rock"],
+    label: { tr: "Rock türü", en: "Rock genre" }
+  },
+  electronic: {
+    tokens: ["electronic", "elektronik", "edm", "house", "techno"],
+    label: { tr: "Elektronik türü", en: "Electronic genre" }
   }
 };
 
@@ -131,27 +207,30 @@ export function findJamMatches(
   const promptBudget = extractPromptBudget(prompt);
   const promptBpm = extractPromptBpm(prompt);
   const creatorMap = new Map(creators.map((creator) => [creator.id, creator]));
-  const selectedSignals = input.categoryIds.flatMap((id) => categorySignals[id] ?? []);
+  const selectedSignals = input.categoryIds
+    .map((id) => categorySignals[id])
+    .filter((signal): signal is MatchSignal => Boolean(signal));
+  const selectedGenre = input.genreId ? genreSignals[input.genreId] : undefined;
   const scoredListings = listings
     .map((listing) =>
       scoreListing({
         listing,
         creator: creatorMap.get(listing.creatorId) ?? null,
         selectedSignals,
+        selectedGenre,
         prompt,
         promptTokens,
         promptBudget,
         promptBpm,
-        budget: promptBudget ? { min: promptBudget, max: promptBudget } : input.budget,
+        budget: promptBudget ? { min: 0, max: promptBudget } : input.budget,
         deadlineId: input.deadlineId,
+        workType: input.workType,
         language: input.language
       })
     )
-    .filter((item) => isUsefulMatch(item, promptTokens, selectedSignals.length));
+    .filter((item) => isUsefulMatch(item, input, promptTokens));
 
-  const listingMatches = scoredListings
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 6);
+  const listingMatches = scoredListings.sort((a, b) => b.score - a.score).slice(0, 6);
   const creatorMatches = scoreCreators(scoredListings);
   const results = [
     ...creatorMatches.slice(0, 2).map(toArtistResult),
@@ -160,33 +239,37 @@ export function findJamMatches(
 
   return dedupeResults(results)
     .sort((a, b) => b.match - a.match)
-    .slice(0, 3);
+    .slice(0, 6);
 }
 
 function scoreListing({
   listing,
   creator,
   selectedSignals,
+  selectedGenre,
   prompt,
   promptTokens,
   promptBudget,
   promptBpm,
   budget,
   deadlineId,
+  workType,
   language
 }: {
   listing: Listing;
   creator: Creator | null;
-  selectedSignals: Array<(typeof categorySignals)[string]>;
+  selectedSignals: MatchSignal[];
+  selectedGenre?: GenreSignal;
   prompt: string;
   promptTokens: string[];
   promptBudget: number | null;
   promptBpm: number | null;
   budget: JamMatchBudget;
   deadlineId: string;
+  workType?: JamMatchWorkType;
   language: JamMatchInput["language"];
 }): ScoredListing {
-  const text = normalizeText(
+  const listingText = normalizeText(
     [
       listing.title,
       listing.category,
@@ -197,7 +280,12 @@ function scoreListing({
       ...listing.tags,
       ...listing.moods,
       ...listing.useCases,
-      ...listing.deliverables,
+      ...listing.deliverables
+    ].join(" ")
+  );
+  const text = normalizeText(
+    [
+      listingText,
       creator?.name,
       creator?.headline,
       creator?.about,
@@ -213,7 +301,7 @@ function scoreListing({
   let semanticHits = 0;
 
   for (const token of promptTokens) {
-    if (text.includes(token)) {
+    if (hasSignal(text, token)) {
       searchHits += 1;
       semanticHits += 1;
       score += token.length > 4 ? 7 : 4;
@@ -221,63 +309,79 @@ function scoreListing({
   }
 
   for (const synonym of promptSynonyms) {
-    if (synonym.tokens.some((token) => hasSignal(prompt, token))) {
-      const matched = synonym.tokens.some((token) => hasSignal(text, token));
-      if (matched) {
-        semanticHits += 1;
-        score += 9;
-        reasons.push(synonym.label[language]);
-      }
-    }
-  }
-
-  for (const signal of selectedSignals) {
-    const categoryMatch = signal.categories.includes(listing.category);
-    const tokenMatch = signal.tokens.some((token) => hasSignal(text, token));
-    if (categoryMatch || tokenMatch) {
+    if (
+      synonym.tokens.some((token) => hasSignal(prompt, token)) &&
+      synonym.tokens.some((token) => hasSignal(text, token))
+    ) {
       semanticHits += 1;
-      score += categoryMatch ? 18 : 11;
-      reasons.push(signal.label[language]);
+      score += 9;
+      reasons.push(synonym.label[language]);
     }
   }
 
-  const categoryFromPrompt = Object.values(categorySignals).find((signal) =>
-    signal.tokens.some((token) => hasSignal(prompt, token))
+  const categoryMatch =
+    selectedSignals.length === 0 ||
+    selectedSignals.some(
+      (signal) =>
+        signal.categories.includes(listing.category) ||
+        signal.tokens.some((token) => hasSignal(listingText, token))
+    );
+  if (categoryMatch && selectedSignals.length > 0) {
+    semanticHits += 1;
+    score += 28;
+    const matchedSignal = selectedSignals.find(
+      (signal) =>
+        signal.categories.includes(listing.category) ||
+        signal.tokens.some((token) => hasSignal(listingText, token))
+    );
+    if (matchedSignal) reasons.push(matchedSignal.label[language]);
+  }
+
+  const acceptsAnyGenre = ["her tür", "her tur", "any genre", "all genres"].some((token) =>
+    hasSignal(listingText, token)
   );
-  if (categoryFromPrompt) {
-    const categoryMatch = categoryFromPrompt.categories.includes(listing.category);
-    const tokenMatch = categoryFromPrompt.tokens.some((token) => hasSignal(text, token));
-    if (categoryMatch || tokenMatch) {
-      semanticHits += 1;
-      score += categoryMatch ? 20 : 12;
-      reasons.push(categoryFromPrompt.label[language]);
-    }
+  const genreMatch =
+    !selectedGenre ||
+    acceptsAnyGenre ||
+    selectedGenre.tokens.some((token) => hasSignal(listingText, token));
+  if (genreMatch && selectedGenre) {
+    semanticHits += 1;
+    score += 22;
+    reasons.push(selectedGenre.label[language]);
   }
 
   const budgetScore = scoreBudget(listing.price, budget, language);
   score += budgetScore.score;
-  if (budgetScore.reason) {
-    reasons.push(budgetScore.reason);
-  }
-  if (promptBudget && listing.price > promptBudget * 1.65) {
-    score -= 18;
-  }
+  if (budgetScore.reason) reasons.push(budgetScore.reason);
+  const budgetMatch = isWithinBudget(listing.price, budget);
+  if (promptBudget && listing.price > promptBudget) score -= 20;
 
   const bpmScore = scoreBpm(listing.bpm, promptBpm, language);
   score += bpmScore.score;
-  if (bpmScore.reason) {
-    reasons.push(bpmScore.reason);
-  }
+  if (bpmScore.reason) reasons.push(bpmScore.reason);
 
   const deadlineScore = scoreDeadline(listing.deliverySpeed, deadlineId, language);
   score += deadlineScore.score;
-  if (deadlineScore.reason) {
-    reasons.push(deadlineScore.reason);
+  if (deadlineScore.reason) reasons.push(deadlineScore.reason);
+  const deadlineMatch = isWithinDeadline(listing.deliverySpeed, deadlineId);
+
+  const workTypeMatch = matchesWorkType(listing, workType);
+  if (workTypeMatch && workType) {
+    score += 12;
+    reasons.push(
+      workType === "ready"
+        ? language === "tr"
+          ? "Hazır ürün"
+          : "Ready-made"
+        : language === "tr"
+          ? "Özel çalışma"
+          : "Custom work"
+    );
   }
 
   score += Math.min(listing.analytics.conversionRate, 12) * 0.7;
   score += creator?.verified ? 6 : 0;
-  score += creator ? Math.min(creator.rating - 4.5, 0.5) * 16 : 0;
+  score += creator ? Math.max(Math.min(creator.rating - 4.5, 0.5), 0) * 16 : 0;
 
   return {
     listing,
@@ -285,7 +389,12 @@ function scoreListing({
     score: clamp(score, 0, 100),
     searchHits,
     semanticHits,
-    reasons: Array.from(new Set(reasons)).slice(0, 3)
+    categoryMatch,
+    genreMatch,
+    budgetMatch,
+    deadlineMatch,
+    workTypeMatch,
+    reasons: Array.from(new Set(reasons)).slice(0, 4)
   };
 }
 
@@ -300,13 +409,13 @@ function scoreCreators(scoredListings: ScoredListing[]) {
 
   return Array.from(grouped.values())
     .map((items) => {
-      const best = items.sort((a, b) => b.score - a.score)[0];
+      const best = [...items].sort((a, b) => b.score - a.score)[0];
       const creator = best.creator;
       if (!creator) return null;
       return {
         creator,
         listing: best.listing,
-        score: clamp(best.score + Math.min(items.length * 3, 9), 0, 100),
+        score: clamp(best.score + Math.min(items.length * 2, 6), 0, 100),
         reasons: best.reasons
       };
     })
@@ -323,13 +432,21 @@ function toArtistResult(item: {
   return {
     kind: "artist",
     match: Math.round(item.score),
-    title: item.creator.name,
-    category: item.creator.specialties.slice(0, 2).join(" / ") || item.listing.category,
+    artistId: item.creator.id,
+    listingId: item.listing.id,
+    artistName: item.creator.name,
+    artistAvatarUrl: item.creator.avatarUrl,
+    listingTitle: item.listing.title,
+    coverImageUrl: item.listing.coverImageUrl,
+    category: item.listing.category,
+    genre: item.listing.genre,
     price: item.listing.price,
     startsAt: true,
     rating: item.creator.rating,
+    deliveryTime: item.listing.turnaround,
     description: item.creator.headline,
-    href: `/creators/${item.creator.handle}`,
+    artistHref: `/creators/${item.creator.handle}`,
+    listingHref: `/listing/${item.listing.id}`,
     reasons: item.reasons
   };
 }
@@ -339,48 +456,47 @@ function toListingResult(item: ScoredListing): JamMatchResult {
   return {
     kind: isService ? "service" : "listing",
     match: Math.round(item.score),
-    title: item.listing.title,
-    category: `${item.listing.category} / ${item.listing.genre}`,
+    artistId: item.listing.creatorId,
+    listingId: item.listing.id,
+    artistName: item.creator?.name ?? item.listing.creatorName,
+    artistAvatarUrl: item.creator?.avatarUrl ?? item.listing.creatorAvatarUrl,
+    listingTitle: item.listing.title,
+    coverImageUrl: item.listing.coverImageUrl,
+    category: item.listing.category,
+    genre: item.listing.genre,
     price: item.listing.price,
-    startsAt: false,
+    startsAt: isService,
     rating: item.creator?.rating ?? 4.8,
+    deliveryTime: item.listing.turnaround,
     description: item.listing.description,
-    href: `/listing/${item.listing.id}`,
+    artistHref: `/creators/${item.listing.creatorHandle}`,
+    listingHref: `/listing/${item.listing.id}`,
     reasons: item.reasons
   };
 }
 
-function isUsefulMatch(
-  item: ScoredListing,
-  promptTokens: string[],
-  selectedSignalCount: number
-) {
-  if (item.score < 32) {
-    return false;
-  }
+function isUsefulMatch(item: ScoredListing, input: JamMatchInput, promptTokens: string[]) {
+  if (item.score < 32) return false;
+  if (!item.categoryMatch || !item.genreMatch || !item.budgetMatch) return false;
+  if (!item.deadlineMatch || !item.workTypeMatch) return false;
+  if (promptTokens.length > 0 && item.semanticHits === 0) return false;
+  return input.categoryIds.length > 0 || promptTokens.length > 0;
+}
 
-  if (promptTokens.length === 0) {
-    return selectedSignalCount > 0;
-  }
-
-  return item.semanticHits > 0;
+function isWithinBudget(price: number, budget: JamMatchBudget) {
+  if (budget.max !== undefined && price > budget.max) return false;
+  if (budget.max === undefined) return true;
+  return price >= budget.min;
 }
 
 function scoreBudget(price: number, budget: JamMatchBudget, language: JamMatchInput["language"]) {
-  const max = budget.max ?? Number.POSITIVE_INFINITY;
-  if (price >= budget.min && price <= max) {
-    return { score: 14, reason: language === "tr" ? "Bütçe uyumu" : "Budget fit" };
+  if (isWithinBudget(price, budget)) {
+    return { score: 16, reason: language === "tr" ? "Bütçeye uygun" : "Within budget" };
   }
-
-  if (price < budget.min) {
-    return { score: 7, reason: language === "tr" ? "Bütçe altında" : "Below budget" };
+  if (budget.max !== undefined && price <= budget.max * 1.15) {
+    return { score: 2, reason: language === "tr" ? "Bütçeye yakın" : "Near budget" };
   }
-
-  if (Number.isFinite(max) && price <= max * 1.25) {
-    return { score: 5, reason: language === "tr" ? "Bütçeye yakın" : "Near budget" };
-  }
-
-  return { score: -8, reason: "" };
+  return { score: -12, reason: "" };
 }
 
 function scoreBpm(
@@ -388,10 +504,7 @@ function scoreBpm(
   promptBpm: number | null,
   language: JamMatchInput["language"]
 ) {
-  if (!promptBpm || !listingBpm) {
-    return { score: 0, reason: "" };
-  }
-
+  if (!promptBpm || !listingBpm) return { score: 0, reason: "" };
   const difference = Math.abs(listingBpm - promptBpm);
   if (difference <= 3) {
     return { score: 13, reason: language === "tr" ? "BPM uyumu" : "BPM fit" };
@@ -402,25 +515,31 @@ function scoreBpm(
   return { score: -8, reason: "" };
 }
 
+function isWithinDeadline(deliverySpeed: Listing["deliverySpeed"], deadlineId: string) {
+  if (deadlineId === "24h") return deliverySpeed === "instant";
+  if (deadlineId === "3-days") return deliverySpeed === "instant" || deliverySpeed === "fast";
+  return true;
+}
+
 function scoreDeadline(
   deliverySpeed: Listing["deliverySpeed"],
   deadlineId: string,
   language: JamMatchInput["language"]
 ) {
-  if (deadlineId === "flexible") {
-    return { score: 2, reason: "" };
+  if (deadlineId === "flexible") return { score: 3, reason: "" };
+  if (isWithinDeadline(deliverySpeed, deadlineId)) {
+    return {
+      score: deadlineId === "24h" ? 12 : 9,
+      reason: language === "tr" ? "Teslim süresi uygun" : "Deadline fit"
+    };
   }
-  if (deadlineId === "24h") {
-    return deliverySpeed === "instant"
-      ? { score: 12, reason: language === "tr" ? "Hızlı teslim" : "Fast delivery" }
-      : { score: -10, reason: "" };
-  }
-  if (deadlineId === "3-days") {
-    return deliverySpeed === "instant" || deliverySpeed === "fast"
-      ? { score: 9, reason: language === "tr" ? "Teslim süresi uygun" : "Deadline fit" }
-      : { score: -4, reason: "" };
-  }
-  return { score: 5, reason: language === "tr" ? "Teslim süresi uygun" : "Deadline fit" };
+  return { score: -10, reason: "" };
+}
+
+function matchesWorkType(listing: Listing, workType?: JamMatchWorkType) {
+  if (!workType) return true;
+  const isCustom = listing.licenseType === "Service" || listing.category === "Custom Production";
+  return workType === "custom" ? isCustom : !isCustom;
 }
 
 function extractPromptBudget(prompt: string) {
@@ -429,22 +548,15 @@ function extractPromptBudget(prompt: string) {
     const value = Number(currencyMatch[1] ?? currencyMatch[2]);
     return Number.isFinite(value) ? value : null;
   }
-
   const budgetMatch = prompt.match(/(?:budget|bütçe|butce|around|yaklaşık|civarı)\D{0,16}(\d{2,5})/);
-  if (!budgetMatch) {
-    return null;
-  }
-
+  if (!budgetMatch) return null;
   const value = Number(budgetMatch[1]);
   return Number.isFinite(value) ? value : null;
 }
 
 function extractPromptBpm(prompt: string) {
   const match = prompt.match(/(\d{2,3})\s*bpm/);
-  if (!match) {
-    return null;
-  }
-
+  if (!match) return null;
   const value = Number(match[1]);
   return value >= 40 && value <= 240 ? value : null;
 }
@@ -452,10 +564,8 @@ function extractPromptBpm(prompt: string) {
 function dedupeResults(results: JamMatchResult[]) {
   const seen = new Set<string>();
   return results.filter((result) => {
-    const key = `${result.kind}-${result.href}`;
-    if (seen.has(key)) {
-      return false;
-    }
+    const key = `${result.kind}-${result.kind === "artist" ? result.artistHref : result.listingHref}`;
+    if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
@@ -481,14 +591,10 @@ function normalizeText(value: string) {
 
 function hasSignal(text: string, token: string) {
   const normalizedToken = normalizeText(token);
-  if (!normalizedToken) {
-    return false;
-  }
-
+  if (!normalizedToken) return false;
   if (normalizedToken.length <= 3 && !normalizedToken.includes(" ")) {
     return tokenizeForExactSignals(text).includes(normalizedToken);
   }
-
   return text.includes(normalizedToken);
 }
 

@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutDashboard, Search, Upload } from "lucide-react";
+import { Menu, MessageCircle, Search, Upload } from "lucide-react";
+import { useRef, useState } from "react";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/components/language-provider";
+import { MobileNavigationDrawer } from "@/components/mobile-navigation-drawer";
 
 function Wordmark() {
   return (
@@ -27,6 +29,8 @@ function Wordmark() {
 
 export function SiteHeader() {
   const { t } = useI18n();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const navItems = [
     { href: "/marketplace", label: t("navMarketplace") },
     { href: "/jam-match", label: "Jam Match" },
@@ -53,37 +57,57 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="hidden items-center gap-2 md:flex">
           <Link
             href="/marketplace"
-            className="focus-ring hidden h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/72 transition hover:border-white/20 hover:bg-white/8 hover:text-white sm:flex"
+            className="focus-ring flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/72 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
             aria-label={t("searchMarketplace")}
           >
             <Search size={18} />
           </Link>
+          <Link
+            href="/messages"
+            className="focus-ring flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/72 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
+            aria-label={t("navMessages")}
+            title={t("navMessages")}
+          >
+            <MessageCircle size={18} />
+          </Link>
           <LanguageToggle />
           <Link
             href="/upload"
-            className="focus-ring hidden items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-jam-mint md:inline-flex"
+            className="focus-ring inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-jam-mint"
           >
             <Upload size={16} />
             {t("navUpload")}
           </Link>
           <Link
             href="/auth/sign-in"
-            className="focus-ring hidden rounded-full border border-white/12 px-4 py-2 text-sm font-semibold text-white/82 transition hover:border-white/24 hover:bg-white/8 sm:inline-flex"
+            className="focus-ring inline-flex rounded-full border border-white/12 px-4 py-2 text-sm font-semibold text-white/82 transition hover:border-white/24 hover:bg-white/8"
           >
             {t("navSignIn")}
           </Link>
-          <Link
-            href="/dashboard/buyer"
-            className="focus-ring inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/72 transition hover:border-white/20 hover:bg-white/8 hover:text-white md:hidden"
-            aria-label={t("navDashboard")}
-          >
-            <LayoutDashboard size={18} />
-          </Link>
         </div>
+
+        <button
+          ref={mobileMenuButtonRef}
+          type="button"
+          onClick={() => setMobileMenuOpen(true)}
+          className="focus-ring flex h-11 w-11 items-center justify-center rounded-md border border-white/10 bg-white/[0.045] text-white/76 transition hover:border-white/20 hover:bg-white/8 hover:text-white md:hidden"
+          aria-label={t("openMenu")}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="jamly-mobile-navigation"
+        >
+          <Menu size={21} />
+        </button>
       </div>
+
+      <MobileNavigationDrawer
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        navigationItems={navItems}
+        triggerRef={mobileMenuButtonRef}
+      />
     </header>
   );
 }

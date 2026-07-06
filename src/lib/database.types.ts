@@ -123,24 +123,68 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["order_requests"]["Insert"]>;
         Relationships: [];
       };
-      messages: {
+      conversations: {
         Row: {
           id: string;
-          sender_id: string;
-          recipient_id: string;
-          order_request_id: string;
-          body: string;
+          buyer_id: string;
+          artist_id: string;
+          listing_id: string | null;
+          order_request_id: string | null;
+          last_message: string | null;
+          last_message_at: string;
           created_at: string;
         };
         Insert: {
           id?: string;
+          buyer_id: string;
+          artist_id: string;
+          listing_id?: string | null;
+          order_request_id?: string | null;
+          last_message?: string | null;
+          last_message_at?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["conversations"]["Insert"]>;
+        Relationships: [];
+      };
+      messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
           sender_id: string;
-          recipient_id: string;
-          order_request_id: string;
           body: string;
+          message_type: string;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          sender_id: string;
+          body: string;
+          message_type?: string;
+          is_read?: boolean;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["messages"]["Insert"]>;
+        Relationships: [];
+      };
+      message_attachments: {
+        Row: {
+          id: string;
+          message_id: string;
+          file_url: string;
+          file_type: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          message_id: string;
+          file_url: string;
+          file_type?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["message_attachments"]["Insert"]>;
         Relationships: [];
       };
     };

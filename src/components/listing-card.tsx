@@ -9,6 +9,7 @@ import { categoryLabel, licenseLabel, moodLabel, usageLabel } from "@/lib/labels
 import { useI18n } from "@/components/language-provider";
 import { AudioPreview } from "@/components/audio-preview";
 import { ShortlistButton } from "@/components/shortlist-button";
+import { StartConversationButton } from "@/components/start-conversation-button";
 
 type ListingCardProps = {
   listing: Listing;
@@ -114,6 +115,13 @@ export function ListingCard({ listing, priority = false }: ListingCardProps) {
             {listing.bpm ?? t("bpmOpen")}
           </span>
         </div>
+
+        <StartConversationButton
+          artistId={listing.creatorId}
+          listingId={listing.id}
+          label={listing.licenseType === "Service" ? "offer" : "message"}
+          variant="compact"
+        />
       </div>
     </article>
   );

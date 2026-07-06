@@ -18,6 +18,7 @@ import { CreativeBriefBuilder } from "@/components/creative-brief-builder";
 import { ListingCard } from "@/components/listing-card";
 import { OrderRequestButton } from "@/components/order-request-button";
 import { ShortlistButton } from "@/components/shortlist-button";
+import { StartConversationButton } from "@/components/start-conversation-button";
 import { useI18n } from "@/components/language-provider";
 import { currency, shortDate } from "@/lib/format";
 import { categoryLabel, licenseLabel, moodLabel, usageLabel } from "@/lib/labels";
@@ -131,6 +132,11 @@ export function ListingDetailView({
             </div>
           </div>
 
+          <StartConversationButton
+            artistId={localizedListing.creatorId}
+            listingId={localizedListing.id}
+            label={localizedListing.licenseType === "Service" ? "offer" : "message"}
+          />
           <OrderRequestButton listing={localizedListing} />
           <CreativeBriefBuilder />
 

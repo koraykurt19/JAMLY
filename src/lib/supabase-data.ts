@@ -1,4 +1,10 @@
 import type { Database } from "@/lib/database.types";
+import {
+  fetchConversationMessages,
+  findOrCreateOrderConversation,
+  sendConversationMessage
+} from "@/lib/messaging-data";
+import type { ChatMessage } from "@/lib/messaging-types";
 import type { Creator, Listing, OrderRequest, Role } from "@/lib/types";
 import { socialLinksFromRecord } from "@/lib/social-links";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -7,7 +13,6 @@ type SupabaseClient = ReturnType<typeof getSupabaseBrowserClient>;
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type ListingRow = Database["public"]["Tables"]["listings"]["Row"];
 type OrderRow = Database["public"]["Tables"]["order_requests"]["Row"];
-type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
 
 const DEFAULT_AVATAR =
   "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=300&q=80";
@@ -21,18 +26,13 @@ export type OrderSummary = OrderRequest & {
   statusCode: OrderRow["status"];
 };
 
-export type OrderMessage = {
-  id: string;
-  senderId: string;
-  recipientId: string;
-  body: string;
-  createdAt: string;
-};
+export type OrderMessage = ChatMessage;
 
 export type OrderDetail = {
   order: OrderSummary;
   listing: Listing | null;
   messages: OrderMessage[];
+  conversationId: string | null;
   currentUserId: string;
 };
 
@@ -202,10 +202,14 @@ export async function fetchOrderDetail(
     return null;
   }
 
-  const [orders, listing, messages] = await Promise.all([
+  const [orders, listing, conversation] = await Promise.all([
     hydrateOrders(client, [orderRow]),
     fetchListing(client, orderRow.listing_id),
-    fetchMessages(client, orderId)
+    client
+      .from("conversations")
+      .select("id")
+      .eq("order_request_id", orderId)
+      .maybeSingle()
   ]);
 
   const order = orders[0];
@@ -213,7 +217,15 @@ export async function fetchOrderDetail(
     return null;
   }
 
-  return { order, listing, messages, currentUserId };
+  if (conversation.error) {
+    throw new Error(conversation.error.message);
+  }
+  const conversationId = conversation.data?.id ?? null;
+  const messages = conversationId
+    ? await fetchConversationMessages(client, conversationId)
+    : [];
+
+  return { order, listing, messages, conversationId, currentUserId };
 }
 
 export async function sendOrderMessage(
@@ -223,38 +235,13 @@ export async function sendOrderMessage(
   body: string
 ) {
   assertClient(client);
-  const recipientId = senderId === order.buyerId ? order.creatorId : order.buyerId;
-  const { data, error } = await client
-    .from("messages")
-    .insert({
-      sender_id: senderId,
-      recipient_id: recipientId,
-      order_request_id: order.id,
-      body: body.trim()
-    })
-    .select("*")
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return mapMessage(data);
-}
-
-async function fetchMessages(client: SupabaseClient, orderId: string) {
-  assertClient(client);
-  const { data, error } = await client
-    .from("messages")
-    .select("*")
-    .eq("order_request_id", orderId)
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data.map(mapMessage);
+  const conversationId = await findOrCreateOrderConversation(client, {
+    orderRequestId: order.id,
+    buyerId: order.buyerId,
+    artistId: order.creatorId,
+    listingId: order.listingId
+  });
+  return sendConversationMessage(client, conversationId, senderId, body);
 }
 
 async function hydrateListings(client: SupabaseClient, rows: ListingRow[]) {
@@ -383,16 +370,6 @@ export function mapProfileToCreator(profile: ProfileRow): Creator {
     responseRate: 0,
     profileStrength: 0,
     socialLinks: socialLinksFromRecord(profile.social_links)
-  };
-}
-
-function mapMessage(row: MessageRow): OrderMessage {
-  return {
-    id: row.id,
-    senderId: row.sender_id,
-    recipientId: row.recipient_id,
-    body: row.body,
-    createdAt: row.created_at
   };
 }
 

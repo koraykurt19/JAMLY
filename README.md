@@ -17,6 +17,7 @@ Jamly, BeatStars ve Fiverr'dan ilham alan koyu temalı, premium bir müzik freel
 - `/creators/[handle]` üretici profili ve portföy
 - `/listing/[id]` ses önizlemeli ürün/hizmet detayı ve sipariş talebi
 - `/orders/[id]` katılımcılara özel sipariş özeti ve mesajlaşma
+- `/messages` ilan ve proje bağlamlı alıcı/üretici konuşmaları
 - `/dashboard/creator` üretici paneli
 - `/dashboard/buyer` alıcı paneli
 - `/upload` ilan yükleme formu
@@ -96,8 +97,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 
 Supabase env değerleri olmadan uygulama demo veri ve demo sipariş/yükleme geri bildirimiyle çalışır. Env değerleri eklendiğinde auth aktif olur; Jam Alanı, ilan/üretici sayfaları ve kullanıcı panelleri canlı veriyi okur. Giriş yapmış üreticiler ilan yayınlayabilir, alıcılar gerçek UUID ilanlar için sipariş talebi oluşturabilir ve sipariş katılımcıları sipariş içinde mesajlaşabilir.
 
+Mevcut Jamly şemasını daha önce kurduysanız `schema.sql` dosyasını tekrar çalıştırmak yerine
+`supabase/migrations/20260629_add_conversations.sql` migration dosyasını SQL Editor'da bir kez
+çalıştırın. Migration eski sipariş mesajlarını korur, konuşmalara bağlar ve Realtime yayınlarını
+açar. Yeni Supabase projelerinde yalnızca güncel `schema.sql` yeterlidir.
+
 ## Notlar
 
 - Gerçek ödeme, escrow, payout ve dosya teslimi bilinçli olarak kapsam dışında bırakıldı.
 - Ses önizlemeleri ve kapak görselleri yükleme formunda dosya tabanlıdır. Supabase env değerleri yoksa yalnızca local preview/demo olarak çalışır; env değerleri ve giriş yapan üretici varsa dosyalar Supabase Storage bucket'larına yüklenir.
-- SQL şeması roller, üretici profilleri, ilanlar, sipariş talepleri, sipariş mesajları, RLS politikaları ve kapak/ses medyası için public storage bucket'ları içerir.
+- SQL şeması roller, üretici profilleri, ilanlar, sipariş talepleri, Realtime konuşmalar, mesajlar, ek dosya altyapısı, RLS politikaları ve kapak/ses medyası için public storage bucket'ları içerir.
