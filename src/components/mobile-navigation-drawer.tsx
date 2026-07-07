@@ -160,8 +160,8 @@ export function MobileNavigationDrawer({
           </div>
         </nav>
 
-        <div className="shrink-0 border-t border-white/10 p-4">
-          <LanguageToggle />
+        <div className="relative z-10 shrink-0 border-t border-white/10 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <LanguageToggle menuPlacement="top" />
         </div>
       </aside>
     </div>

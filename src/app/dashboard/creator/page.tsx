@@ -25,6 +25,7 @@ import { currency, shortDate } from "@/lib/format";
 import { categoryLabel, licenseLabel, orderStatusLabel } from "@/lib/labels";
 import { localizeListing, localizeOrder, splitMessageList } from "@/lib/i18n";
 import { useDashboardData } from "@/lib/use-dashboard-data";
+import { getBeatLicenseCopy, isBeatLicenseListing } from "@/lib/beat-licenses";
 
 export default function CreatorDashboardPage() {
   const { currencyCode, language, t, usdTryRate } = useI18n();
@@ -55,6 +56,7 @@ export default function CreatorDashboardPage() {
   const averageConversion =
     creatorListings.reduce((sum, listing) => sum + listing.analytics.conversionRate, 0) /
     Math.max(creatorListings.length, 1);
+  const activeListingCount = creatorListings.filter((listing) => listing.isActive).length;
   const formatNumber = (value: number) =>
     new Intl.NumberFormat(language === "tr" ? "tr-TR" : "en-US").format(value);
 
@@ -82,7 +84,7 @@ export default function CreatorDashboardPage() {
       <div className="mt-10 grid gap-4 md:grid-cols-4">
         <StatCard
           label={t("activeListings")}
-          value={creatorListings.length.toString()}
+          value={activeListingCount.toString()}
           detail={t("activeListingsDetail")}
         />
         <StatCard
@@ -133,10 +135,19 @@ export default function CreatorDashboardPage() {
                   className="h-[72px] w-[72px] rounded-lg object-cover"
                 />
                 <div>
-                  <p className="font-semibold text-white">{listing.title}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold text-white">{listing.title}</p>
+                    {listing.exclusiveSold ? (
+                      <span className="rounded-full bg-jam-gold/15 px-2.5 py-1 text-[11px] font-semibold text-jam-gold">
+                        {t("exclusiveSold")}
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="mt-1 text-sm text-white/50">
                     {categoryLabel(listing.category, language)} / {listing.genre} /{" "}
-                    {licenseLabel(listing.licenseType, language)}
+                    {isBeatLicenseListing(listing)
+                      ? t("threeLicenseOptions")
+                      : licenseLabel(listing.licenseType, language)}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {listing.tags.slice(0, 3).map((tag) => (
@@ -193,6 +204,11 @@ export default function CreatorDashboardPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-white">{order.listingTitle}</p>
+                      {order.licenseTier !== "service" ? (
+                        <p className="mt-1 text-xs font-semibold text-jam-blue">
+                          {getBeatLicenseCopy(order.licenseTier, language).name}
+                        </p>
+                      ) : null}
                       <p className="mt-1 text-sm text-white/50">
                         {t("buyer")}: {order.buyerName}
                       </p>

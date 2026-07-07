@@ -5,7 +5,18 @@ import {
   sendConversationMessage
 } from "@/lib/messaging-data";
 import type { ChatMessage } from "@/lib/messaging-types";
-import type { Creator, Listing, OrderRequest, Role } from "@/lib/types";
+import {
+  fromDatabaseLicenseTier,
+  getBeatDeliveryPath,
+  toDatabaseLicenseTier
+} from "@/lib/beat-licenses";
+import type {
+  BeatLicenseTier,
+  Creator,
+  Listing,
+  OrderRequest,
+  Role
+} from "@/lib/types";
 import { socialLinksFromRecord } from "@/lib/social-links";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -244,6 +255,48 @@ export async function sendOrderMessage(
   return sendConversationMessage(client, conversationId, senderId, body);
 }
 
+export async function purchaseBeatLicense(
+  client: SupabaseClient,
+  listingId: string,
+  licenseTier: BeatLicenseTier,
+  message: string | null
+) {
+  assertClient(client);
+  const { data, error } = await client.rpc("purchase_listing_license", {
+    p_listing_id: listingId,
+    p_license_tier: toDatabaseLicenseTier(licenseTier),
+    p_message: message
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function createLicenseDownloadUrl(
+  client: SupabaseClient,
+  listing: Listing,
+  licenseTier: BeatLicenseTier
+) {
+  assertClient(client);
+  const path = getBeatDeliveryPath(listing, licenseTier);
+  if (!path) {
+    throw new Error("The delivery package is not available.");
+  }
+
+  const { data, error } = await client.storage
+    .from("license-deliverables")
+    .createSignedUrl(path, 60, { download: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data.signedUrl;
+}
+
 async function hydrateListings(client: SupabaseClient, rows: ListingRow[]) {
   assertClient(client);
   const profiles = await fetchProfiles(client, rows.map((row) => row.creator_id));
@@ -271,7 +324,9 @@ async function hydrateOrders(client: SupabaseClient, rows: OrderRow[]) {
       listingTitle: listing?.title ?? "Jamly project",
       buyerName: profileMap.get(row.buyer_id)?.full_name ?? "Buyer",
       creatorName: profileMap.get(row.creator_id)?.full_name ?? "Creator",
-      price: Number(row.budget ?? listing?.price ?? 0),
+      price: Number(row.license_price ?? row.budget ?? listing?.price ?? 0),
+      licenseTier: fromDatabaseLicenseTier(row.license_tier),
+      licenseTermsVersion: row.license_terms_version,
       status: mapOrderStatus(row.status),
       createdAt: row.created_at,
       buyerId: row.buyer_id,
@@ -314,6 +369,17 @@ async function fetchListingRows(client: SupabaseClient, ids: string[]) {
 
 function mapListing(row: ListingRow, profile?: ProfileRow): Listing {
   const turnaround = row.turnaround ?? "Flexible";
+  const licensePrices =
+    row.category === "Beat" &&
+    row.price_non_exclusive !== null &&
+    row.price_unlimited !== null &&
+    row.price_exclusive !== null
+      ? {
+          nonExclusive: Number(row.price_non_exclusive),
+          unlimited: Number(row.price_unlimited),
+          exclusive: Number(row.price_exclusive)
+        }
+      : null;
   return {
     id: row.id,
     creatorId: row.creator_id,
@@ -324,7 +390,7 @@ function mapListing(row: ListingRow, profile?: ProfileRow): Listing {
     category: row.category,
     genre: row.genre,
     bpm: row.bpm,
-    price: Number(row.price),
+    price: Number(row.price_non_exclusive ?? row.price),
     description: row.description,
     audioPreviewUrl: row.audio_preview_url,
     coverImageUrl: row.cover_image_url,
@@ -338,7 +404,19 @@ function mapListing(row: ListingRow, profile?: ProfileRow): Listing {
     filesIncluded: ["Audio preview"],
     revisionPolicy: "Confirm revisions with the creator before work begins.",
     markers: [],
-    exclusiveAvailable: row.license_type === "Exclusive",
+    licensePrices,
+    deliveryFiles:
+      row.category === "Beat"
+        ? {
+            nonExclusive: row.delivery_mp3_path,
+            unlimited: row.delivery_unlimited_path,
+            exclusive: row.delivery_exclusive_path
+          }
+        : null,
+    exclusiveSold: row.exclusive_sold,
+    isActive: row.is_active,
+    exclusiveAvailable:
+      row.category === "Beat" && row.is_active && !row.exclusive_sold,
     commercialUse: row.license_type !== "Service",
     analytics: { views: 0, saves: 0, plays: 0, conversionRate: 0 },
     createdAt: row.created_at

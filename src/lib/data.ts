@@ -282,6 +282,10 @@ export const listings: Listing[] = [
       { label: "Hook", time: 39 },
       { label: "Verse", time: 75 }
     ],
+    licensePrices: { nonExclusive: 79, unlimited: 199, exclusive: 1499 },
+    deliveryFiles: { nonExclusive: null, unlimited: null, exclusive: null },
+    exclusiveSold: false,
+    isActive: true,
     exclusiveAvailable: true,
     commercialUse: true,
     analytics: { views: 1840, saves: 142, plays: 930, conversionRate: 8.4 },
@@ -320,6 +324,10 @@ export const listings: Listing[] = [
       { label: "Harmony", time: 58 },
       { label: "Outro", time: 92 }
     ],
+    licensePrices: null,
+    deliveryFiles: null,
+    exclusiveSold: false,
+    isActive: true,
     exclusiveAvailable: false,
     commercialUse: true,
     analytics: { views: 1325, saves: 118, plays: 704, conversionRate: 10.2 },
@@ -358,6 +366,10 @@ export const listings: Listing[] = [
       { label: "Vocal lift", time: 42 },
       { label: "Drop", time: 86 }
     ],
+    licensePrices: null,
+    deliveryFiles: null,
+    exclusiveSold: false,
+    isActive: true,
     exclusiveAvailable: false,
     commercialUse: true,
     analytics: { views: 910, saves: 76, plays: 488, conversionRate: 7.6 },
@@ -395,6 +407,10 @@ export const listings: Listing[] = [
       { label: "Loop B", time: 36 },
       { label: "Bridge", time: 72 }
     ],
+    licensePrices: { nonExclusive: 129, unlimited: 299, exclusive: 1999 },
+    deliveryFiles: { nonExclusive: null, unlimited: null, exclusive: null },
+    exclusiveSold: false,
+    isActive: true,
     exclusiveAvailable: true,
     commercialUse: true,
     analytics: { views: 1170, saves: 96, plays: 612, conversionRate: 6.9 },
@@ -432,6 +448,10 @@ export const listings: Listing[] = [
       { label: "Stack", time: 54 },
       { label: "Ad-lib", time: 110 }
     ],
+    licensePrices: null,
+    deliveryFiles: null,
+    exclusiveSold: false,
+    isActive: true,
     exclusiveAvailable: false,
     commercialUse: true,
     analytics: { views: 760, saves: 69, plays: 391, conversionRate: 9.1 },
@@ -469,6 +489,10 @@ export const listings: Listing[] = [
       { label: "Low end", time: 44 },
       { label: "Final lift", time: 96 }
     ],
+    licensePrices: null,
+    deliveryFiles: null,
+    exclusiveSold: false,
+    isActive: true,
     exclusiveAvailable: false,
     commercialUse: true,
     analytics: { views: 1490, saves: 131, plays: 802, conversionRate: 11.4 },
@@ -507,6 +531,10 @@ export const listings: Listing[] = [
       { label: "Lead cevap", time: 48 },
       { label: "Hook loop", time: 83 }
     ],
+    licensePrices: null,
+    deliveryFiles: null,
+    exclusiveSold: false,
+    isActive: true,
     exclusiveAvailable: false,
     commercialUse: true,
     analytics: { views: 680, saves: 54, plays: 342, conversionRate: 8.8 },
@@ -544,6 +572,10 @@ export const listings: Listing[] = [
       { label: "Hook B", time: 46 },
       { label: "Final note", time: 74 }
     ],
+    licensePrices: null,
+    deliveryFiles: null,
+    exclusiveSold: false,
+    isActive: true,
     exclusiveAvailable: false,
     commercialUse: true,
     analytics: { views: 1030, saves: 104, plays: 590, conversionRate: 12.1 },
@@ -582,6 +614,10 @@ export const listings: Listing[] = [
       { label: "Tagline", time: 27 },
       { label: "Alt slogan", time: 51 }
     ],
+    licensePrices: null,
+    deliveryFiles: null,
+    exclusiveSold: false,
+    isActive: true,
     exclusiveAvailable: false,
     commercialUse: true,
     analytics: { views: 540, saves: 48, plays: 270, conversionRate: 7.9 },
@@ -619,6 +655,10 @@ export const listings: Listing[] = [
       { label: "Direction A", time: 32 },
       { label: "Launch kit", time: 68 }
     ],
+    licensePrices: null,
+    deliveryFiles: null,
+    exclusiveSold: false,
+    isActive: true,
     exclusiveAvailable: false,
     commercialUse: true,
     analytics: { views: 790, saves: 82, plays: 210, conversionRate: 9.4 },
@@ -634,6 +674,8 @@ export const orderRequests: OrderRequest[] = [
     buyerName: "Nadia Cruz",
     creatorName: "Sola Grey",
     price: 180,
+    licenseTier: "service",
+    licenseTermsVersion: null,
     status: "In Review",
     createdAt: "2026-06-14T12:00:00.000Z"
   },
@@ -644,6 +686,8 @@ export const orderRequests: OrderRequest[] = [
     buyerName: "Miles Avery",
     creatorName: "Mira Voss",
     price: 240,
+    licenseTier: "service",
+    licenseTermsVersion: null,
     status: "Requested",
     createdAt: "2026-06-15T12:00:00.000Z"
   },
@@ -653,7 +697,9 @@ export const orderRequests: OrderRequest[] = [
     listingTitle: "Gece Mesaisi Bounce",
     buyerName: "Jules Park",
     creatorName: "Kairo Vale",
-    price: 79,
+    price: 199,
+    licenseTier: "unlimited",
+    licenseTermsVersion: "2026-07-07",
     status: "Delivered",
     createdAt: "2026-06-11T12:00:00.000Z"
   }

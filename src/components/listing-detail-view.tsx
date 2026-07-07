@@ -21,6 +21,13 @@ import { ShortlistButton } from "@/components/shortlist-button";
 import { StartConversationButton } from "@/components/start-conversation-button";
 import { useI18n } from "@/components/language-provider";
 import { currency, shortDate } from "@/lib/format";
+import {
+  beatLicenseTiers,
+  getBeatLicenseCopy,
+  getBeatLicensePrice,
+  isBeatLicenseListing,
+  licenseLegalNotice
+} from "@/lib/beat-licenses";
 import { categoryLabel, licenseLabel, moodLabel, usageLabel } from "@/lib/labels";
 import { localizeCreator, localizeListing } from "@/lib/i18n";
 import type { Creator, Listing } from "@/lib/types";
@@ -42,6 +49,7 @@ export function ListingDetailView({
   const localizedRelatedListings = relatedListings.map((item) =>
     localizeListing(item, language)
   );
+  const tieredBeat = isBeatLicenseListing(localizedListing);
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -93,7 +101,9 @@ export function ListingDetailView({
                 </p>
               </div>
               <span className="rounded-full bg-jam-mint px-3 py-1 text-sm font-bold text-black">
-                {licenseLabel(localizedListing.licenseType, language)}
+                {tieredBeat
+                  ? t("threeLicenseOptions")
+                  : licenseLabel(localizedListing.licenseType, language)}
               </span>
             </div>
             <div className="mt-4">
@@ -137,7 +147,48 @@ export function ListingDetailView({
             listingId={localizedListing.id}
             label={localizedListing.licenseType === "Service" ? "offer" : "message"}
           />
-          <OrderRequestButton listing={localizedListing} />
+          {tieredBeat ? (
+            <div className="rounded-lg border border-white/10 bg-white/[0.055] p-5">
+              <div className="grid gap-2">
+                {beatLicenseTiers.map((tier) => {
+                  const copy = getBeatLicenseCopy(tier, language);
+                  return (
+                    <div
+                      key={tier}
+                      className="flex items-center justify-between gap-4 rounded-md bg-black/24 px-3 py-2 text-sm"
+                    >
+                      <span className="text-white/62">{copy.name}</span>
+                      <span className="font-semibold text-white">
+                        {currency(
+                          getBeatLicensePrice(localizedListing, tier),
+                          language,
+                          currencyCode,
+                          usdTryRate
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              {localizedListing.exclusiveSold || !localizedListing.isActive ? (
+                <div className="mt-4 rounded-md border border-jam-gold/25 bg-jam-gold/10 p-3 text-sm font-semibold text-jam-gold">
+                  {t("exclusiveSold")}
+                </div>
+              ) : (
+                <Link
+                  href={`/checkout/${localizedListing.id}`}
+                  className="focus-ring mt-4 inline-flex w-full items-center justify-center rounded-full bg-jam-mint px-5 py-3 text-sm font-bold text-black transition hover:bg-white"
+                >
+                  {t("compareLicenses")}
+                </Link>
+              )}
+              <p className="mt-3 text-xs leading-5 text-white/40">
+                {licenseLegalNotice[language]}
+              </p>
+            </div>
+          ) : (
+            <OrderRequestButton listing={localizedListing} />
+          )}
           <CreativeBriefBuilder />
 
           {localizedCreator ? (

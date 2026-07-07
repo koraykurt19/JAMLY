@@ -10,6 +10,7 @@ import { useI18n } from "@/components/language-provider";
 import { AudioPreview } from "@/components/audio-preview";
 import { ShortlistButton } from "@/components/shortlist-button";
 import { StartConversationButton } from "@/components/start-conversation-button";
+import { isBeatLicenseListing } from "@/lib/beat-licenses";
 
 type ListingCardProps = {
   listing: Listing;
@@ -104,7 +105,9 @@ export function ListingCard({ listing, priority = false }: ListingCardProps) {
         <div className="grid gap-2 text-xs text-white/58 sm:grid-cols-3">
           <span className="flex items-center gap-1 rounded-md bg-black/24 px-2 py-2">
             <Tag size={13} />
-            {licenseLabel(listing.licenseType, language)}
+            {isBeatLicenseListing(listing)
+              ? t("threeLicenseOptions")
+              : licenseLabel(listing.licenseType, language)}
           </span>
           <span className="flex items-center gap-1 rounded-md bg-black/24 px-2 py-2">
             <Clock size={13} />
