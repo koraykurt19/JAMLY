@@ -20,6 +20,14 @@ export type LicenseType =
   | "Exclusive"
   | "Service";
 
+export type BeatLicenseTier = "nonExclusive" | "unlimited" | "exclusive";
+
+export type OrderLicenseTier = BeatLicenseTier | "service";
+
+export type BeatLicensePrices = Record<BeatLicenseTier, number>;
+
+export type BeatDeliveryFiles = Record<BeatLicenseTier, string | null>;
+
 export type ListingMood =
   | "Dark"
   | "Bright"
@@ -103,6 +111,10 @@ export type Listing = {
   filesIncluded: string[];
   revisionPolicy: string;
   markers: AudioMarker[];
+  licensePrices: BeatLicensePrices | null;
+  deliveryFiles: BeatDeliveryFiles | null;
+  exclusiveSold: boolean;
+  isActive: boolean;
   exclusiveAvailable: boolean;
   commercialUse: boolean;
   analytics: ListingAnalytics;
@@ -117,6 +129,8 @@ export type OrderRequest = {
   buyerName: string;
   creatorName: string;
   price: number;
+  licenseTier: OrderLicenseTier;
+  licenseTermsVersion: string | null;
   status: "Draft" | "Requested" | "In Review" | "Delivered";
   createdAt: string;
 };

@@ -4,8 +4,10 @@
 
 import {
   CheckCircle2,
+  FileArchive,
   FileAudio,
   ImageIcon,
+  Info,
   Loader2,
   UploadCloud
 } from "lucide-react";
@@ -13,25 +15,26 @@ import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
 import { listingCategories } from "@/lib/data";
-import { categoryLabel, licenseLabel } from "@/lib/labels";
-import type { LicenseType, ListingCategory } from "@/lib/types";
+import {
+  beatLicenseTiers,
+  getBeatLicenseCopy,
+  getDeliveryFolder,
+  licenseLegalNotice
+} from "@/lib/beat-licenses";
+import { categoryLabel } from "@/lib/labels";
+import type { BeatLicenseTier, ListingCategory } from "@/lib/types";
 import { useI18n } from "@/components/language-provider";
-
-const licenseTypes: LicenseType[] = [
-  "Basic Lease",
-  "Premium Lease",
-  "Exclusive",
-  "Service"
-];
 
 type FormState = {
   title: string;
   category: ListingCategory;
   genre: string;
   bpm: string;
-  price: string;
+  servicePrice: string;
+  priceNonExclusive: string;
+  priceUnlimited: string;
+  priceExclusive: string;
   description: string;
-  licenseType: LicenseType;
   turnaround: string;
   tags: string;
 };
@@ -41,6 +44,9 @@ type MediaState = {
   audioPreviewUrl: string;
   coverFile: File | null;
   coverPreviewUrl: string;
+  deliveryMp3File: File | null;
+  deliveryUnlimitedFile: File | null;
+  deliveryExclusiveFile: File | null;
 };
 
 type SupabaseBrowserClient = NonNullable<ReturnType<typeof getSupabaseBrowserClient>>;
@@ -50,9 +56,11 @@ const initialState: FormState = {
   category: "Beat",
   genre: "",
   bpm: "",
-  price: "",
+  servicePrice: "",
+  priceNonExclusive: "",
+  priceUnlimited: "",
+  priceExclusive: "",
   description: "",
-  licenseType: "Basic Lease",
   turnaround: "",
   tags: ""
 };
@@ -61,7 +69,19 @@ const initialMediaState: MediaState = {
   audioFile: null,
   audioPreviewUrl: "",
   coverFile: null,
-  coverPreviewUrl: ""
+  coverPreviewUrl: "",
+  deliveryMp3File: null,
+  deliveryUnlimitedFile: null,
+  deliveryExclusiveFile: null
+};
+
+const priceFieldByTier: Record<
+  BeatLicenseTier,
+  "priceNonExclusive" | "priceUnlimited" | "priceExclusive"
+> = {
+  nonExclusive: "priceNonExclusive",
+  unlimited: "priceUnlimited",
+  exclusive: "priceExclusive"
 };
 
 type UploadListingFormProps = {
@@ -129,6 +149,14 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
     });
   }
 
+  function updateDeliveryFile(
+    kind: "deliveryMp3File" | "deliveryUnlimitedFile" | "deliveryExclusiveFile",
+    event: ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0] ?? null;
+    setMedia((current) => ({ ...current, [kind]: file }));
+  }
+
   function resetForm() {
     setForm(initialState);
     setMedia((current) => {
@@ -150,6 +178,42 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
       return;
     }
 
+    const isBeat = form.category === "Beat";
+    const licensePrices = {
+      nonExclusive: Number(form.priceNonExclusive),
+      unlimited: Number(form.priceUnlimited),
+      exclusive: Number(form.priceExclusive)
+    };
+
+    if (
+      isBeat &&
+      beatLicenseTiers.some(
+        (tier) => !Number.isFinite(licensePrices[tier]) || licensePrices[tier] <= 0
+      )
+    ) {
+      setLoading(false);
+      setMessage(`${t("listingError")}: ${t("invalidLicensePrices")}`);
+      return;
+    }
+
+    if (
+      isBeat &&
+      (!media.deliveryMp3File ||
+        !media.deliveryUnlimitedFile ||
+        !media.deliveryExclusiveFile)
+    ) {
+      setLoading(false);
+      setMessage(`${t("listingError")}: ${t("missingLicenseFiles")}`);
+      return;
+    }
+
+    const servicePrice = Number(form.servicePrice);
+    if (!isBeat && (!Number.isFinite(servicePrice) || servicePrice <= 0)) {
+      setLoading(false);
+      setMessage(`${t("listingError")}: ${t("invalidServicePrice")}`);
+      return;
+    }
+
     const supabase = getSupabaseBrowserClient();
     let savedRemotely = false;
 
@@ -159,27 +223,47 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
 
       if (supabase) {
         if (creatorId) {
-          const uploadedMedia = await uploadListingMedia(
-            supabase,
-            creatorId,
-            media.audioFile,
-            media.coverFile
-          );
+          const listingId = createUuid();
+          const [uploadedMedia, deliveryFiles] = await Promise.all([
+            uploadListingMedia(
+              supabase,
+              creatorId,
+              media.audioFile,
+              media.coverFile
+            ),
+            isBeat &&
+            media.deliveryMp3File &&
+            media.deliveryUnlimitedFile &&
+            media.deliveryExclusiveFile
+              ? uploadLicensePackages(supabase, creatorId, listingId, {
+                  nonExclusive: media.deliveryMp3File,
+                  unlimited: media.deliveryUnlimitedFile,
+                  exclusive: media.deliveryExclusiveFile
+                })
+              : Promise.resolve(null)
+          ]);
 
           audioPreviewUrl = uploadedMedia.audioPreviewUrl;
           coverImageUrl = uploadedMedia.coverImageUrl;
 
           const { error } = await supabase.from("listings").insert({
+            id: listingId,
             creator_id: creatorId,
             title: form.title,
             category: form.category,
             genre: form.genre,
             bpm: form.bpm ? Number(form.bpm) : null,
-            price: Number(form.price),
+            price: isBeat ? licensePrices.nonExclusive : servicePrice,
+            price_non_exclusive: isBeat ? licensePrices.nonExclusive : null,
+            price_unlimited: isBeat ? licensePrices.unlimited : null,
+            price_exclusive: isBeat ? licensePrices.exclusive : null,
             description: form.description,
             audio_preview_url: audioPreviewUrl,
             cover_image_url: coverImageUrl,
-            license_type: form.licenseType,
+            delivery_mp3_path: deliveryFiles?.nonExclusive ?? null,
+            delivery_unlimited_path: deliveryFiles?.unlimited ?? null,
+            delivery_exclusive_path: deliveryFiles?.exclusive ?? null,
+            license_type: isBeat ? "Basic Lease" : "Service",
             turnaround: form.turnaround,
             tags: form.tags
               .split(",")
@@ -253,31 +337,32 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
           />
         </Field>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="BPM">
-            <input
-              value={form.bpm}
-              onChange={(event) => update("bpm", event.target.value)}
-              type="number"
-              min="40"
-              max="240"
-              placeholder={t("optional")}
-              className="input-field"
-            />
-          </Field>
+        <Field label="BPM">
+          <input
+            value={form.bpm}
+            onChange={(event) => update("bpm", event.target.value)}
+            type="number"
+            min="40"
+            max="240"
+            placeholder={t("optional")}
+            className="input-field"
+          />
+        </Field>
+
+        {form.category !== "Beat" ? (
           <Field label={t("price")}>
             <input
-              value={form.price}
-              onChange={(event) => update("price", event.target.value)}
+              value={form.servicePrice}
+              onChange={(event) => update("servicePrice", event.target.value)}
               type="number"
-              min="0"
-              step="1"
+              min="0.01"
+              step="0.01"
               placeholder="120"
               required
               className="input-field"
             />
           </Field>
-        </div>
+        ) : null}
 
         <FileUploadField
           key={`audio-${fileInputVersion}`}
@@ -309,20 +394,6 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
           onChange={(event) => updateMedia("cover", event)}
         />
 
-        <Field label={t("licenseType")}>
-          <select
-            value={form.licenseType}
-            onChange={(event) => update("licenseType", event.target.value as LicenseType)}
-            className="input-field"
-          >
-            {licenseTypes.map((license) => (
-              <option key={license} value={license}>
-                {licenseLabel(license, language)}
-              </option>
-            ))}
-          </select>
-        </Field>
-
         <Field label={t("turnaround")}>
           <input
             value={form.turnaround}
@@ -332,6 +403,100 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
           />
         </Field>
       </div>
+
+      {form.category === "Beat" ? (
+        <>
+          <section className="rounded-lg border border-white/10 bg-black/24 p-4 sm:p-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-jam-blue">
+                  {t("beatLicensePricing")}
+                </p>
+                <h2 className="mt-2 text-xl font-semibold text-white">
+                  {t("setThreeLicensePrices")}
+                </h2>
+              </div>
+              <p className="text-xs text-white/42">{t("pricesStoredInUsd")}</p>
+            </div>
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-3">
+              {beatLicenseTiers.map((tier) => {
+                const field = priceFieldByTier[tier];
+                return (
+                  <LicensePriceCard
+                    key={tier}
+                    tier={tier}
+                    language={language}
+                    value={form[field]}
+                    onChange={(value) => update(field, value)}
+                  />
+                );
+              })}
+            </div>
+
+            <p className="mt-4 text-xs leading-5 text-white/42">
+              {licenseLegalNotice[language]}
+            </p>
+          </section>
+
+          <section className="rounded-lg border border-white/10 bg-black/24 p-4 sm:p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-jam-blue">
+              {t("licenseDeliveryPackages")}
+            </p>
+            <h2 className="mt-2 text-xl font-semibold text-white">
+              {t("uploadBuyerFiles")}
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-white/48">
+              {t("privateDeliveryFilesHint")}
+            </p>
+
+            <div className="mt-5 grid gap-5 lg:grid-cols-3">
+              <FileUploadField
+                key={`delivery-mp3-${fileInputVersion}`}
+                label={getBeatLicenseCopy("nonExclusive", language).deliveryLabel}
+                hint={t("deliveryMp3Hint")}
+                accept="audio/mpeg,.mp3"
+                file={media.deliveryMp3File}
+                icon={<FileAudio size={20} />}
+                previewType="none"
+                previewUrl=""
+                chooseLabel={media.deliveryMp3File ? t("replaceFile") : t("chooseFile")}
+                selectedLabel={t("selectedFile")}
+                readyLabel={t("deliveryReady")}
+                onChange={(event) => updateDeliveryFile("deliveryMp3File", event)}
+              />
+              <FileUploadField
+                key={`delivery-unlimited-${fileInputVersion}`}
+                label={getBeatLicenseCopy("unlimited", language).deliveryLabel}
+                hint={t("deliveryUnlimitedHint")}
+                accept="application/zip,application/x-zip-compressed,.zip"
+                file={media.deliveryUnlimitedFile}
+                icon={<FileArchive size={20} />}
+                previewType="none"
+                previewUrl=""
+                chooseLabel={media.deliveryUnlimitedFile ? t("replaceFile") : t("chooseFile")}
+                selectedLabel={t("selectedFile")}
+                readyLabel={t("deliveryReady")}
+                onChange={(event) => updateDeliveryFile("deliveryUnlimitedFile", event)}
+              />
+              <FileUploadField
+                key={`delivery-exclusive-${fileInputVersion}`}
+                label={getBeatLicenseCopy("exclusive", language).deliveryLabel}
+                hint={t("deliveryExclusiveHint")}
+                accept="application/zip,application/x-zip-compressed,.zip"
+                file={media.deliveryExclusiveFile}
+                icon={<FileArchive size={20} />}
+                previewType="none"
+                previewUrl=""
+                chooseLabel={media.deliveryExclusiveFile ? t("replaceFile") : t("chooseFile")}
+                selectedLabel={t("selectedFile")}
+                readyLabel={t("deliveryReady")}
+                onChange={(event) => updateDeliveryFile("deliveryExclusiveFile", event)}
+              />
+            </div>
+          </section>
+        </>
+      ) : null}
 
       <Field label={t("description")}>
         <textarea
@@ -381,6 +546,35 @@ async function uploadListingMedia(
   return { audioPreviewUrl, coverImageUrl };
 }
 
+async function uploadLicensePackages(
+  supabase: SupabaseBrowserClient,
+  userId: string,
+  listingId: string,
+  files: Record<BeatLicenseTier, File>
+) {
+  const uploaded = await Promise.all(
+    beatLicenseTiers.map(async (tier) => {
+      const file = files[tier];
+      const path = `${userId}/${listingId}/${getDeliveryFolder(tier)}/${Date.now()}-${randomId()}-${safeFileName(file.name)}`;
+      const { error } = await supabase.storage
+        .from("license-deliverables")
+        .upload(path, file, {
+          cacheControl: "3600",
+          contentType: file.type || "application/octet-stream",
+          upsert: false
+        });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return [tier, path] as const;
+    })
+  );
+
+  return Object.fromEntries(uploaded) as Record<BeatLicenseTier, string>;
+}
+
 async function uploadPublicFile(
   supabase: SupabaseBrowserClient,
   bucket: "audio-previews" | "listing-covers",
@@ -403,6 +597,18 @@ async function uploadPublicFile(
 
 function randomId() {
   return globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
+}
+
+function createUuid() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = character === "x" ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
 }
 
 function safeFileName(fileName: string) {
@@ -440,7 +646,7 @@ function FileUploadField({
   accept: string;
   file: File | null;
   icon: ReactNode;
-  previewType: "audio" | "image";
+  previewType: "audio" | "image" | "none";
   previewUrl: string;
   chooseLabel: string;
   selectedLabel: string;
@@ -494,6 +700,69 @@ function FileUploadField({
           <audio src={previewUrl} controls className="w-full" />
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function LicensePriceCard({
+  tier,
+  language,
+  value,
+  onChange
+}: {
+  tier: BeatLicenseTier;
+  language: "tr" | "en";
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const copy = getBeatLicenseCopy(tier, language);
+
+  return (
+    <div className="relative rounded-lg border border-white/10 bg-white/[0.045] p-4">
+      <div className="flex min-h-12 items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold text-white">{copy.name}</p>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-jam-blue">
+            {copy.qualifier}
+          </p>
+        </div>
+        <div className="group relative shrink-0">
+          <button
+            type="button"
+            aria-label={`${copy.name} info`}
+            title={copy.summary}
+            className="focus-ring flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/48 transition hover:border-jam-blue/40 hover:text-jam-blue"
+          >
+            <Info size={16} />
+          </button>
+          <div className="pointer-events-none absolute right-0 top-11 z-20 hidden w-64 rounded-md border border-white/10 bg-jam-panel p-3 text-xs leading-5 text-white/68 shadow-soft group-hover:block group-focus-within:block">
+            {copy.summary}
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-3 min-h-12 text-sm leading-6 text-white/52">{copy.summary}</p>
+      <label className="mt-4 block">
+        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/40">
+          USD
+        </span>
+        <div className="relative mt-2">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/42">
+            $
+          </span>
+          <input
+            type="number"
+            aria-label={`${copy.name} ${language === "tr" ? "fiyatı" : "price"} (USD)`}
+            min="0.01"
+            step="0.01"
+            required
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            placeholder={tier === "exclusive" ? "1500" : tier === "unlimited" ? "199" : "79"}
+            className="input-field pl-8"
+          />
+        </div>
+      </label>
     </div>
   );
 }

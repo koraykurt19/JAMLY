@@ -9,9 +9,9 @@ creators can publish listings, present their portfolio, receive project requests
 and continue the conversation inside the platform.
 
 Jamly is currently a production-oriented MVP. The marketplace, role-based auth,
-Supabase data layer, media uploads, order requests, and Realtime messaging are
-implemented. Payments, escrow, payouts, and final file delivery are intentionally
-outside the current release.
+Supabase data layer, tiered beat licensing, private delivery packages, order
+requests, and Realtime messaging are implemented. Payments, escrow, payouts,
+and service-order file delivery are intentionally outside the current release.
 
 ## Product Highlights
 
@@ -21,8 +21,10 @@ outside the current release.
 | Jam Match | Guided project brief and intent-aware matching across listings and creators |
 | Creator tools | Creator profile, portfolio, social links, listing upload, and creator dashboard |
 | Buyer tools | Shortlist, buyer dashboard, order requests, and order detail views |
+| Beat licensing | Fixed MP3, Unlimited, and Exclusive terms with creator-controlled pricing |
+| Exclusive sale | Transactional marketplace removal that blocks every later license purchase |
 | Messaging | Listing- and order-aware conversations with Supabase Realtime updates |
-| Media | Cover image and audio preview uploads through Supabase Storage |
+| Media | Public previews and tier-specific private delivery packages through Supabase Storage |
 | Localization | Full Turkish and English interface support |
 | Currency | USD and TRY display with a server-side USD/TRY rate endpoint and safe fallback |
 | Resilience | Fully usable demo mode when Supabase environment variables are absent |
@@ -35,15 +37,16 @@ outside the current release.
 1. Browse or filter listings in Jam Place.
 2. Listen to audio previews and compare creator signals.
 3. Use Jam Match to describe the project, budget, genre, and deadline.
-4. Open a listing or creator profile and start a conversation.
-5. Send an order request and follow its status from the buyer dashboard.
+4. Compare MP3, Unlimited, and Exclusive terms on the beat checkout.
+5. Complete a license order and access its private delivery package.
+6. Follow the order or continue the conversation from the buyer dashboard.
 
 ### Creator
 
 1. Create an account with the `creator` role.
 2. Complete the profile and add Spotify, Instagram, TikTok, YouTube,
    SoundCloud, or website links.
-3. Upload a beat or service with cover art and an audio preview.
+3. Upload a beat with three prices and tier-specific delivery packages, or publish a service.
 4. Manage active listings and incoming requests from the creator dashboard.
 5. Discuss briefs with buyers through Realtime conversations.
 
@@ -127,7 +130,9 @@ Never commit `.env`, `.env.local`, service-role keys, or private credentials.
 | Dashboards | Representative demo states | User-specific creator or buyer data |
 | Authentication | Non-persistent demo experience | Supabase sessions and role-based redirects |
 | Listing upload | Local file preview and demo feedback | Storage upload and Postgres insert for authenticated creators |
-| Order requests | Explicit demo-mode response | Persisted request for authenticated buyers and UUID listings |
+| Beat checkout | Interactive license comparison without persistence | Atomic license order with exclusive-sale locking |
+| Delivery | Terms and file manifest preview | Private package access through 60-second signed URLs |
+| Order requests | Explicit demo-mode response | Persisted service request for authenticated buyers and UUID listings |
 | Messaging | Mock conversations | Persisted messages with Realtime subscriptions |
 
 The application enters demo mode automatically when either public Supabase
@@ -164,15 +169,20 @@ The schema creates:
 - `conversations`
 - `messages`
 - `message_attachments`
-- `listing-covers` and `audio-previews` Storage buckets
+- `listing-covers`, `audio-previews`, and private `license-deliverables` Storage buckets
 - RLS policies, indexes, triggers, and Realtime publications
 
 ### Existing project
 
-If an older Jamly schema is already installed, run
-[`supabase/migrations/20260629_add_conversations.sql`](supabase/migrations/20260629_add_conversations.sql)
-once instead of re-running the complete schema. The migration preserves existing
-order messages, links them to conversations, and enables Realtime publication.
+If an older Jamly schema is already installed, apply the relevant migrations in
+date order instead of re-running the complete schema:
+
+1. [`supabase/migrations/20260629_add_conversations.sql`](supabase/migrations/20260629_add_conversations.sql)
+2. [`supabase/migrations/20260707_add_beat_license_tiers.sql`](supabase/migrations/20260707_add_beat_license_tiers.sql)
+
+The licensing migration backfills prices for existing beat rows, adds the
+transactional purchase function, and creates the private delivery bucket. Existing
+beats still require their three delivery packages before a live purchase can succeed.
 
 ### Authentication configuration
 
@@ -191,8 +201,8 @@ sign-ins to the matching dashboard.
 | Table | Responsibility |
 | --- | --- |
 | `profiles` | Identity, role, creator presentation, specialties, and social links |
-| `listings` | Beat and service metadata, price, license, media, genre, BPM, and delivery |
-| `order_requests` | Buyer brief, budget, creator, listing, and order lifecycle status |
+| `listings` | Beat and service metadata, three beat prices, exclusive state, private package paths, and public media |
+| `order_requests` | Buyer brief, selected license tier, locked purchase price, terms version, and order status |
 | `conversations` | Buyer/creator thread with optional listing or order context |
 | `messages` | Text messages, read state, sender, and timestamps |
 | `message_attachments` | Future-ready file metadata associated with messages |
@@ -204,7 +214,10 @@ sign-ins to the matching dashboard.
 - Message inserts require `sender_id = auth.uid()`.
 - Buyers can only create order requests for themselves.
 - Only authenticated creators can create or update their own listings.
+- Beat license purchases use a row lock so an Exclusive sale and another license cannot race.
+- Exclusive purchase atomically marks the listing sold and removes it from public discovery.
 - Storage upload policies require an authenticated creator profile.
+- Buyers can read only the private folder matching the tier recorded on their order.
 - Public clients use only the Supabase anonymous key; no service-role key is
   required by the application.
 - Public listing media is readable, while uploads remain policy-controlled.
@@ -221,6 +234,7 @@ add automated authorization tests for every role and table.
 | `/jam-match` | Guided project brief and matching results |
 | `/creators/[handle]` | Creator profile, portfolio, and social presence |
 | `/listing/[id]` | Listing details, audio preview, and request actions |
+| `/checkout/[id]` | Three-tier beat license comparison and order confirmation |
 | `/messages` | Conversation list and active chat workspace |
 | `/orders/[id]` | Participant-only order brief, status, and messages |
 | `/dashboard/creator` | Creator listings and incoming order requests |
@@ -323,8 +337,8 @@ The current release deliberately focuses on discovery, trust, project intent,
 and communication. The next production milestones are:
 
 1. Payment provider integration, escrow, refunds, and creator payouts.
-2. Custom offers and order conversion from conversations.
-3. Secure project-file delivery and attachment UI.
+2. Custom offers and service-order conversion from conversations.
+3. Service-order file delivery and message attachment UI.
 4. Notifications, typing indicators, online presence, block, and report tools.
 5. Moderation, observability, audit logs, and automated end-to-end tests.
 6. Search indexing and a learned or embedding-assisted Jam Match ranking layer.

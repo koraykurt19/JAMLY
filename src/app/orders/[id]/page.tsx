@@ -6,6 +6,7 @@ import { AlertCircle, ArrowLeft, Loader2, MessageSquareText, Send } from "lucide
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/components/language-provider";
+import { LicenseDeliveryPanel } from "@/components/license-delivery-panel";
 import { currency, shortDate } from "@/lib/format";
 import { orderStatusLabel } from "@/lib/labels";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
@@ -124,16 +125,19 @@ export default function OrderPage({ params }: OrderPageProps) {
       <div className="mt-8 grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
         <aside className="space-y-5">
           {detail.listing ? (
-            <Link href={`/listing/${detail.listing.id}`} className="grid grid-cols-[88px_1fr] gap-4 rounded-lg border border-white/10 bg-white/[0.045] p-4 transition hover:border-white/20">
-              <Image src={detail.listing.coverImageUrl} alt={detail.listing.title} width={88} height={88} className="h-[88px] w-[88px] rounded-md object-cover" />
-              <div className="min-w-0">
-                <p className="font-semibold text-white">{detail.listing.title}</p>
-                <p className="mt-1 text-sm text-white/48">{detail.listing.genre}</p>
-                <p className="mt-3 text-sm font-semibold text-jam-mint">
-                  {currency(detail.order.price, language, currencyCode, usdTryRate)}
-                </p>
-              </div>
-            </Link>
+            <>
+              <Link href={`/listing/${detail.listing.id}`} className="grid grid-cols-[88px_1fr] gap-4 rounded-lg border border-white/10 bg-white/[0.045] p-4 transition hover:border-white/20">
+                <Image src={detail.listing.coverImageUrl} alt={detail.listing.title} width={88} height={88} className="h-[88px] w-[88px] rounded-md object-cover" />
+                <div className="min-w-0">
+                  <p className="font-semibold text-white">{detail.listing.title}</p>
+                  <p className="mt-1 text-sm text-white/48">{detail.listing.genre}</p>
+                  <p className="mt-3 text-sm font-semibold text-jam-mint">
+                    {currency(detail.order.price, language, currencyCode, usdTryRate)}
+                  </p>
+                </div>
+              </Link>
+              <LicenseDeliveryPanel order={detail.order} listing={detail.listing} />
+            </>
           ) : null}
 
           <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5">

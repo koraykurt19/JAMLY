@@ -22,6 +22,7 @@ import { deliverySpeedLabel, orderStatusLabel } from "@/lib/labels";
 import { localizeListing, localizeOrder } from "@/lib/i18n";
 import { useShortlist } from "@/lib/use-shortlist";
 import { useDashboardData } from "@/lib/use-dashboard-data";
+import { getBeatLicenseCopy } from "@/lib/beat-licenses";
 
 const DEFAULT_SHORTLIST = ["night-shift-bounce", "velvet-hook-package"];
 
@@ -112,6 +113,11 @@ export default function BuyerDashboardPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="font-semibold text-white">{order.listingTitle}</p>
+                      {order.licenseTier !== "service" ? (
+                        <p className="mt-1 text-xs font-semibold text-jam-blue">
+                          {getBeatLicenseCopy(order.licenseTier, language).name}
+                        </p>
+                      ) : null}
                       <p className="mt-1 text-sm text-white/50">
                         {t("creatorLabel")}: {order.creatorName} /{" "}
                         {shortDate(order.createdAt, language)}

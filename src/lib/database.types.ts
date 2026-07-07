@@ -26,6 +26,7 @@ export type Database = {
         | "Premium Lease"
         | "Exclusive"
         | "Service";
+      license_tier: "non_exclusive" | "unlimited" | "exclusive" | "service";
       order_status: "requested" | "in_review" | "delivered" | "cancelled";
     };
     Tables: {
@@ -70,12 +71,19 @@ export type Database = {
           genre: string;
           bpm: number | null;
           price: number;
+          price_non_exclusive: number | null;
+          price_unlimited: number | null;
+          price_exclusive: number | null;
           description: string;
           audio_preview_url: string;
           cover_image_url: string;
+          delivery_mp3_path: string | null;
+          delivery_unlimited_path: string | null;
+          delivery_exclusive_path: string | null;
           license_type: Database["public"]["Enums"]["license_type"];
           turnaround: string | null;
           tags: string[] | null;
+          exclusive_sold: boolean;
           is_active: boolean;
           created_at: string;
         };
@@ -87,12 +95,19 @@ export type Database = {
           genre: string;
           bpm?: number | null;
           price: number;
+          price_non_exclusive?: number | null;
+          price_unlimited?: number | null;
+          price_exclusive?: number | null;
           description: string;
           audio_preview_url: string;
           cover_image_url: string;
+          delivery_mp3_path?: string | null;
+          delivery_unlimited_path?: string | null;
+          delivery_exclusive_path?: string | null;
           license_type: Database["public"]["Enums"]["license_type"];
           turnaround?: string | null;
           tags?: string[] | null;
+          exclusive_sold?: boolean;
           is_active?: boolean;
           created_at?: string;
         };
@@ -107,6 +122,9 @@ export type Database = {
           creator_id: string;
           message: string | null;
           budget: number | null;
+          license_tier: Database["public"]["Enums"]["license_tier"];
+          license_price: number | null;
+          license_terms_version: string | null;
           status: Database["public"]["Enums"]["order_status"];
           created_at: string;
         };
@@ -117,6 +135,9 @@ export type Database = {
           creator_id: string;
           message?: string | null;
           budget?: number | null;
+          license_tier?: Database["public"]["Enums"]["license_tier"];
+          license_price?: number | null;
+          license_terms_version?: string | null;
           status?: Database["public"]["Enums"]["order_status"];
           created_at?: string;
         };
@@ -189,7 +210,16 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      purchase_listing_license: {
+        Args: {
+          p_listing_id: string;
+          p_license_tier: Database["public"]["Enums"]["license_tier"];
+          p_message?: string | null;
+        };
+        Returns: string;
+      };
+    };
     CompositeTypes: Record<string, never>;
   };
 };
