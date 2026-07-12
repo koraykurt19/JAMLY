@@ -21,7 +21,7 @@ import {
   toJamMatchWorkType,
   type JamMatchAnswers
 } from "@/lib/jam-match-onboarding";
-import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { getSupabaseBrowserClient, isSupabaseRecoverableError } from "@/lib/supabase";
 import { fetchCreators, fetchMarketplaceListings } from "@/lib/supabase-data";
 import type { Creator, Listing } from "@/lib/types";
 
@@ -79,7 +79,7 @@ export function JamMatchEntry() {
           listings: demoListings,
           creators: demoCreators,
           isDemo: true,
-          message: error instanceof Error ? error.message : "Supabase data could not be loaded."
+          message: isSupabaseRecoverableError(error) ? undefined : "Supabase data could not be loaded."
         });
       }
     }

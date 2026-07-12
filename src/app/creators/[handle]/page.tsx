@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 import { CreatorProfileView } from "@/components/creator-profile-view";
 import { useI18n } from "@/components/language-provider";
 import { getCreatorByHandle, getCreatorListings } from "@/lib/data";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
 import { fetchCreatorByHandle, fetchCreatorListings } from "@/lib/supabase-data";
 import type { Creator, Listing } from "@/lib/types";
 
@@ -45,7 +49,11 @@ export default function CreatorProfilePage({ params }: CreatorProfilePageProps) 
         if (active) {
           setState({
             status: "error",
-            message: error instanceof Error ? error.message : t("unknownError")
+            message: isSupabaseRecoverableError(error)
+              ? t("supabaseInvalidConfig")
+              : error instanceof Error
+                ? error.message
+                : t("unknownError")
           });
         }
       }

@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 import { LicenseCheckout } from "@/components/license-checkout";
 import { useI18n } from "@/components/language-provider";
 import { getListingById } from "@/lib/data";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
 import { fetchListing } from "@/lib/supabase-data";
 import type { Listing } from "@/lib/types";
 import { isBeatLicenseListing } from "@/lib/beat-licenses";
@@ -42,7 +46,11 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
         if (!active) return;
         setState({
           status: "error",
-          message: error instanceof Error ? error.message : t("unknownError")
+          message: isSupabaseRecoverableError(error)
+            ? t("supabaseInvalidConfig")
+            : error instanceof Error
+              ? error.message
+              : t("unknownError")
         });
       });
 

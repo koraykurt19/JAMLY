@@ -229,7 +229,7 @@ export const messages = {
     supabaseMissing:
       "Demo önizleme modu açık. Canlı hesap, ilan ve mesaj kayıtları Supabase bağlantısı yapılınca aktif olur.",
     supabaseInvalidConfig:
-      "Supabase anahtarı geçersiz görünüyor. Doğru Project URL ve anon public key eklenene kadar Jamly demo verilerle çalışır.",
+      "Canlı Supabase bağlantısı henüz tamamlanmadı. Project URL, publishable key ve veritabanı şeması hazır olana kadar Jamly demo verilerle çalışır.",
     signedIn: "Giriş yapıldı. Artık iş yayınlayabilir veya sipariş talep edebilirsiniz.",
     accountCreated: "Hesap oluşturuldu. E-posta doğrulaması açıksa gelen kutunuzu kontrol edin.",
     authError: "İşlem tamamlanamadı",
@@ -658,7 +658,7 @@ export const messages = {
     supabaseMissing:
       "Demo preview mode is active. Live accounts, listings, and messages become active once Supabase is connected.",
     supabaseInvalidConfig:
-      "The Supabase key looks invalid. Jamly will keep using demo data until the correct Project URL and anon public key are added.",
+      "The live Supabase connection is not complete yet. Jamly keeps using demo data until the Project URL, publishable key, and database schema are ready.",
     signedIn: "Signed in. You can now upload listings or request orders.",
     accountCreated: "Account created. Check your inbox if email confirmation is enabled.",
     authError: "Could not complete action",

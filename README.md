@@ -79,7 +79,7 @@ can later be replaced or enhanced by Supabase search, embeddings, or an AI model
 | Realtime | Supabase Realtime |
 | Media storage | Supabase Storage |
 | Package manager | npm with lockfile |
-| Deployment | Netlify or Docker |
+| Deployment | Vercel or Docker |
 
 ## Quick Start
 
@@ -136,12 +136,12 @@ variables are missing, placeholder values, invalid, or unreachable.
 | Variable | Required | Description |
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase mode | Public Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase mode | Public Supabase anonymous key; RLS remains the authorization boundary |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase mode | Public Supabase publishable/anonymous key; RLS remains the authorization boundary |
 | `APP_PORT` | Docker only | Host port mapped to the application; defaults to `3000` |
 
 Use `.env.local` for local Next.js development. Docker Compose reads values
-from `.env` or the shell environment. Netlify values belong in the site's
-Environment variables settings.
+from `.env` or the shell environment. Vercel values belong in the project's
+Environment Variables settings.
 
 ## Supabase Setup
 
@@ -151,7 +151,7 @@ Environment variables settings.
 2. Open the Supabase SQL Editor.
 3. Run [`supabase/schema.sql`](supabase/schema.sql).
 4. Copy `.env.example` to `.env.local`.
-5. Add the project URL and anonymous key.
+5. Add the project URL and publishable/anonymous key.
 6. Restart the development server.
 
 The schema creates:
@@ -213,7 +213,7 @@ Successful sign-ins redirect to `/dashboard`.
 - Exclusive purchase atomically marks the listing sold and removes it from public discovery.
 - Storage upload policies require an authenticated account.
 - Buyers can read only the private folder matching the tier recorded on their order.
-- Public clients use only the Supabase anonymous key; no service-role key is
+- Public clients use only the Supabase publishable/anonymous key; no service-role or `sb_secret` key is
   required by the application.
 - Public listing media is readable, while uploads remain policy-controlled.
 
@@ -237,6 +237,7 @@ add automated authorization tests for every role and table.
 | `/upload` | Authenticated creator listing upload |
 | `/auth/sign-in` | Sign-in flow |
 | `/auth/sign-up` | Role-aware registration flow |
+| `/api/health` | Vercel and Supabase readiness check without exposing secrets |
 | `/api/exchange-rate` | Server-side USD/TRY rate response with timeout and fallback |
 
 ## Project Structure
@@ -251,7 +252,7 @@ supabase/
 └── schema.sql             Complete schema for a new project
 Dockerfile                 Production multi-stage Node image
 docker-compose.yml         Local production-style container orchestration
-netlify.toml               Netlify build and Next.js plugin configuration
+vercel.json                Vercel build command and Next.js project hints
 ```
 
 ## Development Commands
@@ -275,6 +276,34 @@ npm run build
 An automated unit/integration test suite is not included yet. Type checking,
 linting, production build validation, and focused browser verification are the
 current quality gates.
+
+## Supabase Verification And Schema Apply
+
+Check whether the configured Supabase project is ready:
+
+```bash
+npm run supabase:check
+```
+
+Expected live result:
+
+```json
+{
+  "ok": true,
+  "auth": "ready",
+  "database": "ready"
+}
+```
+
+If the result says `schema_missing`, apply the schema with a direct Supabase
+Postgres connection string:
+
+```bash
+SUPABASE_DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require" npm run supabase:apply-schema
+```
+
+Use the database password or connection string from Supabase Dashboard. Do not
+commit this value, and do not put it in Vercel frontend environment variables.
 
 ## Docker
 
@@ -302,29 +331,38 @@ Docker Compose runs the Jamly web application only. Supabase Auth, Postgres,
 Realtime, and Storage must come from a hosted Supabase project or a separately
 managed local Supabase stack.
 
-## Netlify Deployment
+## Vercel Deployment
 
-The checked-in [`netlify.toml`](netlify.toml) defines the production settings:
+Jamly is intended to run on Vercel for production previews and sharing. The
+checked-in [`vercel.json`](vercel.json) keeps the project aligned with Vercel's
+Next.js runtime:
 
 ```text
 Build command:     npm run build
-Publish directory: .next
-Node version:      20
-Plugin:            @netlify/plugin-nextjs
+Install command:   npm ci
+Framework preset:  Next.js
+Output directory:  Managed by Vercel
 ```
 
 Deployment flow:
 
 1. Push the repository to GitHub.
-2. In Netlify, select **Add new site → Import an existing project**.
+2. In Vercel, select **Add New → Project**.
 3. Connect the GitHub repository.
-4. Confirm the build settings above.
-5. Add Supabase variables in **Site configuration → Environment variables**.
+4. Confirm the Next.js preset and build settings above.
+5. Add Supabase variables in **Project Settings → Environment Variables** for
+   Production, Preview, and Development as needed.
 6. Deploy and add the production URL to Supabase Auth redirect settings.
+7. Open `/api/health` on the deployed URL. `supabase.status` should be `ready`
+   before testing live auth, uploads, messages, or orders.
 
-Jamly uses Next.js App Router and is not a static SPA. Do not add a catch-all
-`/* → /index.html` redirect; the Netlify Next.js plugin manages routes and server
-functions.
+Jamly uses Next.js App Router and is not a static SPA. Do not configure static
+SPA rewrites such as `/* → /index.html`; Vercel handles App Router routes, API
+routes, and server-rendered pages automatically.
+
+If `/api/health` returns `schema_missing`, the Vercel integration is fine but
+[`supabase/schema.sql`](supabase/schema.sql) still needs to be applied in the
+Supabase SQL Editor.
 
 ## Current Scope and Roadmap
 

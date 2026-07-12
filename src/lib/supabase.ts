@@ -31,6 +31,10 @@ export function isSupabaseRecoverableError(error: unknown) {
     normalized.includes("invalid api key") ||
     normalized.includes("api key") ||
     normalized.includes("auth session missing") ||
+    normalized.includes("could not find the table") ||
+    normalized.includes("schema cache") ||
+    normalized.includes("pgrst205") ||
+    (normalized.includes("relation") && normalized.includes("does not exist")) ||
     normalized.includes("jwt") ||
     normalized.includes("failed to fetch") ||
     normalized.includes("networkerror")
