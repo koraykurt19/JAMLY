@@ -10,7 +10,7 @@ import {
   isSupabaseConfigured,
   isSupabaseRecoverableError
 } from "@/lib/supabase";
-import { getCurrentProfile } from "@/lib/supabase-data";
+import { ensureCurrentProfile } from "@/lib/supabase-data";
 import { useI18n } from "@/components/language-provider";
 
 type AuthFormProps = {
@@ -73,7 +73,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     }
 
     try {
-      const { profile } = await getCurrentProfile(supabase);
+      const { profile } = await ensureCurrentProfile(supabase);
       if (!profile && mode === "sign-in") {
         throw new Error(t("profileMissing"));
       }

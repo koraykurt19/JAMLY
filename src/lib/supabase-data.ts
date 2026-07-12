@@ -22,6 +22,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 type SupabaseClient = ReturnType<typeof getSupabaseBrowserClient>;
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
+type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
 type ListingRow = Database["public"]["Tables"]["listings"]["Row"];
 type OrderRow = Database["public"]["Tables"]["order_requests"]["Row"];
 
@@ -73,6 +74,44 @@ export async function getCurrentProfile(client: SupabaseClient) {
   }
 
   return { user, profile };
+}
+
+export async function ensureCurrentProfile(client: SupabaseClient) {
+  assertClient(client);
+  const { user, profile } = await getCurrentProfile(client);
+
+  if (!user || profile) {
+    return { user, profile };
+  }
+
+  const emailPrefix = user.email?.split("@")[0] ?? "jamly";
+  const metadata = user.user_metadata;
+  const rawHandle =
+    typeof metadata.handle === "string" && metadata.handle.trim()
+      ? metadata.handle
+      : `${emailPrefix}-${user.id.slice(0, 6)}`;
+  const fullName =
+    typeof metadata.full_name === "string" && metadata.full_name.trim()
+      ? metadata.full_name
+      : user.email ?? "Jamly user";
+  const fallbackProfile: ProfileInsert = {
+    id: user.id,
+    role: "buyer",
+    handle: normalizeHandle(rawHandle),
+    full_name: fullName
+  };
+
+  const { data, error } = await client
+    .from("profiles")
+    .insert(fallbackProfile)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { user, profile: data };
 }
 
 export async function fetchMarketplaceListings(client: SupabaseClient) {
@@ -467,6 +506,17 @@ function inferDeliverySpeed(turnaround: string): Listing["deliverySpeed"] {
     return "fast";
   }
   return "standard";
+}
+
+function normalizeHandle(value: string) {
+  const normalized = value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9_]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32);
+
+  return normalized || `jamly-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function assertClient(
