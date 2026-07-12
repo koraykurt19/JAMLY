@@ -7,7 +7,11 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { listings } from "@/lib/data";
 import { localizeListing } from "@/lib/i18n";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
 import { fetchMarketplaceListings } from "@/lib/supabase-data";
 import type { Listing } from "@/lib/types";
 
@@ -35,6 +39,10 @@ export default function MarketplacePage() {
       })
       .catch((error: unknown) => {
         if (active) {
+          if (isSupabaseRecoverableError(error)) {
+            setState({ status: "ready", listings, isDemo: true });
+            return;
+          }
           setState({
             status: "error",
             message: error instanceof Error ? error.message : t("unknownError")

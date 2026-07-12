@@ -24,11 +24,15 @@ import {
   licenseLegalNotice
 } from "@/lib/beat-licenses";
 import { currency } from "@/lib/format";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
 import { getCurrentProfile, purchaseBeatLicense } from "@/lib/supabase-data";
 import type { BeatLicenseTier, Listing } from "@/lib/types";
 
-type AccountState = "checking" | "demo" | "signed-out" | "buyer" | "creator";
+type AccountState = "checking" | "demo" | "signed-out" | "ready" | "own-listing";
 type PurchaseState = "idle" | "loading" | "success" | "error";
 
 const tierIcons: Record<BeatLicenseTier, ElementType> = {
@@ -59,18 +63,22 @@ export function LicenseCheckout({ listing }: { listing: Listing }) {
 
     let active = true;
     getCurrentProfile(client)
-      .then(({ user, profile }) => {
+      .then(({ user }) => {
         if (!active) return;
         if (!user) {
           setAccountState("signed-out");
-        } else if (profile?.role === "buyer") {
-          setAccountState("buyer");
+        } else if (user.id === listing.creatorId) {
+          setAccountState("own-listing");
         } else {
-          setAccountState("creator");
+          setAccountState("ready");
         }
       })
       .catch((error: unknown) => {
         if (!active) return;
+        if (isSupabaseRecoverableError(error)) {
+          setAccountState("demo");
+          return;
+        }
         setAccountState("signed-out");
         setMessage(error instanceof Error ? error.message : t("unknownError"));
       });
@@ -78,7 +86,7 @@ export function LicenseCheckout({ listing }: { listing: Listing }) {
     return () => {
       active = false;
     };
-  }, [listing.id, t]);
+  }, [listing.creatorId, listing.id, t]);
 
   async function completePurchase() {
     if (!available || purchaseState === "loading") return;
@@ -89,7 +97,7 @@ export function LicenseCheckout({ listing }: { listing: Listing }) {
       return;
     }
 
-    if (accountState !== "buyer") return;
+    if (accountState !== "ready") return;
 
     const client = getSupabaseBrowserClient();
     if (!client || !isUuid(listing.id)) {
@@ -112,6 +120,12 @@ export function LicenseCheckout({ listing }: { listing: Listing }) {
       setMessage(t("licensePurchaseRecorded"));
       router.prefetch(`/orders/${createdOrderId}`);
     } catch (error) {
+      if (isSupabaseRecoverableError(error)) {
+        setAccountState("demo");
+        setPurchaseState("success");
+        setMessage(t("mockPurchaseCopy"));
+        return;
+      }
       setPurchaseState("error");
       setMessage(
         `${t("purchaseFailed")}: ${
@@ -373,8 +387,8 @@ function CheckoutAction({
     );
   }
 
-  if (accountState === "creator") {
-    return <p className="mt-5 text-sm leading-6 text-jam-gold">{t("checkoutBuyerOnly")}</p>;
+  if (accountState === "own-listing") {
+    return <p className="mt-5 text-sm leading-6 text-jam-gold">{t("ownListingPurchaseBlocked")}</p>;
   }
 
   return (

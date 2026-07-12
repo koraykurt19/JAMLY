@@ -4,7 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/components/language-provider";
 import { fetchConversations, getDemoConversations, DEMO_CURRENT_USER_ID } from "@/lib/messaging-data";
 import type { ChatMessage, ConversationSummary } from "@/lib/messaging-types";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
 import { getCurrentProfile } from "@/lib/supabase-data";
 import type { Role } from "@/lib/types";
 
@@ -63,6 +67,16 @@ export function useConversations() {
       });
       return user.id;
     } catch (error) {
+      if (isSupabaseRecoverableError(error)) {
+        setState({
+          status: "ready",
+          conversations: getDemoConversations(language),
+          currentUserId: DEMO_CURRENT_USER_ID,
+          currentRole: "buyer",
+          isDemo: true
+        });
+        return DEMO_CURRENT_USER_ID;
+      }
       setState({
         status: "error",
         conversations: [],

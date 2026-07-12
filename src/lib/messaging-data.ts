@@ -122,13 +122,6 @@ export async function findOrCreateMarketplaceConversation(
   if (authError) throw new Error(authError.message);
   if (!authData.user) throw new Error("AUTH_REQUIRED");
 
-  const { data: profile, error: profileError } = await client
-    .from("profiles")
-    .select("role")
-    .eq("id", authData.user.id)
-    .maybeSingle();
-  if (profileError) throw new Error(profileError.message);
-  if (profile?.role !== "buyer") throw new Error("BUYER_REQUIRED");
   if (authData.user.id === artistId) throw new Error("SELF_CONVERSATION");
 
   const existing = await findMarketplaceConversation(

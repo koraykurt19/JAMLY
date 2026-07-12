@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
 import { getCurrentProfile } from "@/lib/supabase-data";
-import { roleLabel } from "@/lib/labels";
-import type { Role } from "@/lib/types";
 import { useI18n } from "@/components/language-provider";
 
 type AuthFormProps = {
@@ -17,12 +19,11 @@ type AuthFormProps = {
 
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
-  const { language, t } = useI18n();
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [handle, setHandle] = useState("");
-  const [role, setRole] = useState<Role>("buyer");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const configured = isSupabaseConfigured();
@@ -50,14 +51,18 @@ export function AuthForm({ mode }: AuthFormProps) {
               data: {
                 full_name: fullName,
                 handle,
-                role
+                role: "buyer"
               }
             }
           });
 
     if (result.error) {
       setLoading(false);
-      setMessage(`${t("authError")}: ${result.error.message}`);
+      setMessage(
+        isSupabaseRecoverableError(result.error)
+          ? t("supabaseInvalidConfig")
+          : `${t("authError")}: ${result.error.message}`
+      );
       return;
     }
 
@@ -69,18 +74,18 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     try {
       const { profile } = await getCurrentProfile(supabase);
-      const destinationRole = profile?.role ?? (mode === "sign-up" ? role : null);
-
-      if (!destinationRole) {
+      if (!profile && mode === "sign-in") {
         throw new Error(t("profileMissing"));
       }
 
-      router.replace(`/dashboard/${destinationRole}`);
+      router.replace("/dashboard");
       router.refresh();
     } catch (error) {
       setLoading(false);
       setMessage(
-        `${t("authError")}: ${error instanceof Error ? error.message : t("unknownError")}`
+        isSupabaseRecoverableError(error)
+          ? t("supabaseInvalidConfig")
+          : `${t("authError")}: ${error instanceof Error ? error.message : t("unknownError")}`
       );
     }
   }
@@ -112,25 +117,6 @@ export function AuthForm({ mode }: AuthFormProps) {
               required
               className="focus-ring h-12 w-full rounded-lg border border-white/10 bg-black/35 px-4 text-white"
             />
-          </label>
-          <label className="space-y-2 sm:col-span-2">
-            <span className="text-sm text-white/64">{t("role")}</span>
-            <div className="grid grid-cols-2 rounded-lg border border-white/10 bg-black/35 p-1">
-              {(["buyer", "creator"] as Role[]).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setRole(item)}
-                  className={`focus-ring rounded-md px-4 py-3 text-sm font-semibold transition ${
-                    role === item
-                      ? "bg-white text-black"
-                      : "text-white/58 hover:bg-white/8 hover:text-white"
-                  }`}
-                >
-                  {roleLabel(item, language)}
-                </button>
-              ))}
-            </div>
           </label>
         </div>
       ) : null}

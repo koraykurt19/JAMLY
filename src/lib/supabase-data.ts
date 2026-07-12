@@ -131,7 +131,6 @@ export async function fetchCreator(client: SupabaseClient, creatorId: string) {
     .from("profiles")
     .select("*")
     .eq("id", creatorId)
-    .eq("role", "creator")
     .maybeSingle();
 
   if (error) {
@@ -147,7 +146,6 @@ export async function fetchCreatorByHandle(client: SupabaseClient, handle: strin
     .from("profiles")
     .select("*")
     .eq("handle", handle)
-    .eq("role", "creator")
     .maybeSingle();
 
   if (error) {
@@ -162,7 +160,6 @@ export async function fetchCreators(client: SupabaseClient) {
   const { data, error } = await client
     .from("profiles")
     .select("*")
-    .eq("role", "creator")
     .order("created_at", { ascending: false });
 
   if (error) {

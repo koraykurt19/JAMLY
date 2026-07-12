@@ -15,8 +15,7 @@ export function SiteHeader() {
   const navItems = [
     { href: "/marketplace", label: t("navMarketplace") },
     { href: "/jam-match", label: "Jam Match" },
-    { href: "/dashboard/creator", label: t("navCreator") },
-    { href: "/dashboard/buyer", label: t("navBuyer") }
+    { href: "/dashboard", label: t("navDashboard") }
   ];
 
   return (

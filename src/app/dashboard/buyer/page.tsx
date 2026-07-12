@@ -35,7 +35,6 @@ export default function BuyerDashboardPage() {
     return (
       <DashboardState
         status={dashboard.state.status}
-        actualRole={dashboard.state.status === "wrong-role" ? dashboard.state.actualRole : undefined}
         message={dashboard.state.status === "error" ? dashboard.state.message : undefined}
         onRetry={dashboard.retry}
       />

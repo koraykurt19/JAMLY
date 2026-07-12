@@ -26,8 +26,8 @@ const copy = {
     save: "Bağlantıları kaydet",
     saving: "Kaydediliyor",
     saved: "Bağlantılar profile kaydedildi.",
-    signIn: "Kaydetmek için üretici hesabıyla giriş yapmak gerekir.",
-    creatorOnly: "Bu alan yalnızca üretici hesapları için kaydedilebilir.",
+    signIn: "Kaydetmek için giriş yapmak gerekir.",
+    creatorOnly: "Bu alan profil sahibi tarafından kaydedilebilir.",
     error: "Bağlantılar kaydedilemedi.",
     preview: "Profilde görünecek bağlantılar"
   },
@@ -39,8 +39,8 @@ const copy = {
     save: "Save links",
     saving: "Saving",
     saved: "Links were saved to your profile.",
-    signIn: "Sign in with a creator account to save links.",
-    creatorOnly: "Only creator accounts can save this section.",
+    signIn: "Sign in to save links.",
+    creatorOnly: "Only the profile owner can save this section.",
     error: "Links could not be saved.",
     preview: "Links shown on profile"
   }
@@ -95,11 +95,11 @@ export function CreatorSocialLinksForm({ creator, isDemo }: CreatorSocialLinksFo
     setStatus({ type: "idle", message: "" });
 
     try {
-      const { user, profile } = await getCurrentProfile(client);
+      const { user } = await getCurrentProfile(client);
       if (!user) {
         throw new Error(text.signIn);
       }
-      if (profile?.role !== "creator") {
+      if (user.id !== creator.id) {
         throw new Error(text.creatorOnly);
       }
 

@@ -3,39 +3,29 @@
 import Link from "next/link";
 import { AlertCircle, Loader2, LockKeyhole } from "lucide-react";
 import { useI18n } from "@/components/language-provider";
-import type { Role } from "@/lib/types";
 
 type DashboardStateProps = {
-  status: "loading" | "signed-out" | "wrong-role" | "error";
-  actualRole?: Role;
+  status: "loading" | "signed-out" | "error";
   message?: string;
   onRetry?: () => void;
 };
 
 export function DashboardState({
   status,
-  actualRole,
   message,
   onRetry
 }: DashboardStateProps) {
   const { t } = useI18n();
   const loading = status === "loading";
   const signedOut = status === "signed-out";
-  const wrongRole = status === "wrong-role";
   const title = loading
     ? t("dashboardLoading")
     : signedOut
       ? t("dashboardSignInTitle")
-      : wrongRole
-        ? t("wrongDashboardTitle")
-        : t("dashboardErrorTitle");
+      : t("dashboardErrorTitle");
   const description = signedOut
     ? t("dashboardSignInCopy")
-    : wrongRole
-      ? actualRole === "creator"
-        ? t("wrongDashboardCreator")
-        : t("wrongDashboardBuyer")
-      : message;
+    : message;
 
   return (
     <section className="mx-auto flex min-h-[68vh] w-full max-w-3xl items-center justify-center px-4 py-12 sm:px-6">
@@ -48,11 +38,6 @@ export function DashboardState({
         {signedOut ? (
           <Link href="/auth/sign-in" className="focus-ring mt-6 inline-flex rounded-full bg-white px-5 py-3 text-sm font-bold text-black hover:bg-jam-mint">
             {t("navSignIn")}
-          </Link>
-        ) : null}
-        {wrongRole && actualRole ? (
-          <Link href={`/dashboard/${actualRole}`} className="focus-ring mt-6 inline-flex rounded-full bg-white px-5 py-3 text-sm font-bold text-black hover:bg-jam-mint">
-            {t("openCorrectDashboard")}
           </Link>
         ) : null}
         {status === "error" && onRetry ? (
