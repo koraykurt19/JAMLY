@@ -351,19 +351,21 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
         </Field>
 
         <Field label={t("genre")}>
-          <input
-            list="jamly-genre-options"
+          <select
             value={form.genre}
             onChange={(event) => update("genre", event.target.value)}
-            placeholder={t("genrePlaceholder")}
             required
             className="input-field"
-          />
-          <datalist id="jamly-genre-options">
+          >
+            <option value="" disabled>
+              {t("genrePlaceholder")}
+            </option>
             {genreOptions.map((genre) => (
-              <option key={genre} value={genre} />
+              <option key={genre} value={genre}>
+                {genre}
+              </option>
             ))}
-          </datalist>
+          </select>
         </Field>
 
         <Field label="BPM">
@@ -379,18 +381,20 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
         </Field>
 
         <Field label={t("turnaround")}>
-          <input
-            list="jamly-turnaround-options"
+          <select
             value={form.turnaround}
             onChange={(event) => update("turnaround", event.target.value)}
-            placeholder={t("turnaroundPlaceholder")}
             className="input-field"
-          />
-          <datalist id="jamly-turnaround-options">
+          >
+            <option value="">
+              {t("turnaroundPlaceholder")}
+            </option>
             {turnaroundOptions.map((option) => (
-              <option key={option} value={option} />
+              <option key={option} value={option}>
+                {option}
+              </option>
             ))}
-          </datalist>
+          </select>
         </Field>
       </div>
 
