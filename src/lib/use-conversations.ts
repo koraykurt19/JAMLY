@@ -9,7 +9,7 @@ import {
   isSupabaseConfigured,
   isSupabaseRecoverableError
 } from "@/lib/supabase";
-import { getCurrentProfile } from "@/lib/supabase-data";
+import { ensureCurrentProfile } from "@/lib/supabase-data";
 import type { Role } from "@/lib/types";
 
 export type ConversationsState =
@@ -52,7 +52,7 @@ export function useConversations() {
     }
 
     try {
-      const { user, profile } = await getCurrentProfile(client);
+      const { user, profile } = await ensureCurrentProfile(client);
       if (!user || !profile) {
         setState({ status: "signed-out", conversations: [], isDemo: false });
         return null;

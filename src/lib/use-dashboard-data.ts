@@ -11,7 +11,7 @@ import {
   fetchCreatorListings,
   fetchMarketplaceListings,
   fetchOrderSummaries,
-  getCurrentProfile,
+  ensureCurrentProfile,
   mapProfileToCreator,
   type OrderSummary
 } from "@/lib/supabase-data";
@@ -47,7 +47,7 @@ export function useDashboardData(role: Role) {
 
     async function load() {
       try {
-        const { user, profile } = await getCurrentProfile(client);
+        const { user, profile } = await ensureCurrentProfile(client);
         if (!active) return;
         if (!user) {
           setState({ status: "signed-out" });

@@ -24,6 +24,7 @@ import {
 import { categoryLabel } from "@/lib/labels";
 import type { BeatLicenseTier, ListingCategory } from "@/lib/types";
 import { useI18n } from "@/components/language-provider";
+import { currency } from "@/lib/format";
 
 type FormState = {
   title: string;
@@ -84,12 +85,26 @@ const priceFieldByTier: Record<
   exclusive: "priceExclusive"
 };
 
+const genreOptions = [
+  "Hip-Hop",
+  "Trap",
+  "Drill",
+  "R&B",
+  "Pop",
+  "Afrobeat",
+  "Rock",
+  "Electronic",
+  "Other"
+];
+
+const turnaroundOptions = ["24 saat", "3 gün", "1 hafta", "Esnek"];
+
 type UploadListingFormProps = {
   creatorId?: string;
 };
 
 export function UploadListingForm({ creatorId }: UploadListingFormProps) {
-  const { language, t } = useI18n();
+  const { currencyCode, language, t, usdTryRate } = useI18n();
   const [form, setForm] = useState<FormState>(initialState);
   const [media, setMedia] = useState<MediaState>(initialMediaState);
   const [fileInputVersion, setFileInputVersion] = useState(0);
@@ -179,16 +194,21 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
     }
 
     const isBeat = form.category === "Beat";
-    const licensePrices = {
+    const licenseInputPrices = {
       nonExclusive: Number(form.priceNonExclusive),
       unlimited: Number(form.priceUnlimited),
       exclusive: Number(form.priceExclusive)
+    };
+    const licensePrices = {
+      nonExclusive: convertInputPriceToUsd(licenseInputPrices.nonExclusive, currencyCode, usdTryRate),
+      unlimited: convertInputPriceToUsd(licenseInputPrices.unlimited, currencyCode, usdTryRate),
+      exclusive: convertInputPriceToUsd(licenseInputPrices.exclusive, currencyCode, usdTryRate)
     };
 
     if (
       isBeat &&
       beatLicenseTiers.some(
-        (tier) => !Number.isFinite(licensePrices[tier]) || licensePrices[tier] <= 0
+        (tier) => !Number.isFinite(licenseInputPrices[tier]) || licenseInputPrices[tier] <= 0
       )
     ) {
       setLoading(false);
@@ -208,6 +228,7 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
     }
 
     const servicePrice = Number(form.servicePrice);
+    const servicePriceUsd = convertInputPriceToUsd(servicePrice, currencyCode, usdTryRate);
     if (!isBeat && (!Number.isFinite(servicePrice) || servicePrice <= 0)) {
       setLoading(false);
       setMessage(`${t("listingError")}: ${t("invalidServicePrice")}`);
@@ -253,7 +274,7 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
             category: form.category,
             genre: form.genre,
             bpm: form.bpm ? Number(form.bpm) : null,
-            price: isBeat ? licensePrices.nonExclusive : servicePrice,
+            price: isBeat ? licensePrices.nonExclusive : servicePriceUsd,
             price_non_exclusive: isBeat ? licensePrices.nonExclusive : null,
             price_unlimited: isBeat ? licensePrices.unlimited : null,
             price_exclusive: isBeat ? licensePrices.exclusive : null,
@@ -302,6 +323,8 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
         </div>
       ) : null}
 
+      <FormStep title={t("listingBasicsStep")} description={t("listingBasicsCopy")} />
+
       <div className="grid gap-5 lg:grid-cols-2">
         <Field label={t("title")}>
           <input
@@ -329,12 +352,18 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
 
         <Field label={t("genre")}>
           <input
+            list="jamly-genre-options"
             value={form.genre}
             onChange={(event) => update("genre", event.target.value)}
             placeholder={t("genrePlaceholder")}
             required
             className="input-field"
           />
+          <datalist id="jamly-genre-options">
+            {genreOptions.map((genre) => (
+              <option key={genre} value={genre} />
+            ))}
+          </datalist>
         </Field>
 
         <Field label="BPM">
@@ -349,17 +378,44 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
           />
         </Field>
 
+        <Field label={t("turnaround")}>
+          <input
+            list="jamly-turnaround-options"
+            value={form.turnaround}
+            onChange={(event) => update("turnaround", event.target.value)}
+            placeholder={t("turnaroundPlaceholder")}
+            className="input-field"
+          />
+          <datalist id="jamly-turnaround-options">
+            {turnaroundOptions.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </Field>
+      </div>
+
+      <FormStep title={t("listingMediaStep")} description={t("listingMediaCopy")} />
+
+      <div className="grid gap-5 lg:grid-cols-2">
         {form.category !== "Beat" ? (
-          <Field label={t("price")}>
+          <Field label={`${t("price")} (${currencyCode})`}>
             <input
               value={form.servicePrice}
               onChange={(event) => update("servicePrice", event.target.value)}
               type="number"
               min="0.01"
               step="0.01"
-              placeholder="120"
+              placeholder={currencyCode === "TRY" ? "3500" : "120"}
               required
               className="input-field"
+            />
+            <PriceHelper
+              value={form.servicePrice}
+              currencyCode={currencyCode}
+              language={language}
+              usdTryRate={usdTryRate}
+              convertedLabel={t("convertedPriceHint")}
+              inputLabel={t("priceCurrencyHint")}
             />
           </Field>
         ) : null}
@@ -393,16 +449,9 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
           readyLabel={t("mediaReady")}
           onChange={(event) => updateMedia("cover", event)}
         />
-
-        <Field label={t("turnaround")}>
-          <input
-            value={form.turnaround}
-            onChange={(event) => update("turnaround", event.target.value)}
-            placeholder={t("turnaroundPlaceholder")}
-            className="input-field"
-          />
-        </Field>
       </div>
+
+      <FormStep title={t("listingDeliveryStep")} description={t("listingDeliveryCopy")} />
 
       {form.category === "Beat" ? (
         <>
@@ -428,6 +477,10 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
                     tier={tier}
                     language={language}
                     value={form[field]}
+                    currencyCode={currencyCode}
+                    usdTryRate={usdTryRate}
+                    convertedLabel={t("convertedPriceHint")}
+                    inputLabel={t("priceCurrencyHint")}
                     onChange={(value) => update(field, value)}
                   />
                 );
@@ -620,6 +673,12 @@ function safeFileName(fileName: string) {
   );
 }
 
+function convertInputPriceToUsd(value: number, displayCurrency: "USD" | "TRY", usdTryRate: number) {
+  if (!Number.isFinite(value)) return value;
+  if (displayCurrency === "TRY") return Number((value / usdTryRate).toFixed(2));
+  return Number(value.toFixed(2));
+}
+
 function formatFileSize(size: number) {
   if (size < 1024 * 1024) {
     return `${Math.max(1, Math.round(size / 1024))} KB`;
@@ -708,11 +767,19 @@ function LicensePriceCard({
   tier,
   language,
   value,
+  currencyCode,
+  usdTryRate,
+  convertedLabel,
+  inputLabel,
   onChange
 }: {
   tier: BeatLicenseTier;
   language: "tr" | "en";
   value: string;
+  currencyCode: "USD" | "TRY";
+  usdTryRate: number;
+  convertedLabel: string;
+  inputLabel: string;
   onChange: (value: string) => void;
 }) {
   const copy = getBeatLicenseCopy(tier, language);
@@ -744,26 +811,87 @@ function LicensePriceCard({
       <p className="mt-3 min-h-12 text-sm leading-6 text-white/52">{copy.summary}</p>
       <label className="mt-4 block">
         <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/40">
-          USD
+          {currencyCode}
         </span>
         <div className="relative mt-2">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/42">
-            $
+            {currencyCode === "TRY" ? "₺" : "$"}
           </span>
           <input
             type="number"
-            aria-label={`${copy.name} ${language === "tr" ? "fiyatı" : "price"} (USD)`}
+            aria-label={`${copy.name} ${language === "tr" ? "fiyatı" : "price"} (${currencyCode})`}
             min="0.01"
             step="0.01"
             required
             value={value}
             onChange={(event) => onChange(event.target.value)}
-            placeholder={tier === "exclusive" ? "1500" : tier === "unlimited" ? "199" : "79"}
+            placeholder={
+              currencyCode === "TRY"
+                ? tier === "exclusive"
+                  ? "60000"
+                  : tier === "unlimited"
+                    ? "8000"
+                    : "3000"
+                : tier === "exclusive"
+                  ? "1500"
+                  : tier === "unlimited"
+                    ? "199"
+                    : "79"
+            }
             className="input-field pl-8"
           />
         </div>
+        <PriceHelper
+          value={value}
+          currencyCode={currencyCode}
+          language={language}
+          usdTryRate={usdTryRate}
+          convertedLabel={convertedLabel}
+          inputLabel={inputLabel}
+        />
       </label>
     </div>
+  );
+}
+
+function FormStep({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+      <h2 className="text-lg font-semibold text-white">{title}</h2>
+      <p className="mt-1 text-sm leading-6 text-white/50">{description}</p>
+    </div>
+  );
+}
+
+function PriceHelper({
+  value,
+  currencyCode,
+  language,
+  usdTryRate,
+  convertedLabel,
+  inputLabel
+}: {
+  value: string;
+  currencyCode: "USD" | "TRY";
+  language: "tr" | "en";
+  usdTryRate: number;
+  convertedLabel: string;
+  inputLabel: string;
+}) {
+  const numericValue = Number(value);
+  if (!value || !Number.isFinite(numericValue) || numericValue <= 0) {
+    return <p className="mt-2 text-xs text-white/38">{inputLabel}: {currencyCode}</p>;
+  }
+
+  if (currencyCode === "USD") {
+    return <p className="mt-2 text-xs text-white/38">{inputLabel}: USD</p>;
+  }
+
+  const usdValue = convertInputPriceToUsd(numericValue, currencyCode, usdTryRate);
+  return (
+    <p className="mt-2 text-xs text-white/42">
+      {convertedLabel}: {currency(usdValue, language, "USD", usdTryRate)}
+    </p>
   );
 }
 

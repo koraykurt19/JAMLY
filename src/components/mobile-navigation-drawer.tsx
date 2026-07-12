@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, LogIn, MessageCircle, Upload, X } from "lucide-react";
+import { ArrowRight, LogIn, LogOut, MessageCircle, Upload, UserRound, X } from "lucide-react";
 import type { KeyboardEvent, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import { JamlyWordmark } from "@/components/jamly-logo";
@@ -18,12 +18,16 @@ export function MobileNavigationDrawer({
   open,
   onClose,
   navigationItems,
-  triggerRef
+  triggerRef,
+  account,
+  onSignOut
 }: {
   open: boolean;
   onClose: () => void;
   navigationItems: NavigationItem[];
   triggerRef: RefObject<HTMLButtonElement>;
+  account: { handle: string; fullName: string } | null;
+  onSignOut: () => Promise<void>;
 }) {
   const { t } = useI18n();
   const panelRef = useRef<HTMLElement>(null);
@@ -157,7 +161,24 @@ export function MobileNavigationDrawer({
           <div className="space-y-2">
             <DrawerAction href="/messages" label={t("navMessages")} icon={MessageCircle} onClick={onClose} />
             <DrawerAction href="/upload" label={t("navUpload")} icon={Upload} onClick={onClose} />
-            <DrawerAction href="/auth/sign-in" label={t("navSignIn")} icon={LogIn} onClick={onClose} />
+            {account ? (
+              <>
+                <DrawerAction href={`/creators/${account.handle}`} label={account.fullName} icon={UserRound} onClick={onClose} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    void onSignOut();
+                  }}
+                  className="focus-ring flex min-h-14 w-full items-center gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-4 text-left text-sm font-semibold text-white/70 transition hover:border-jam-blue/30 hover:bg-jam-blue/10 hover:text-white"
+                >
+                  <LogOut size={18} className="text-jam-blue" />
+                  {t("signOut")}
+                </button>
+              </>
+            ) : (
+              <DrawerAction href="/auth/sign-in" label={t("navSignIn")} icon={LogIn} onClick={onClose} />
+            )}
           </div>
         </nav>
 
