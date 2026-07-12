@@ -8,7 +8,11 @@ import { LanguageProvider } from "@/components/language-provider";
 export const metadata: Metadata = {
   title: "Jamly - Müzik üreticileri Jam Alanı",
   description:
-    "Beat, hook, miks ve özel prodüksiyon işleri için premium müzik üreticileri Jam Alanı."
+    "Beat, hook, miks ve özel prodüksiyon işleri için premium müzik üreticileri Jam Alanı.",
+  icons: {
+    icon: "/brand/jamly-logo.png",
+    apple: "/brand/jamly-logo.png"
+  }
 };
 
 export default function RootLayout({

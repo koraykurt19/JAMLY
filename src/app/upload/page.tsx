@@ -6,14 +6,17 @@ import { useEffect, useState } from "react";
 import { UploadListingForm } from "@/components/upload-listing-form";
 import { SectionHeading } from "@/components/section-heading";
 import { useI18n } from "@/components/language-provider";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
 import { getCurrentProfile } from "@/lib/supabase-data";
 
 type UploadAccess =
   | { status: "demo" }
   | { status: "loading" }
   | { status: "signed-out" }
-  | { status: "buyer" }
   | { status: "creator"; creatorId: string }
   | { status: "error"; message: string };
 
@@ -31,18 +34,20 @@ export default function UploadListingPage() {
 
     let active = true;
     getCurrentProfile(supabase)
-      .then(({ user, profile }) => {
+      .then(({ user }) => {
         if (!active) return;
         if (!user) {
           setAccess({ status: "signed-out" });
-        } else if (profile?.role !== "creator") {
-          setAccess({ status: "buyer" });
         } else {
           setAccess({ status: "creator", creatorId: user.id });
         }
       })
       .catch((error: unknown) => {
         if (active) {
+          if (isSupabaseRecoverableError(error)) {
+            setAccess({ status: "demo" });
+            return;
+          }
           setAccess({
             status: "error",
             message: error instanceof Error ? error.message : t("unknownError")
@@ -73,14 +78,6 @@ export default function UploadListingPage() {
             title={t("uploadSignInTitle")}
             description={t("uploadSignInCopy")}
             action={{ href: "/auth/sign-in", label: t("navSignIn") }}
-          />
-        ) : null}
-        {access.status === "buyer" ? (
-          <AccessNotice
-            icon={<UserRoundX />}
-            title={t("creatorOnlyTitle")}
-            description={t("creatorOnlyCopy")}
-            action={{ href: "/dashboard/buyer", label: t("navDashboard") }}
           />
         ) : null}
         {access.status === "error" ? (

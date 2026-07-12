@@ -177,18 +177,11 @@ create policy "Active listings are readable"
   on public.listings for select
   using (is_active = true);
 
-create policy "Creators can insert their listings"
+create policy "Account owners can insert their listings"
   on public.listings for insert
-  with check (
-    auth.uid() = creator_id
-    and exists (
-      select 1 from public.profiles
-      where profiles.id = auth.uid()
-      and profiles.role = 'creator'
-    )
-  );
+  with check (auth.uid() = creator_id);
 
-create policy "Creators can update their listings"
+create policy "Account owners can update their listings"
   on public.listings for update
   using (auth.uid() = creator_id)
   with check (auth.uid() = creator_id);
@@ -207,16 +200,12 @@ create policy "Order participants can read requests"
   on public.order_requests for select
   using (auth.uid() = buyer_id or auth.uid() = creator_id);
 
-create policy "Buyers can create order requests"
+create policy "Accounts can create service order requests"
   on public.order_requests for insert
   with check (
     auth.uid() = buyer_id
+    and buyer_id <> creator_id
     and order_requests.license_tier = 'service'
-    and exists (
-      select 1 from public.profiles
-      where profiles.id = auth.uid()
-      and profiles.role = 'buyer'
-    )
     and exists (
       select 1 from public.listings
       where listings.id = order_requests.listing_id
@@ -256,13 +245,6 @@ begin
     raise exception 'A beat license tier is required';
   end if;
 
-  if not exists (
-    select 1 from public.profiles
-    where id = buyer_user_id and role = 'buyer'
-  ) then
-    raise exception 'Only buyer accounts can purchase licenses';
-  end if;
-
   select *
   into selected_listing
   from public.listings
@@ -274,7 +256,7 @@ begin
   end if;
 
   if selected_listing.creator_id = buyer_user_id then
-    raise exception 'Creators cannot purchase their own listing';
+    raise exception 'You cannot purchase your own listing';
   end if;
 
   if selected_listing.category <> 'Beat' then
@@ -369,16 +351,6 @@ create policy "Participants can create conversations"
   with check (
     (auth.uid() = buyer_id or auth.uid() = artist_id)
     and buyer_id <> artist_id
-    and exists (
-      select 1 from public.profiles
-      where profiles.id = conversations.buyer_id
-      and profiles.role = 'buyer'
-    )
-    and exists (
-      select 1 from public.profiles
-      where profiles.id = conversations.artist_id
-      and profiles.role = 'creator'
-    )
     and (
       listing_id is null
       or exists (
@@ -542,25 +514,15 @@ create policy "Authenticated users can upload listing media"
   with check (
     bucket_id in ('listing-covers', 'audio-previews')
     and owner = auth.uid()
-    and exists (
-      select 1 from public.profiles
-      where profiles.id = auth.uid()
-      and profiles.role = 'creator'
-    )
   );
 
-create policy "Creators can upload private license packages"
+create policy "Authenticated users can upload private license packages"
   on storage.objects for insert
   to authenticated
   with check (
     bucket_id = 'license-deliverables'
     and owner = auth.uid()
     and (storage.foldername(name))[1] = auth.uid()::text
-    and exists (
-      select 1 from public.profiles
-      where profiles.id = auth.uid()
-      and profiles.role = 'creator'
-    )
   );
 
 create policy "License participants can read purchased delivery"

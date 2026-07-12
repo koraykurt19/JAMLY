@@ -3,29 +3,10 @@
 import Link from "next/link";
 import { Menu, MessageCircle, Search, Upload } from "lucide-react";
 import { useRef, useState } from "react";
+import { JamlyWordmark } from "@/components/jamly-logo";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/components/language-provider";
 import { MobileNavigationDrawer } from "@/components/mobile-navigation-drawer";
-
-function Wordmark() {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="flex h-9 w-9 items-end justify-center gap-[3px] rounded-lg border border-white/12 bg-white/[0.06] px-2 pb-2">
-        {[11, 17, 8, 22].map((height, index) => (
-          <span
-            key={height}
-            className="w-[3px] rounded-full bg-jam-mint"
-            style={{
-              height,
-              opacity: index === 2 ? 0.65 : 1
-            }}
-          />
-        ))}
-      </span>
-      <span className="text-lg font-semibold tracking-tight">Jamly</span>
-    </div>
-  );
-}
 
 export function SiteHeader() {
   const { t } = useI18n();
@@ -34,15 +15,14 @@ export function SiteHeader() {
   const navItems = [
     { href: "/marketplace", label: t("navMarketplace") },
     { href: "/jam-match", label: "Jam Match" },
-    { href: "/dashboard/creator", label: t("navCreator") },
-    { href: "/dashboard/buyer", label: t("navBuyer") }
+    { href: "/dashboard", label: t("navDashboard") }
   ];
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/8 bg-jam-ink/82 backdrop-blur-2xl">
       <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="focus-ring rounded-lg">
-          <Wordmark />
+          <JamlyWordmark />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

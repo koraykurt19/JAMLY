@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { creators, getCreatorListings, listings, orderRequests } from "@/lib/data";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
 import {
   fetchCreatorListings,
   fetchMarketplaceListings,
@@ -25,7 +29,6 @@ type DashboardState =
   | ReadyDashboard
   | { status: "loading" }
   | { status: "signed-out" }
-  | { status: "wrong-role"; actualRole: Role }
   | { status: "error"; message: string };
 
 export function useDashboardData(role: Role) {
@@ -53,10 +56,6 @@ export function useDashboardData(role: Role) {
         if (!profile) {
           throw new Error("Profile record is missing.");
         }
-        if (profile.role !== role) {
-          setState({ status: "wrong-role", actualRole: profile.role });
-          return;
-        }
 
         const [dashboardListings, orders] = await Promise.all([
           role === "creator"
@@ -71,11 +70,15 @@ export function useDashboardData(role: Role) {
             listings: dashboardListings,
             orders,
             isDemo: false,
-            profile: profile.role === "creator" ? mapProfileToCreator(profile) : null
+            profile: role === "creator" ? mapProfileToCreator(profile) : null
           });
         }
       } catch (error) {
         if (active) {
+          if (isSupabaseRecoverableError(error)) {
+            setState(getDemoState(role));
+            return;
+          }
           setState({
             status: "error",
             message: error instanceof Error ? error.message : "Unknown error"

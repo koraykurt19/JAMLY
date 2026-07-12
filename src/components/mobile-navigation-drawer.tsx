@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, LogIn, MessageCircle, Upload, X } from "lucide-react";
 import type { KeyboardEvent, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
+import { JamlyWordmark } from "@/components/jamly-logo";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/components/language-provider";
 import { cn } from "@/lib/format";
@@ -124,7 +125,7 @@ export function MobileNavigationDrawer({
         )}
       >
         <div className="flex h-20 shrink-0 items-center justify-between border-b border-white/10 px-5">
-          <span className="text-lg font-semibold text-white">Jamly</span>
+          <JamlyWordmark />
           <button
             ref={closeButtonRef}
             type="button"

@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { Info, Loader2, LogIn, Send } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
 import { getCurrentProfile } from "@/lib/supabase-data";
 import type { Listing } from "@/lib/types";
 import { useI18n } from "@/components/language-provider";
@@ -59,14 +63,14 @@ export function OrderRequestButton({ listing }: OrderRequestButtonProps) {
     }
 
     try {
-      const { user, profile } = await getCurrentProfile(supabase);
+      const { user } = await getCurrentProfile(supabase);
       if (!user) {
         setStatus("signed-out");
         return;
       }
-      if (profile?.role !== "buyer") {
+      if (user.id === listing.creatorId) {
         setStatus("idle");
-        setMessage(t("buyerOnlyOrder"));
+        setMessage(t("ownListingOrderBlocked"));
         return;
       }
 
@@ -85,6 +89,11 @@ export function OrderRequestButton({ listing }: OrderRequestButtonProps) {
       setStatus("sent");
       setMessage(t("orderMessage"));
     } catch (error) {
+      if (isSupabaseRecoverableError(error)) {
+        setStatus("demo");
+        setMessage(t("demoOrderOnly"));
+        return;
+      }
       setStatus("idle");
       setMessage(
         `${t("orderRequestError")}: ${error instanceof Error ? error.message : t("unknownError")}`

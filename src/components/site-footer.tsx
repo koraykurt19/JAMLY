@@ -17,7 +17,7 @@ export function SiteFooter() {
           <Link className="transition hover:text-white" href="/upload">
             {t("footerUpload")}
           </Link>
-          <Link className="transition hover:text-white" href="/auth/sign-up">
+          <Link className="transition hover:text-white" href="/dashboard">
             {t("footerAccount")}
           </Link>
         </div>

@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 import { ListingDetailView } from "@/components/listing-detail-view";
 import { useI18n } from "@/components/language-provider";
 import { creators, getCreatorByHandle, getCreatorListings, getListingById } from "@/lib/data";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
 import { fetchCreator, fetchCreatorListings, fetchListing } from "@/lib/supabase-data";
 import type { Creator, Listing } from "@/lib/types";
 
@@ -55,7 +59,11 @@ export default function ListingDetailPage({ params }: ListingDetailPageProps) {
         if (active) {
           setState({
             status: "error",
-            message: error instanceof Error ? error.message : t("unknownError")
+            message: isSupabaseRecoverableError(error)
+              ? t("supabaseInvalidConfig")
+              : error instanceof Error
+                ? error.message
+                : t("unknownError")
           });
         }
       }

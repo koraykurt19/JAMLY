@@ -53,11 +53,7 @@ export function StartConversationButton({
         router.push("/auth/sign-in");
         return;
       }
-      setError(
-        code === "BUYER_REQUIRED"
-          ? t("buyerOnlyMessaging")
-          : `${t("conversationStartError")}: ${code || t("unknownError")}`
-      );
+      setError(`${t("conversationStartError")}: ${code || t("unknownError")}`);
       setLoading(false);
     }
   }

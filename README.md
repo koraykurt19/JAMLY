@@ -8,7 +8,7 @@ vocals, lyrics, mixing, mastering, instrument work, and custom production;
 creators can publish listings, present their portfolio, receive project requests,
 and continue the conversation inside the platform.
 
-Jamly is currently a production-oriented MVP. The marketplace, role-based auth,
+Jamly is currently a production-oriented MVP. The marketplace, unified account auth,
 Supabase data layer, tiered beat licensing, private delivery packages, order
 requests, and Realtime messaging are implemented. Payments, escrow, payouts,
 and service-order file delivery are intentionally outside the current release.
@@ -32,23 +32,16 @@ and service-order file delivery are intentionally outside the current release.
 
 ## Core User Flows
 
-### Buyer
+### Account
 
 1. Browse or filter listings in Jam Place.
 2. Listen to audio previews and compare creator signals.
 3. Use Jam Match to describe the project, budget, genre, and deadline.
 4. Compare MP3, Unlimited, and Exclusive terms on the beat checkout.
-5. Complete a license order and access its private delivery package.
-6. Follow the order or continue the conversation from the buyer dashboard.
-
-### Creator
-
-1. Create an account with the `creator` role.
-2. Complete the profile and add Spotify, Instagram, TikTok, YouTube,
+5. Publish your own beat, service, or custom production offer from the same account.
+6. Complete the profile and add Spotify, Instagram, TikTok, YouTube,
    SoundCloud, or website links.
-3. Upload a beat with three prices and tier-specific delivery packages, or publish a service.
-4. Manage active listings and incoming requests from the creator dashboard.
-5. Discuss briefs with buyers through Realtime conversations.
+7. Follow requests, orders, and conversations from the unified dashboard.
 
 ## Architecture
 
@@ -86,7 +79,7 @@ can later be replaced or enhanced by Supabase search, embeddings, or an AI model
 | Realtime | Supabase Realtime |
 | Media storage | Supabase Storage |
 | Package manager | npm with lockfile |
-| Deployment | Netlify or Docker |
+| Deployment | Vercel or Docker |
 
 ## Quick Start
 
@@ -127,28 +120,28 @@ Never commit `.env`, `.env.local`, service-role keys, or private credentials.
 | Capability | Demo mode | Supabase mode |
 | --- | --- | --- |
 | Catalog and profiles | Typed local fixture data | Live Postgres data with demo fallback |
-| Dashboards | Representative demo states | User-specific creator or buyer data |
-| Authentication | Non-persistent demo experience | Supabase sessions and role-based redirects |
-| Listing upload | Local file preview and demo feedback | Storage upload and Postgres insert for authenticated creators |
+| Dashboards | Representative demo states | User-specific buying and selling data |
+| Authentication | Non-persistent demo experience | Supabase sessions and unified account redirects |
+| Listing upload | Local file preview and demo feedback | Storage upload and Postgres insert for authenticated accounts |
 | Beat checkout | Interactive license comparison without persistence | Atomic license order with exclusive-sale locking |
 | Delivery | Terms and file manifest preview | Private package access through 60-second signed URLs |
 | Order requests | Explicit demo-mode response | Persisted service request for authenticated buyers and UUID listings |
 | Messaging | Mock conversations | Persisted messages with Realtime subscriptions |
 
-The application enters demo mode automatically when either public Supabase
-environment variable is missing.
+The application enters demo mode automatically when public Supabase environment
+variables are missing, placeholder values, invalid, or unreachable.
 
 ## Environment Variables
 
 | Variable | Required | Description |
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase mode | Public Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase mode | Public Supabase anonymous key; RLS remains the authorization boundary |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase mode | Public Supabase publishable/anonymous key; RLS remains the authorization boundary |
 | `APP_PORT` | Docker only | Host port mapped to the application; defaults to `3000` |
 
 Use `.env.local` for local Next.js development. Docker Compose reads values
-from `.env` or the shell environment. Netlify values belong in the site's
-Environment variables settings.
+from `.env` or the shell environment. Vercel values belong in the project's
+Environment Variables settings.
 
 ## Supabase Setup
 
@@ -158,7 +151,7 @@ Environment variables settings.
 2. Open the Supabase SQL Editor.
 3. Run [`supabase/schema.sql`](supabase/schema.sql).
 4. Copy `.env.example` to `.env.local`.
-5. Add the project URL and anonymous key.
+5. Add the project URL and publishable/anonymous key.
 6. Restart the development server.
 
 The schema creates:
@@ -179,6 +172,7 @@ date order instead of re-running the complete schema:
 
 1. [`supabase/migrations/20260629_add_conversations.sql`](supabase/migrations/20260629_add_conversations.sql)
 2. [`supabase/migrations/20260707_add_beat_license_tiers.sql`](supabase/migrations/20260707_add_beat_license_tiers.sql)
+3. [`supabase/migrations/20260712_unify_account_capabilities.sql`](supabase/migrations/20260712_unify_account_capabilities.sql)
 
 The licensing migration backfills prices for existing beat rows, adds the
 transactional purchase function, and creates the private delivery bucket. Existing
@@ -193,14 +187,15 @@ Local:      http://localhost:3000
 Production: https://your-domain.example
 ```
 
-Jamly stores `creator` or `buyer` in the user's profile and redirects successful
-sign-ins to the matching dashboard.
+Jamly uses one account model. The legacy `profile_role` enum remains in the
+database for compatibility, but it is no longer used as a hard product gate.
+Successful sign-ins redirect to `/dashboard`.
 
 ## Data Model
 
 | Table | Responsibility |
 | --- | --- |
-| `profiles` | Identity, role, creator presentation, specialties, and social links |
+| `profiles` | Identity, public presentation, specialties, and social links |
 | `listings` | Beat and service metadata, three beat prices, exclusive state, private package paths, and public media |
 | `order_requests` | Buyer brief, selected license tier, locked purchase price, terms version, and order status |
 | `conversations` | Buyer/creator thread with optional listing or order context |
@@ -212,13 +207,13 @@ sign-ins to the matching dashboard.
 - Row Level Security is enabled for every application table.
 - Users can only read conversations and messages in which they participate.
 - Message inserts require `sender_id = auth.uid()`.
-- Buyers can only create order requests for themselves.
-- Only authenticated creators can create or update their own listings.
+- Authenticated users can create order requests for themselves.
+- Authenticated users can create or update their own listings.
 - Beat license purchases use a row lock so an Exclusive sale and another license cannot race.
 - Exclusive purchase atomically marks the listing sold and removes it from public discovery.
-- Storage upload policies require an authenticated creator profile.
+- Storage upload policies require an authenticated account.
 - Buyers can read only the private folder matching the tier recorded on their order.
-- Public clients use only the Supabase anonymous key; no service-role key is
+- Public clients use only the Supabase publishable/anonymous key; no service-role or `sb_secret` key is
   required by the application.
 - Public listing media is readable, while uploads remain policy-controlled.
 
@@ -242,6 +237,7 @@ add automated authorization tests for every role and table.
 | `/upload` | Authenticated creator listing upload |
 | `/auth/sign-in` | Sign-in flow |
 | `/auth/sign-up` | Role-aware registration flow |
+| `/api/health` | Vercel and Supabase readiness check without exposing secrets |
 | `/api/exchange-rate` | Server-side USD/TRY rate response with timeout and fallback |
 
 ## Project Structure
@@ -256,7 +252,7 @@ supabase/
 └── schema.sql             Complete schema for a new project
 Dockerfile                 Production multi-stage Node image
 docker-compose.yml         Local production-style container orchestration
-netlify.toml               Netlify build and Next.js plugin configuration
+vercel.json                Vercel build command and Next.js project hints
 ```
 
 ## Development Commands
@@ -280,6 +276,34 @@ npm run build
 An automated unit/integration test suite is not included yet. Type checking,
 linting, production build validation, and focused browser verification are the
 current quality gates.
+
+## Supabase Verification And Schema Apply
+
+Check whether the configured Supabase project is ready:
+
+```bash
+npm run supabase:check
+```
+
+Expected live result:
+
+```json
+{
+  "ok": true,
+  "auth": "ready",
+  "database": "ready"
+}
+```
+
+If the result says `schema_missing`, apply the schema with a direct Supabase
+Postgres connection string:
+
+```bash
+SUPABASE_DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require" npm run supabase:apply-schema
+```
+
+Use the database password or connection string from Supabase Dashboard. Do not
+commit this value, and do not put it in Vercel frontend environment variables.
 
 ## Docker
 
@@ -307,29 +331,38 @@ Docker Compose runs the Jamly web application only. Supabase Auth, Postgres,
 Realtime, and Storage must come from a hosted Supabase project or a separately
 managed local Supabase stack.
 
-## Netlify Deployment
+## Vercel Deployment
 
-The checked-in [`netlify.toml`](netlify.toml) defines the production settings:
+Jamly is intended to run on Vercel for production previews and sharing. The
+checked-in [`vercel.json`](vercel.json) keeps the project aligned with Vercel's
+Next.js runtime:
 
 ```text
 Build command:     npm run build
-Publish directory: .next
-Node version:      20
-Plugin:            @netlify/plugin-nextjs
+Install command:   npm ci
+Framework preset:  Next.js
+Output directory:  Managed by Vercel
 ```
 
 Deployment flow:
 
 1. Push the repository to GitHub.
-2. In Netlify, select **Add new site → Import an existing project**.
+2. In Vercel, select **Add New → Project**.
 3. Connect the GitHub repository.
-4. Confirm the build settings above.
-5. Add Supabase variables in **Site configuration → Environment variables**.
+4. Confirm the Next.js preset and build settings above.
+5. Add Supabase variables in **Project Settings → Environment Variables** for
+   Production, Preview, and Development as needed.
 6. Deploy and add the production URL to Supabase Auth redirect settings.
+7. Open `/api/health` on the deployed URL. `supabase.status` should be `ready`
+   before testing live auth, uploads, messages, or orders.
 
-Jamly uses Next.js App Router and is not a static SPA. Do not add a catch-all
-`/* → /index.html` redirect; the Netlify Next.js plugin manages routes and server
-functions.
+Jamly uses Next.js App Router and is not a static SPA. Do not configure static
+SPA rewrites such as `/* → /index.html`; Vercel handles App Router routes, API
+routes, and server-rendered pages automatically.
+
+If `/api/health` returns `schema_missing`, the Vercel integration is fine but
+[`supabase/schema.sql`](supabase/schema.sql) still needs to be applied in the
+Supabase SQL Editor.
 
 ## Current Scope and Roadmap
 
