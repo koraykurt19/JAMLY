@@ -93,8 +93,8 @@ export function AuthForm({ mode }: AuthFormProps) {
   return (
     <form onSubmit={submit} className="space-y-4">
       {!configured ? (
-        <div className="rounded-lg border border-jam-gold/30 bg-jam-gold/10 p-4 text-sm leading-6 text-jam-gold">
-          {t("supabaseMissing")}
+        <div className="rounded-lg border border-jam-blue/25 bg-jam-blue/10 p-4 text-sm leading-6 text-jam-blue">
+          {t("authDemoMode")}
         </div>
       ) : null}
 

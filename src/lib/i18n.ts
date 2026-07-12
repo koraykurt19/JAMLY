@@ -223,9 +223,11 @@ export const messages = {
     createAccount: "Hesap oluştur",
     alreadyAccount: "Zaten hesabınız var mı?",
     newToJamly: "Jamly'de yeni misiniz?",
-    liveAuthMissing: "Canlı giriş için Supabase ortam değişkenlerini ekleyin.",
+    liveAuthMissing: "Canlı hesap açma ve giriş için Supabase bağlantısı gerekir. Demo modda siteyi giriş yapmadan inceleyebilirsiniz.",
+    authDemoMode:
+      "Demo önizleme modu açık. Jamly ekranlarını giriş yapmadan inceleyebilirsiniz; canlı hesap açma Supabase bağlanınca aktif olur.",
     supabaseMissing:
-      "Supabase henüz yapılandırılmadı. .env.example dosyasını .env.local olarak kopyalayıp proje URL'sini ve anon key değerini ekleyin.",
+      "Demo önizleme modu açık. Canlı hesap, ilan ve mesaj kayıtları Supabase bağlantısı yapılınca aktif olur.",
     supabaseInvalidConfig:
       "Supabase anahtarı geçersiz görünüyor. Doğru Project URL ve anon public key eklenene kadar Jamly demo verilerle çalışır.",
     signedIn: "Giriş yapıldı. Artık iş yayınlayabilir veya sipariş talep edebilirsiniz.",
@@ -272,7 +274,7 @@ export const messages = {
     noBriefProvided: "Talep oluşturulurken ek bir proje özeti paylaşılmadı.",
     creatorNotFound: "Bu üretici profili bulunamadı.",
     formDemoMode:
-      "Form hazır; Supabase bilgileri eksik olduğu için .env.local yapılandırılana kadar dosyalar yalnızca bu oturumda yerel önizleme olarak çalışır.",
+      "Demo önizleme modu açık. Formu ve dosya seçimlerini deneyebilirsiniz; canlı Supabase bağlandığında ilanlar hesaba kaydedilir.",
     title: "Başlık",
     uploadTitlePlaceholder: "Gece yarısı sample paketi",
     category: "Kategori",
@@ -650,9 +652,11 @@ export const messages = {
     createAccount: "Create account",
     alreadyAccount: "Already have an account?",
     newToJamly: "New to Jamly?",
-    liveAuthMissing: "Add Supabase environment variables to enable live auth.",
+    liveAuthMissing: "Live sign-up and sign-in require a Supabase connection. You can explore the site without signing in while demo mode is active.",
+    authDemoMode:
+      "Demo preview mode is active. You can explore Jamly without signing in; live accounts become active once Supabase is connected.",
     supabaseMissing:
-      "Supabase is not configured yet. Copy .env.example to .env.local and add your project URL and anon key.",
+      "Demo preview mode is active. Live accounts, listings, and messages become active once Supabase is connected.",
     supabaseInvalidConfig:
       "The Supabase key looks invalid. Jamly will keep using demo data until the correct Project URL and anon public key are added.",
     signedIn: "Signed in. You can now upload listings or request orders.",
@@ -699,7 +703,7 @@ export const messages = {
     noBriefProvided: "No additional project brief was included with this request.",
     creatorNotFound: "This creator profile could not be found.",
     formDemoMode:
-      "The form is fully wired, but Supabase credentials are missing. Files run as local previews in this session until .env.local is configured.",
+      "Demo preview mode is active. You can try the form and file pickers; live Supabase will save listings to your account once connected.",
     title: "Title",
     uploadTitlePlaceholder: "Midnight sample pack",
     category: "Category",

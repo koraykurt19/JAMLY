@@ -8,7 +8,7 @@ vocals, lyrics, mixing, mastering, instrument work, and custom production;
 creators can publish listings, present their portfolio, receive project requests,
 and continue the conversation inside the platform.
 
-Jamly is currently a production-oriented MVP. The marketplace, role-based auth,
+Jamly is currently a production-oriented MVP. The marketplace, unified account auth,
 Supabase data layer, tiered beat licensing, private delivery packages, order
 requests, and Realtime messaging are implemented. Payments, escrow, payouts,
 and service-order file delivery are intentionally outside the current release.
@@ -32,23 +32,16 @@ and service-order file delivery are intentionally outside the current release.
 
 ## Core User Flows
 
-### Buyer
+### Account
 
 1. Browse or filter listings in Jam Place.
 2. Listen to audio previews and compare creator signals.
 3. Use Jam Match to describe the project, budget, genre, and deadline.
 4. Compare MP3, Unlimited, and Exclusive terms on the beat checkout.
-5. Complete a license order and access its private delivery package.
-6. Follow the order or continue the conversation from the buyer dashboard.
-
-### Creator
-
-1. Create an account with the `creator` role.
-2. Complete the profile and add Spotify, Instagram, TikTok, YouTube,
+5. Publish your own beat, service, or custom production offer from the same account.
+6. Complete the profile and add Spotify, Instagram, TikTok, YouTube,
    SoundCloud, or website links.
-3. Upload a beat with three prices and tier-specific delivery packages, or publish a service.
-4. Manage active listings and incoming requests from the creator dashboard.
-5. Discuss briefs with buyers through Realtime conversations.
+7. Follow requests, orders, and conversations from the unified dashboard.
 
 ## Architecture
 
@@ -127,16 +120,16 @@ Never commit `.env`, `.env.local`, service-role keys, or private credentials.
 | Capability | Demo mode | Supabase mode |
 | --- | --- | --- |
 | Catalog and profiles | Typed local fixture data | Live Postgres data with demo fallback |
-| Dashboards | Representative demo states | User-specific creator or buyer data |
-| Authentication | Non-persistent demo experience | Supabase sessions and role-based redirects |
-| Listing upload | Local file preview and demo feedback | Storage upload and Postgres insert for authenticated creators |
+| Dashboards | Representative demo states | User-specific buying and selling data |
+| Authentication | Non-persistent demo experience | Supabase sessions and unified account redirects |
+| Listing upload | Local file preview and demo feedback | Storage upload and Postgres insert for authenticated accounts |
 | Beat checkout | Interactive license comparison without persistence | Atomic license order with exclusive-sale locking |
 | Delivery | Terms and file manifest preview | Private package access through 60-second signed URLs |
 | Order requests | Explicit demo-mode response | Persisted service request for authenticated buyers and UUID listings |
 | Messaging | Mock conversations | Persisted messages with Realtime subscriptions |
 
-The application enters demo mode automatically when either public Supabase
-environment variable is missing.
+The application enters demo mode automatically when public Supabase environment
+variables are missing, placeholder values, invalid, or unreachable.
 
 ## Environment Variables
 
@@ -179,6 +172,7 @@ date order instead of re-running the complete schema:
 
 1. [`supabase/migrations/20260629_add_conversations.sql`](supabase/migrations/20260629_add_conversations.sql)
 2. [`supabase/migrations/20260707_add_beat_license_tiers.sql`](supabase/migrations/20260707_add_beat_license_tiers.sql)
+3. [`supabase/migrations/20260712_unify_account_capabilities.sql`](supabase/migrations/20260712_unify_account_capabilities.sql)
 
 The licensing migration backfills prices for existing beat rows, adds the
 transactional purchase function, and creates the private delivery bucket. Existing
@@ -193,14 +187,15 @@ Local:      http://localhost:3000
 Production: https://your-domain.example
 ```
 
-Jamly stores `creator` or `buyer` in the user's profile and redirects successful
-sign-ins to the matching dashboard.
+Jamly uses one account model. The legacy `profile_role` enum remains in the
+database for compatibility, but it is no longer used as a hard product gate.
+Successful sign-ins redirect to `/dashboard`.
 
 ## Data Model
 
 | Table | Responsibility |
 | --- | --- |
-| `profiles` | Identity, role, creator presentation, specialties, and social links |
+| `profiles` | Identity, public presentation, specialties, and social links |
 | `listings` | Beat and service metadata, three beat prices, exclusive state, private package paths, and public media |
 | `order_requests` | Buyer brief, selected license tier, locked purchase price, terms version, and order status |
 | `conversations` | Buyer/creator thread with optional listing or order context |
@@ -212,11 +207,11 @@ sign-ins to the matching dashboard.
 - Row Level Security is enabled for every application table.
 - Users can only read conversations and messages in which they participate.
 - Message inserts require `sender_id = auth.uid()`.
-- Buyers can only create order requests for themselves.
-- Only authenticated creators can create or update their own listings.
+- Authenticated users can create order requests for themselves.
+- Authenticated users can create or update their own listings.
 - Beat license purchases use a row lock so an Exclusive sale and another license cannot race.
 - Exclusive purchase atomically marks the listing sold and removes it from public discovery.
-- Storage upload policies require an authenticated creator profile.
+- Storage upload policies require an authenticated account.
 - Buyers can read only the private folder matching the tier recorded on their order.
 - Public clients use only the Supabase anonymous key; no service-role key is
   required by the application.
