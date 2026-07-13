@@ -33,8 +33,14 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
   const account = useCurrentAccount();
   const localizedCreator = localizeCreator(creator, language);
   const localizedListings = listings.map((listing) => localizeListing(listing, language));
+  const accountProfile = account.state.status === "signed-in" ? account.state.profile : null;
   const isOwnProfile =
-    account.state.status === "signed-in" && account.state.profile.id === localizedCreator.id;
+    accountProfile !== null &&
+    (accountProfile.id === localizedCreator.id ||
+      accountProfile.handle === localizedCreator.handle ||
+      normalizeComparableName(accountProfile.fullName) ===
+        normalizeComparableName(localizedCreator.name));
+  const isAccountLoading = account.state.status === "loading";
 
   return (
     <div>
@@ -107,7 +113,7 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
                   <Settings size={17} />
                   {language === "tr" ? "Profili düzenle" : "Edit profile"}
                 </Link>
-              ) : (
+              ) : isAccountLoading ? null : (
                 <StartConversationButton
                   artistId={localizedCreator.id}
                   variant="secondary"
@@ -209,6 +215,10 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
       </section>
     </div>
   );
+}
+
+function normalizeComparableName(value: string) {
+  return value.trim().toLowerCase();
 }
 
 function SignalList({ items, positive = false }: { items: string[]; positive?: boolean }) {

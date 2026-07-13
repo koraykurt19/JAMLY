@@ -110,6 +110,16 @@ export default function CreatorDashboardPage() {
         />
       </div>
 
+      {creatorProfile ? (
+        <div className="mt-8">
+          <CreatorProfileEditor
+            creator={creatorProfile}
+            isDemo={isDemo}
+            onSaved={dashboard.retry}
+          />
+        </div>
+      ) : null}
+
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
         <div className="rounded-lg border border-white/10 bg-white/[0.045]">
           <div className="flex items-center justify-between border-b border-white/10 p-5">
@@ -237,14 +247,6 @@ export default function CreatorDashboardPage() {
           </div>
 
           <CreatorReadiness />
-
-          {creatorProfile ? (
-            <CreatorProfileEditor
-              creator={creatorProfile}
-              isDemo={isDemo}
-              onSaved={dashboard.retry}
-            />
-          ) : null}
 
           <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5">
             <div className="flex items-center gap-2">
