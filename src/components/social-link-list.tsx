@@ -11,7 +11,7 @@ import {
   Youtube,
   type LucideIcon
 } from "lucide-react";
-import type { SocialLink, SocialPlatform } from "@/lib/social-links";
+import type { SocialLink, SocialLinkPlatform, SocialPlatform } from "@/lib/social-links";
 import { cn } from "@/lib/format";
 
 const socialIcons: Record<SocialPlatform, LucideIcon> = {
@@ -36,7 +36,7 @@ export function SocialLinkList({ links, compact = false }: SocialLinkListProps) 
   return (
     <div className="flex flex-wrap gap-2">
       {links.map((link) => {
-        const Icon = socialIcons[link.platform];
+        const Icon = getSocialIcon(link.platform);
         return (
           <Link
             key={`${link.platform}-${link.url}`}
@@ -57,4 +57,8 @@ export function SocialLinkList({ links, compact = false }: SocialLinkListProps) 
       })}
     </div>
   );
+}
+
+function getSocialIcon(platform: SocialLinkPlatform) {
+  return platform === "custom" ? Globe2 : socialIcons[platform];
 }

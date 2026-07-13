@@ -460,6 +460,9 @@ function mapListing(row: ListingRow, profile?: ProfileRow): Listing {
 }
 
 export function mapProfileToCreator(profile: ProfileRow): Creator {
+  const socialLinks = socialLinksFromRecord(profile.social_links);
+  const profileStrength = calculateProfileStrength(profile, socialLinks.length);
+
   return {
     id: profile.id,
     handle: profile.handle,
@@ -482,9 +485,25 @@ export function mapProfileToCreator(profile: ProfileRow): Creator {
     faq: [],
     repeatBuyerRate: 0,
     responseRate: 0,
-    profileStrength: 0,
-    socialLinks: socialLinksFromRecord(profile.social_links)
+    profileStrength,
+    socialLinks
   };
+}
+
+function calculateProfileStrength(profile: ProfileRow, socialLinkCount: number) {
+  const checks = [
+    Boolean(profile.full_name?.trim()),
+    Boolean(profile.handle?.trim()),
+    Boolean(profile.headline?.trim()),
+    Boolean(profile.bio?.trim()),
+    Boolean(profile.location?.trim()),
+    Boolean(profile.avatar_url?.trim()),
+    Boolean(profile.cover_url?.trim()),
+    Boolean(profile.specialties?.length),
+    socialLinkCount > 0
+  ];
+  const completed = checks.filter(Boolean).length;
+  return Math.round((completed / checks.length) * 100);
 }
 
 function mapOrderStatus(status: OrderRow["status"]): OrderRequest["status"] {

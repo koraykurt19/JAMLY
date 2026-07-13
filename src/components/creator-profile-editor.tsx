@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Camera, Loader2, Save, Sparkles } from "lucide-react";
+import { Camera, Loader2, Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/components/language-provider";
@@ -10,11 +10,14 @@ import { cn } from "@/lib/format";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { ensureCurrentProfile } from "@/lib/supabase-data";
 import {
+  customSocialLinksFromLinks,
   socialLinkFormValues,
   socialLinkRecordFromForm,
   socialLinksFromRecord,
   socialPlatforms,
+  type CustomSocialLink,
   type SocialLinkRecord,
+  type SocialLinkPlatform,
   type SocialPlatform
 } from "@/lib/social-links";
 import type { Creator } from "@/lib/types";
@@ -42,6 +45,12 @@ type MediaState = {
   coverPreviewUrl: string;
 };
 
+type SocialPickerState = {
+  platform: SocialPlatform | "custom";
+  label: string;
+  url: string;
+};
+
 type CreatorProfileEditorProps = {
   creator: Creator;
   isDemo: boolean;
@@ -56,7 +65,13 @@ const copy = {
     demo: "Demo modda değişiklikler kaydedilmez. Supabase bağlantısı aktif olduğunda bu alan canlı profile yazılır.",
     identity: "Temel bilgiler",
     visuals: "Görsel vitrin",
-    socials: "Sosyal kanıt",
+    socials: "Sosyal medya",
+    addSocial: "Bağlantı ekle",
+    socialPlatform: "Platform",
+    socialUrl: "Link",
+    customSiteName: "Site adı",
+    customPlatform: "Diğer",
+    emptySocials: "Henüz sosyal medya veya dış vitrin linki eklenmedi.",
     fullName: "Görünen ad",
     handle: "Kullanıcı adı",
     headline: "Kısa başlık",
@@ -84,7 +99,13 @@ const copy = {
     demo: "Changes are not saved in demo mode. Once Supabase is connected, this writes to the live profile.",
     identity: "Core details",
     visuals: "Visual storefront",
-    socials: "Social proof",
+    socials: "Social media",
+    addSocial: "Add link",
+    socialPlatform: "Platform",
+    socialUrl: "Link",
+    customSiteName: "Site name",
+    customPlatform: "Other",
+    emptySocials: "No social or external storefront links have been added yet.",
     fullName: "Display name",
     handle: "Handle",
     headline: "Short headline",
@@ -114,6 +135,14 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
   const [socialValues, setSocialValues] = useState<SocialLinkRecord>(() =>
     socialLinkFormValues(creator.socialLinks)
   );
+  const [customSocialLinks, setCustomSocialLinks] = useState<CustomSocialLink[]>(() =>
+    customSocialLinksFromLinks(creator.socialLinks)
+  );
+  const [socialPicker, setSocialPicker] = useState<SocialPickerState>({
+    platform: "spotify",
+    label: "",
+    url: ""
+  });
   const [media, setMedia] = useState<MediaState>({
     avatarFile: null,
     coverFile: null,
@@ -129,6 +158,7 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
   useEffect(() => {
     setForm(profileToForm(creator));
     setSocialValues(socialLinkFormValues(creator.socialLinks));
+    setCustomSocialLinks(customSocialLinksFromLinks(creator.socialLinks));
     setStatus({ type: "idle", message: isDemo ? text.demo : "" });
   }, [creator, isDemo, text.demo]);
 
@@ -139,7 +169,10 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
     };
   }, [media.avatarPreviewUrl, media.coverPreviewUrl]);
 
-  const previewSocialLinks = useMemo(() => socialLinksFromRecord(socialValues), [socialValues]);
+  const previewSocialLinks = useMemo(
+    () => socialLinksFromRecord(socialLinkRecordFromForm(socialValues, customSocialLinks)),
+    [customSocialLinks, socialValues]
+  );
   const previewAvatar = media.avatarPreviewUrl || form.avatarUrl || creator.avatarUrl;
   const previewCover = media.coverPreviewUrl || form.coverUrl || creator.coverUrl;
 
@@ -147,8 +180,40 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function updateSocial(platform: SocialPlatform, value: string) {
-    setSocialValues((current) => ({ ...current, [platform]: value }));
+  function updateSocialPicker<K extends keyof SocialPickerState>(
+    key: K,
+    value: SocialPickerState[K]
+  ) {
+    setSocialPicker((current) => ({ ...current, [key]: value }));
+  }
+
+  function addSocialLink() {
+    const url = socialPicker.url.trim();
+    if (!url) return;
+
+    if (socialPicker.platform === "custom") {
+      const label = socialPicker.label.trim();
+      if (!label) return;
+      setCustomSocialLinks((current) => [...current, { label, url }]);
+      setSocialPicker((current) => ({ ...current, label: "", url: "" }));
+      return;
+    }
+
+    setSocialValues((current) => ({ ...current, [socialPicker.platform]: url }));
+    setSocialPicker((current) => ({ ...current, url: "" }));
+  }
+
+  function removeSocialLink(platform: SocialLinkPlatform, index: number) {
+    if (platform === "custom") {
+      setCustomSocialLinks((current) => current.filter((_, itemIndex) => itemIndex !== index));
+      return;
+    }
+
+    setSocialValues((current) => {
+      const next = { ...current };
+      delete next[platform];
+      return next;
+    });
   }
 
   function updateMedia(kind: "avatar" | "cover", event: ChangeEvent<HTMLInputElement>) {
@@ -209,7 +274,7 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
           specialties: splitSpecialties(form.specialties),
           avatar_url: avatarUrl,
           cover_url: coverUrl,
-          social_links: socialLinkRecordFromForm(socialValues)
+          social_links: socialLinkRecordFromForm(socialValues, customSocialLinks)
         })
         .eq("id", user.id);
 
@@ -366,18 +431,94 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-jam-blue">
               {text.socials}
             </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {socialPlatforms.map((platform) => (
-                <Field key={platform.id} label={platform.label}>
+            <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.035] p-4">
+              <div className="grid gap-3 md:grid-cols-[0.9fr_1.1fr_auto]">
+                <Field label={text.socialPlatform}>
+                  <select
+                    value={socialPicker.platform}
+                    onChange={(event) =>
+                      updateSocialPicker(
+                        "platform",
+                        event.target.value as SocialPlatform | "custom"
+                      )
+                    }
+                    className="input-field"
+                  >
+                    {socialPlatforms.map((platform) => (
+                      <option key={platform.id} value={platform.id}>
+                        {platform.label}
+                      </option>
+                    ))}
+                    <option value="custom">{text.customPlatform}</option>
+                  </select>
+                </Field>
+                <Field label={text.socialUrl}>
                   <input
                     type="url"
-                    value={socialValues[platform.id] ?? ""}
-                    onChange={(event) => updateSocial(platform.id, event.target.value)}
-                    placeholder={platform.placeholder}
+                    value={socialPicker.url}
+                    onChange={(event) => updateSocialPicker("url", event.target.value)}
+                    placeholder={getSocialPlaceholder(socialPicker.platform)}
                     className="input-field"
                   />
                 </Field>
-              ))}
+                <button
+                  type="button"
+                  onClick={addSocialLink}
+                  className="focus-ring mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/12 px-5 text-sm font-bold text-white/76 transition hover:border-jam-blue/35 hover:bg-jam-blue/10 hover:text-white md:mt-6"
+                >
+                  <Plus size={17} />
+                  {text.addSocial}
+                </button>
+              </div>
+              {socialPicker.platform === "custom" ? (
+                <div className="mt-3">
+                  <Field label={text.customSiteName}>
+                    <input
+                      value={socialPicker.label}
+                      onChange={(event) => updateSocialPicker("label", event.target.value)}
+                      placeholder="Bandcamp, Linktree, Portfolio..."
+                      className="input-field"
+                    />
+                  </Field>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mt-4 grid gap-2">
+              {previewSocialLinks.length > 0 ? (
+                previewSocialLinks.map((link, index) => {
+                  const removeIndex =
+                    link.platform === "custom"
+                      ? previewSocialLinks
+                          .slice(0, index)
+                          .filter((item) => item.platform === "custom").length
+                      : index;
+
+                  return (
+                    <div
+                      key={`${link.platform}-${link.label}-${link.url}`}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-white">{link.label}</p>
+                        <p className="truncate text-xs text-white/42">{link.url}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeSocialLink(link.platform, removeIndex)}
+                        className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/50 transition hover:border-jam-coral/40 hover:bg-jam-coral/10 hover:text-jam-coral"
+                        aria-label={`${link.label} remove`}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="rounded-lg border border-dashed border-white/12 px-3 py-4 text-sm text-white/42">
+                  {text.emptySocials}
+                </p>
+              )}
             </div>
             <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.035] p-4">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-white/36">
@@ -497,6 +638,14 @@ function splitSpecialties(value: string) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function getSocialPlaceholder(platform: SocialLinkPlatform) {
+  if (platform === "custom") {
+    return "https://...";
+  }
+
+  return socialPlatforms.find((item) => item.id === platform)?.placeholder ?? "https://...";
 }
 
 function normalizeHandle(value: string) {

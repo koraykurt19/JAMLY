@@ -41,6 +41,10 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
       normalizeComparableName(accountProfile.fullName) ===
         normalizeComparableName(localizedCreator.name));
   const isAccountLoading = account.state.status === "loading";
+  const hasFitSignals =
+    localizedCreator.bestFor.length > 0 || localizedCreator.notBestFor.length > 0;
+  const hasWorkflowPanels =
+    localizedCreator.workflow.length > 0 || localizedCreator.requirements.length > 0;
 
   return (
     <div>
@@ -136,29 +140,41 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
           <div className="rounded-lg border border-white/10 bg-white/[0.045] p-6">
             <h2 className="text-lg font-semibold text-white">{t("about")}</h2>
             <p className="mt-3 text-sm leading-7 text-white/60">{localizedCreator.about}</p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {localizedCreator.specialties.map((specialty) => (
-                <span
-                  key={specialty}
-                  className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-sm text-white/62"
-                >
-                  {specialty}
-                </span>
-              ))}
-            </div>
+            {localizedCreator.specialties.length > 0 ? (
+              <div className="mt-5 flex flex-wrap gap-2">
+                {localizedCreator.specialties.map((specialty) => (
+                  <span
+                    key={specialty}
+                    className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-sm text-white/62"
+                  >
+                    {specialty}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
-          <div className="rounded-lg border border-white/10 bg-white/[0.045] p-6">
-            <div className="flex items-center gap-2">
-              <Sparkles size={18} className="text-jam-mint" />
-              <h2 className="text-lg font-semibold text-white">{t("bestFor")}</h2>
+          {hasFitSignals ? (
+            <div className="rounded-lg border border-white/10 bg-white/[0.045] p-6">
+              {localizedCreator.bestFor.length > 0 ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={18} className="text-jam-mint" />
+                    <h2 className="text-lg font-semibold text-white">{t("bestFor")}</h2>
+                  </div>
+                  <SignalList items={localizedCreator.bestFor} positive />
+                </>
+              ) : null}
+              {localizedCreator.notBestFor.length > 0 ? (
+                <>
+                  <div className="mt-5 flex items-center gap-2">
+                    <XCircle size={18} className="text-jam-coral" />
+                    <h2 className="text-lg font-semibold text-white">{t("notBestFor")}</h2>
+                  </div>
+                  <SignalList items={localizedCreator.notBestFor} />
+                </>
+              ) : null}
             </div>
-            <SignalList items={localizedCreator.bestFor} positive />
-            <div className="mt-5 flex items-center gap-2">
-              <XCircle size={18} className="text-jam-coral" />
-              <h2 className="text-lg font-semibold text-white">{t("notBestFor")}</h2>
-            </div>
-            <SignalList items={localizedCreator.notBestFor} />
-          </div>
+          ) : null}
           <div className="rounded-lg border border-white/10 bg-white/[0.045] p-6">
             <h2 className="text-lg font-semibold text-white">{t("trustSignals")}</h2>
             <div className="mt-4 grid gap-3">
@@ -192,25 +208,33 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
             ))}
           </div>
 
-          <div className="mt-8 grid gap-5 lg:grid-cols-2">
-            <InfoPanel title={t("workflow")} items={localizedCreator.workflow} numbered />
-            <InfoPanel title={t("requirements")} items={localizedCreator.requirements} />
-          </div>
+          {hasWorkflowPanels ? (
+            <div className="mt-8 grid gap-5 lg:grid-cols-2">
+              {localizedCreator.workflow.length > 0 ? (
+                <InfoPanel title={t("workflow")} items={localizedCreator.workflow} numbered />
+              ) : null}
+              {localizedCreator.requirements.length > 0 ? (
+                <InfoPanel title={t("requirements")} items={localizedCreator.requirements} />
+              ) : null}
+            </div>
+          ) : null}
 
-          <div className="mt-8 rounded-lg border border-white/10 bg-white/[0.045] p-6">
-            <div className="flex items-center gap-2">
-              <HelpCircle size={19} className="text-jam-blue" />
-              <h2 className="text-xl font-semibold text-white">{t("creatorFaq")}</h2>
+          {localizedCreator.faq.length > 0 ? (
+            <div className="mt-8 rounded-lg border border-white/10 bg-white/[0.045] p-6">
+              <div className="flex items-center gap-2">
+                <HelpCircle size={19} className="text-jam-blue" />
+                <h2 className="text-xl font-semibold text-white">{t("creatorFaq")}</h2>
+              </div>
+              <div className="mt-5 grid gap-3">
+                {localizedCreator.faq.map((item) => (
+                  <div key={item.question} className="rounded-lg border border-white/10 bg-black/24 p-4">
+                    <p className="font-semibold text-white">{item.question}</p>
+                    <p className="mt-2 text-sm leading-6 text-white/58">{item.answer}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="mt-5 grid gap-3">
-              {localizedCreator.faq.map((item) => (
-                <div key={item.question} className="rounded-lg border border-white/10 bg-black/24 p-4">
-                  <p className="font-semibold text-white">{item.question}</p>
-                  <p className="mt-2 text-sm leading-6 text-white/58">{item.answer}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          ) : null}
         </div>
       </section>
     </div>
