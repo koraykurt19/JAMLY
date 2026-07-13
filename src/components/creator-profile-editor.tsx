@@ -83,6 +83,7 @@ const copy = {
     coverUrl: "Kapak görseli URL",
     avatarFile: "Profil fotoğrafı yükle",
     coverFile: "Kapak görseli yükle",
+    visualUrlToggle: "URL ile görsel kullan",
     imageHint: "JPG, PNG veya WebP. Dosya seçerseniz URL alanının yerine yüklenen görsel kullanılır.",
     specialtiesHint: "Virgülle ayırın: Trap, Vocal hooks, Mix",
     save: "Profili kaydet",
@@ -117,6 +118,7 @@ const copy = {
     coverUrl: "Cover image URL",
     avatarFile: "Upload profile photo",
     coverFile: "Upload cover image",
+    visualUrlToggle: "Use image URLs",
     imageHint: "JPG, PNG, or WebP. If you choose a file, the uploaded image replaces the URL field.",
     specialtiesHint: "Separate with commas: Trap, Vocal hooks, Mix",
     save: "Save profile",
@@ -321,8 +323,8 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
         </button>
       </div>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-        <section className="rounded-lg border border-white/10 bg-black/24 p-4">
+      <div className="mt-6 grid items-start gap-5 lg:grid-cols-[0.82fr_1.18fr]">
+        <section className="self-start rounded-lg border border-white/10 bg-black/24 p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-jam-blue">
             {text.visuals}
           </p>
@@ -341,7 +343,7 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <FileControl
               label={text.avatarFile}
               hint={text.imageHint}
@@ -352,23 +354,31 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
               hint={text.imageHint}
               onChange={(event) => updateMedia("cover", event)}
             />
-            <Field label={text.avatarUrl}>
-              <input
-                type="url"
-                value={form.avatarUrl}
-                onChange={(event) => updateField("avatarUrl", event.target.value)}
-                className="input-field"
-              />
-            </Field>
-            <Field label={text.coverUrl}>
-              <input
-                type="url"
-                value={form.coverUrl}
-                onChange={(event) => updateField("coverUrl", event.target.value)}
-                className="input-field"
-              />
-            </Field>
           </div>
+
+          <details className="mt-4 rounded-lg border border-white/10 bg-white/[0.035] p-4">
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.16em] text-white/46 transition hover:text-white">
+              {text.visualUrlToggle}
+            </summary>
+            <div className="mt-4 grid gap-3">
+              <Field label={text.avatarUrl}>
+                <input
+                  type="url"
+                  value={form.avatarUrl}
+                  onChange={(event) => updateField("avatarUrl", event.target.value)}
+                  className="input-field"
+                />
+              </Field>
+              <Field label={text.coverUrl}>
+                <input
+                  type="url"
+                  value={form.coverUrl}
+                  onChange={(event) => updateField("coverUrl", event.target.value)}
+                  className="input-field"
+                />
+              </Field>
+            </div>
+          </details>
         </section>
 
         <section className="space-y-5">

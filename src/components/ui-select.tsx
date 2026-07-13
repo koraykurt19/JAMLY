@@ -70,7 +70,7 @@ export function UiSelect<T extends string>({
   }
 
   return (
-    <div ref={rootRef} className={cn("relative", className)}>
+    <div ref={rootRef} className={cn("relative isolate", className)}>
       <button
         ref={buttonRef}
         type="button"
@@ -79,7 +79,7 @@ export function UiSelect<T extends string>({
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
-          "focus-ring group flex w-full items-center justify-between gap-3 border text-left text-sm font-semibold transition",
+          "focus-ring group flex w-full items-center justify-between gap-3 border text-left text-sm font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition",
           variant === "field" &&
             "min-h-12 rounded-lg border-white/10 bg-black/35 px-4 text-white hover:border-jam-blue/35 hover:bg-jam-blue/5",
           variant === "pill" &&
@@ -104,7 +104,7 @@ export function UiSelect<T extends string>({
         <div
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[80] max-h-72 overflow-y-auto overscroll-contain rounded-lg border border-white/10 bg-[#0d1118]/98 p-1 shadow-soft backdrop-blur-2xl"
+          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[999] max-h-72 min-w-48 overflow-y-auto overscroll-contain rounded-lg border border-jam-blue/25 bg-[#101722] p-1.5 shadow-[0_28px_90px_rgba(0,0,0,0.78),0_0_0_1px_rgba(255,255,255,0.06)_inset] ring-1 ring-black/40"
         >
           {options.map((option) => {
             const active = option.value === value;
@@ -119,8 +119,8 @@ export function UiSelect<T extends string>({
                 className={cn(
                   "focus-ring flex w-full items-center justify-between gap-3 rounded-md px-3 py-2.5 text-left text-sm transition",
                   active
-                    ? "bg-jam-blue text-black"
-                    : "text-white/70 hover:bg-white/[0.07] hover:text-white",
+                    ? "bg-gradient-to-r from-jam-blue to-[#79a8ff] text-black shadow-[0_8px_24px_rgba(88,197,255,0.24)]"
+                    : "bg-[#0b1018] text-white/72 hover:bg-[#172132] hover:text-white",
                   option.disabled && "cursor-not-allowed opacity-45"
                 )}
               >
