@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ElementType } from "react";
+import { useState } from "react";
 import {
-  ArrowRight,
   Banknote,
   BarChart3,
   Clock,
@@ -16,19 +16,19 @@ import {
   TrendingUp
 } from "lucide-react";
 import { CreatorProfileEditor } from "@/components/creator-profile-editor";
-import { CreatorReadiness } from "@/components/creator-readiness";
 import { DashboardState } from "@/components/dashboard-state";
 import { SectionHeading } from "@/components/section-heading";
 import { StatCard } from "@/components/stat-card";
 import { useI18n } from "@/components/language-provider";
 import { currency, shortDate } from "@/lib/format";
 import { categoryLabel, licenseLabel, orderStatusLabel } from "@/lib/labels";
-import { localizeListing, localizeOrder, splitMessageList } from "@/lib/i18n";
+import { localizeListing, localizeOrder } from "@/lib/i18n";
 import { useDashboardData } from "@/lib/use-dashboard-data";
 import { getBeatLicenseCopy, isBeatLicenseListing } from "@/lib/beat-licenses";
 
 export default function CreatorDashboardPage() {
   const { currencyCode, language, t, usdTryRate } = useI18n();
+  const [showAllListings, setShowAllListings] = useState(false);
   const dashboard = useDashboardData("creator");
 
   if (dashboard.state.status !== "ready") {
@@ -47,7 +47,6 @@ export default function CreatorDashboardPage() {
   const creatorOrders = dashboard.state.orders.map((order) => localizeOrder(order, language));
   const isDemo = dashboard.state.isDemo;
   const creatorProfile = dashboard.state.profile;
-  const nextTargets = splitMessageList(t("nextBuildTargetItems"));
   const revenue = creatorOrders.reduce((sum, order) => sum + order.price, 0);
   const totalViews = creatorListings.reduce((sum, listing) => sum + listing.analytics.views, 0);
   const totalSaves = creatorListings.reduce((sum, listing) => sum + listing.analytics.saves, 0);
@@ -58,6 +57,20 @@ export default function CreatorDashboardPage() {
   const activeListingCount = creatorListings.filter((listing) => listing.isActive).length;
   const formatNumber = (value: number) =>
     new Intl.NumberFormat(language === "tr" ? "tr-TR" : "en-US").format(value);
+  const visibleListings = showAllListings ? creatorListings : creatorListings.slice(0, 1);
+  const hasHiddenListings = creatorListings.length > 1;
+  const listedCountCopy =
+    language === "tr"
+      ? showAllListings
+        ? `${creatorListings.length} ilanın tamamı gösteriliyor`
+        : "Sadece en son ilan gösteriliyor"
+      : showAllListings
+        ? `Showing all ${creatorListings.length} listings`
+        : "Only the latest listing is shown";
+  const operationsCopy =
+    language === "tr"
+      ? "İlanlarınızı, taleplerinizi ve satış aksiyonlarını profil düzenlemeden ayrı yönetin."
+      : "Manage listings, requests, and sales actions separately from profile editing.";
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -120,17 +133,44 @@ export default function CreatorDashboardPage() {
         </div>
       ) : null}
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
+      <div className="mt-10 flex flex-col gap-2 border-t border-white/10 pt-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-jam-blue">
+          {language === "tr" ? "Operasyon paneli" : "Operations panel"}
+        </p>
+        <h2 className="text-2xl font-semibold text-white">
+          {language === "tr" ? "Satış akışınızı buradan yönetin." : "Run your sales flow here."}
+        </h2>
+        <p className="max-w-2xl text-sm leading-6 text-white/54">{operationsCopy}</p>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
         <div className="rounded-lg border border-white/10 bg-white/[0.045]">
-          <div className="flex items-center justify-between border-b border-white/10 p-5">
+          <div className="flex flex-col gap-4 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-semibold text-white">{t("publishedListings")}</h2>
-              <p className="mt-1 text-sm text-white/48">{t("inventoryHint")}</p>
+              <p className="mt-1 text-sm text-white/48">{listedCountCopy}</p>
             </div>
-            <TrendingUp size={20} className="text-jam-mint" />
+            <div className="flex items-center gap-3">
+              {hasHiddenListings ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAllListings((value) => !value)}
+                  className="focus-ring rounded-full border border-white/12 bg-black/24 px-4 py-2 text-sm font-bold text-white transition hover:border-jam-blue/60 hover:bg-jam-blue/12"
+                >
+                  {showAllListings
+                    ? language === "tr"
+                      ? "Daha az göster"
+                      : "Show less"
+                    : language === "tr"
+                      ? "Tüm ilanları göster"
+                      : "Show all listings"}
+                </button>
+              ) : null}
+              <TrendingUp size={20} className="text-jam-mint" />
+            </div>
           </div>
           <div className="divide-y divide-white/8">
-            {creatorListings.length > 0 ? creatorListings.map((listing) => (
+            {visibleListings.length > 0 ? visibleListings.map((listing) => (
               <Link
                 key={listing.id}
                 href={`/listing/${listing.id}`}
@@ -243,41 +283,6 @@ export default function CreatorDashboardPage() {
                   <p className="mt-2 text-sm leading-6 text-white/48">{t("noOrderRequestsCopy")}</p>
                 </div>
               )}
-            </div>
-          </div>
-
-          <CreatorReadiness />
-
-          <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5">
-            <div className="flex items-center gap-2">
-              <BarChart3 size={20} className="text-jam-blue" />
-              <h2 className="text-xl font-semibold text-white">{t("profileTips")}</h2>
-            </div>
-            <div className="mt-4 grid gap-3 text-sm text-white/56">
-              {[
-                t("quickStems"),
-                t("audioMarkers"),
-                t("revisionPolicy")
-              ].map((item) => (
-                <div key={item} className="rounded-md bg-black/24 px-3 py-2">
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5">
-            <h2 className="text-xl font-semibold text-white">{t("nextBuildTargets")}</h2>
-            <div className="mt-4 space-y-3 text-sm text-white/56">
-              {nextTargets.map((item) => (
-                <div
-                  key={item}
-                  className="flex items-center justify-between rounded-md bg-black/24 px-3 py-2"
-                >
-                  <span>{item}</span>
-                  <ArrowRight size={15} className="text-white/36" />
-                </div>
-              ))}
             </div>
           </div>
         </div>
