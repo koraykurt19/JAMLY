@@ -124,7 +124,7 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
                 />
               )}
               <Link
-                href="/marketplace"
+                href="#portfolio"
                 className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-jam-mint"
               >
                 {t("creatorProfileWork")}
@@ -190,7 +190,7 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
           </div>
         </aside>
 
-        <div>
+        <div id="portfolio" className="scroll-mt-28">
           <div className="mb-5 flex items-end justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-jam-mint">

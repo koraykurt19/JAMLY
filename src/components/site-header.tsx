@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, LogOut, Menu, MessageCircle, Search, Upload, UserRound } from "lucide-react";
+import {
+  ChevronDown,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageCircle,
+  Search,
+  Store,
+  Upload,
+  UserRound
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { JamlyWordmark } from "@/components/jamly-logo";
 import { LanguageToggle } from "@/components/language-toggle";
@@ -79,7 +89,23 @@ export function SiteHeader() {
                 <ChevronDown size={14} className={`text-white/42 transition ${accountMenuOpen ? "rotate-180" : ""}`} />
               </button>
               {accountMenuOpen ? (
-                <div className="absolute right-0 top-12 z-50 w-56 rounded-lg border border-white/10 bg-jam-panel/95 p-1 shadow-soft backdrop-blur-xl">
+                <div className="absolute right-0 top-12 z-50 w-64 rounded-lg border border-white/10 bg-jam-panel/95 p-1.5 shadow-soft backdrop-blur-xl">
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setAccountMenuOpen(false)}
+                    className="focus-ring flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white/72 transition hover:bg-white/8 hover:text-white"
+                  >
+                    <LayoutDashboard size={16} className="text-jam-blue" />
+                    {t("navDashboard")}
+                  </Link>
+                  <Link
+                    href="/dashboard/creator"
+                    onClick={() => setAccountMenuOpen(false)}
+                    className="focus-ring flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white/72 transition hover:bg-white/8 hover:text-white"
+                  >
+                    <Store size={16} className="text-jam-blue" />
+                    {t("openSellerWorkspace")}
+                  </Link>
                   <Link
                     href={`/creators/${accountProfile.handle}`}
                     onClick={() => setAccountMenuOpen(false)}
@@ -88,13 +114,7 @@ export function SiteHeader() {
                     <UserRound size={16} className="text-jam-blue" />
                     {t("navProfile")}
                   </Link>
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setAccountMenuOpen(false)}
-                    className="focus-ring flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white/72 transition hover:bg-white/8 hover:text-white"
-                  >
-                    {t("navDashboard")}
-                  </Link>
+                  <div className="my-1 h-px bg-white/10" />
                   <button
                     type="button"
                     onClick={() => {

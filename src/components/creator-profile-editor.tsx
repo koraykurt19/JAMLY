@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Camera, Loader2, Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/components/language-provider";
 import { SocialLinkList } from "@/components/social-link-list";
 import { UiSelect } from "@/components/ui-select";
@@ -153,6 +153,8 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
     coverPreviewUrl: ""
   });
   const [saving, setSaving] = useState(false);
+  const socialUrlInputRef = useRef<HTMLInputElement>(null);
+  const customLabelInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<FormStatus>({
     type: "idle",
     message: isDemo ? text.demo : ""
@@ -188,6 +190,18 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
     value: SocialPickerState[K]
   ) {
     setSocialPicker((current) => ({ ...current, [key]: value }));
+  }
+
+  function selectSocialPlatform(value: SocialPickerState["platform"]) {
+    setSocialPicker((current) => ({ ...current, platform: value }));
+    window.requestAnimationFrame(() => {
+      if (value === "custom") {
+        customLabelInputRef.current?.focus();
+        return;
+      }
+
+      socialUrlInputRef.current?.focus();
+    });
   }
 
   function addSocialLink() {
@@ -447,8 +461,9 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
                 <Field label={text.socialPlatform}>
                   <UiSelect
                     value={socialPicker.platform}
-                    onChange={(value) => updateSocialPicker("platform", value)}
+                    onChange={selectSocialPlatform}
                     ariaLabel={text.socialPlatform}
+                    restoreFocusOnSelect={false}
                     options={[
                       ...socialPlatforms.map((platform) => ({
                         value: platform.id,
@@ -460,6 +475,7 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
                 </Field>
                 <Field label={text.socialUrl}>
                   <input
+                    ref={socialUrlInputRef}
                     type="url"
                     value={socialPicker.url}
                     onChange={(event) => updateSocialPicker("url", event.target.value)}
@@ -480,6 +496,7 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
                 <div className="mt-3">
                   <Field label={text.customSiteName}>
                     <input
+                      ref={customLabelInputRef}
                       value={socialPicker.label}
                       onChange={(event) => updateSocialPicker("label", event.target.value)}
                       placeholder="Bandcamp, Linktree, Portfolio..."

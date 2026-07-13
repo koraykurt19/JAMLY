@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, LogIn, LogOut, MessageCircle, Upload, UserRound, X } from "lucide-react";
+import {
+  ArrowRight,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  MessageCircle,
+  Store,
+  Upload,
+  UserRound,
+  X
+} from "lucide-react";
 import type { KeyboardEvent, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import { JamlyWordmark } from "@/components/jamly-logo";
@@ -163,7 +173,9 @@ export function MobileNavigationDrawer({
             <DrawerAction href="/upload" label={t("navUpload")} icon={Upload} onClick={onClose} />
             {account ? (
               <>
-                <DrawerAction href={`/creators/${account.handle}`} label={account.fullName} icon={UserRound} onClick={onClose} />
+                <DrawerAction href="/dashboard" label={t("navDashboard")} icon={LayoutDashboard} onClick={onClose} />
+                <DrawerAction href="/dashboard/creator" label={t("openSellerWorkspace")} icon={Store} onClick={onClose} />
+                <DrawerAction href={`/creators/${account.handle}`} label={t("navProfile")} icon={UserRound} onClick={onClose} />
                 <button
                   type="button"
                   onClick={() => {

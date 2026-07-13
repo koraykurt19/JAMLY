@@ -18,6 +18,7 @@ type UiSelectProps<T extends string> = {
   placeholder?: string;
   variant?: "field" | "pill" | "ghost";
   className?: string;
+  restoreFocusOnSelect?: boolean;
 };
 
 export function UiSelect<T extends string>({
@@ -27,7 +28,8 @@ export function UiSelect<T extends string>({
   ariaLabel,
   placeholder,
   variant = "field",
-  className
+  className,
+  restoreFocusOnSelect = true
 }: UiSelectProps<T>) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -66,7 +68,9 @@ export function UiSelect<T extends string>({
     if (option.disabled) return;
     onChange(option.value);
     setOpen(false);
-    buttonRef.current?.focus();
+    if (restoreFocusOnSelect) {
+      buttonRef.current?.focus();
+    }
   }
 
   return (
