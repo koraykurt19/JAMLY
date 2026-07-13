@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ListingCard } from "@/components/listing-card";
+import { UiSelect } from "@/components/ui-select";
 import { creators, listingCategories } from "@/lib/data";
 import { currency } from "@/lib/format";
 import { categoryLabel, localizedGenres } from "@/lib/i18n";
@@ -249,82 +250,78 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
 
           <label>
             <span className="sr-only">{t("category")}</span>
-            <select
+            <UiSelect
               value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              className="focus-ring h-12 w-full rounded-full border border-white/10 bg-black/35 px-4 text-sm text-white"
-            >
-              <option value={ALL_FILTER}>{t("all")}</option>
-              {listingCategories.map((item) => (
-                <option key={item} value={item}>
-                  {categoryLabel(item, language)}
-                </option>
-              ))}
-            </select>
+              onChange={setCategory}
+              ariaLabel={t("category")}
+              variant="pill"
+              options={[
+                { value: ALL_FILTER, label: t("all") },
+                ...listingCategories.map((item) => ({
+                  value: item,
+                  label: categoryLabel(item, language)
+                }))
+              ]}
+            />
           </label>
 
           <label>
             <span className="sr-only">{t("genre")}</span>
-            <select
+            <UiSelect
               value={genre}
-              onChange={(event) => setGenre(event.target.value)}
-              className="focus-ring h-12 w-full rounded-full border border-white/10 bg-black/35 px-4 text-sm text-white"
-            >
-              <option value={ALL_FILTER}>{t("all")}</option>
-              {genreOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
+              onChange={setGenre}
+              ariaLabel={t("genre")}
+              variant="pill"
+              options={[
+                { value: ALL_FILTER, label: t("all") },
+                ...genreOptions.map((item) => ({ value: item, label: item }))
+              ]}
+            />
           </label>
 
           <label>
             <span className="sr-only">{t("mood")}</span>
-            <select
+            <UiSelect
               value={mood}
-              onChange={(event) => setMood(event.target.value)}
-              className="focus-ring h-12 w-full rounded-full border border-white/10 bg-black/35 px-4 text-sm text-white"
-            >
-              <option value={ALL_FILTER}>{t("selectMood")}</option>
-              {moods.map((item) => (
-                <option key={item} value={item}>
-                  {moodLabel(item, language)}
-                </option>
-              ))}
-            </select>
+              onChange={setMood}
+              ariaLabel={t("mood")}
+              variant="pill"
+              options={[
+                { value: ALL_FILTER, label: t("selectMood") },
+                ...moods.map((item) => ({ value: item, label: moodLabel(item, language) }))
+              ]}
+            />
           </label>
 
           <label>
             <span className="sr-only">{t("useCase")}</span>
-            <select
+            <UiSelect
               value={useCase}
-              onChange={(event) => setUseCase(event.target.value)}
-              className="focus-ring h-12 w-full rounded-full border border-white/10 bg-black/35 px-4 text-sm text-white"
-            >
-              <option value={ALL_FILTER}>{t("selectUseCase")}</option>
-              {useCases.map((item) => (
-                <option key={item} value={item}>
-                  {usageLabel(item, language)}
-                </option>
-              ))}
-            </select>
+              onChange={setUseCase}
+              ariaLabel={t("useCase")}
+              variant="pill"
+              options={[
+                { value: ALL_FILTER, label: t("selectUseCase") },
+                ...useCases.map((item) => ({ value: item, label: usageLabel(item, language) }))
+              ]}
+            />
           </label>
 
           <label>
             <span className="sr-only">{t("deliverySpeed")}</span>
-            <select
+            <UiSelect
               value={deliverySpeed}
-              onChange={(event) => setDeliverySpeed(event.target.value)}
-              className="focus-ring h-12 w-full rounded-full border border-white/10 bg-black/35 px-4 text-sm text-white"
-            >
-              <option value={ALL_FILTER}>{t("selectDelivery")}</option>
-              {deliverySpeeds.map((item) => (
-                <option key={item} value={item}>
-                  {deliverySpeedLabel(item, language)}
-                </option>
-              ))}
-            </select>
+              onChange={setDeliverySpeed}
+              ariaLabel={t("deliverySpeed")}
+              variant="pill"
+              options={[
+                { value: ALL_FILTER, label: t("selectDelivery") },
+                ...deliverySpeeds.map((item) => ({
+                  value: item,
+                  label: deliverySpeedLabel(item, language)
+                }))
+              ]}
+            />
           </label>
         </div>
 
@@ -348,16 +345,19 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
           <label className="flex h-12 items-center gap-3 rounded-full border border-white/10 bg-black/35 px-4">
             <ArrowDownUp size={17} className="text-white/45" />
             <span className="sr-only">{t("sort")}</span>
-            <select
+            <UiSelect
               value={sortMode}
-              onChange={(event) => setSortMode(event.target.value as SortMode)}
-              className="focus-ring min-w-0 flex-1 bg-transparent text-sm text-white"
-            >
-              <option value="recommended">{t("sortRecommended")}</option>
-              <option value="low-price">{t("sortLowPrice")}</option>
-              <option value="high-price">{t("sortHighPrice")}</option>
-              <option value="newest">{t("sortNewest")}</option>
-            </select>
+              onChange={(value) => setSortMode(value as SortMode)}
+              ariaLabel={t("sort")}
+              variant="ghost"
+              className="min-w-0 flex-1"
+              options={[
+                { value: "recommended", label: t("sortRecommended") },
+                { value: "low-price", label: t("sortLowPrice") },
+                { value: "high-price", label: t("sortHighPrice") },
+                { value: "newest", label: t("sortNewest") }
+              ]}
+            />
           </label>
 
           <button

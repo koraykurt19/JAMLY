@@ -6,6 +6,7 @@ import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/components/language-provider";
 import { SocialLinkList } from "@/components/social-link-list";
+import { UiSelect } from "@/components/ui-select";
 import { cn } from "@/lib/format";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { ensureCurrentProfile } from "@/lib/supabase-data";
@@ -434,23 +435,18 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
             <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.035] p-4">
               <div className="grid gap-3 md:grid-cols-[0.9fr_1.1fr_auto]">
                 <Field label={text.socialPlatform}>
-                  <select
+                  <UiSelect
                     value={socialPicker.platform}
-                    onChange={(event) =>
-                      updateSocialPicker(
-                        "platform",
-                        event.target.value as SocialPlatform | "custom"
-                      )
-                    }
-                    className="input-field"
-                  >
-                    {socialPlatforms.map((platform) => (
-                      <option key={platform.id} value={platform.id}>
-                        {platform.label}
-                      </option>
-                    ))}
-                    <option value="custom">{text.customPlatform}</option>
-                  </select>
+                    onChange={(value) => updateSocialPicker("platform", value)}
+                    ariaLabel={text.socialPlatform}
+                    options={[
+                      ...socialPlatforms.map((platform) => ({
+                        value: platform.id,
+                        label: platform.label
+                      })),
+                      { value: "custom", label: text.customPlatform }
+                    ]}
+                  />
                 </Field>
                 <Field label={text.socialUrl}>
                   <input

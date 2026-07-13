@@ -24,6 +24,7 @@ import {
 import { categoryLabel } from "@/lib/labels";
 import type { BeatLicenseTier, ListingCategory } from "@/lib/types";
 import { useI18n } from "@/components/language-provider";
+import { UiSelect } from "@/components/ui-select";
 import { currency } from "@/lib/format";
 
 type FormState = {
@@ -193,6 +194,12 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
       return;
     }
 
+    if (!form.genre.trim()) {
+      setLoading(false);
+      setMessage(`${t("listingError")}: ${t("genrePlaceholder")}`);
+      return;
+    }
+
     const isBeat = form.category === "Beat";
     const licenseInputPrices = {
       nonExclusive: Number(form.priceNonExclusive),
@@ -337,35 +344,28 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
         </Field>
 
         <Field label={t("category")}>
-          <select
+          <UiSelect
             value={form.category}
-            onChange={(event) => update("category", event.target.value as ListingCategory)}
-            className="input-field"
-          >
-            {listingCategories.map((category) => (
-              <option key={category} value={category}>
-                {categoryLabel(category, language)}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => update("category", value as ListingCategory)}
+            ariaLabel={t("category")}
+            options={listingCategories.map((category) => ({
+              value: category,
+              label: categoryLabel(category, language)
+            }))}
+          />
         </Field>
 
         <Field label={t("genre")}>
-          <select
+          <UiSelect
             value={form.genre}
-            onChange={(event) => update("genre", event.target.value)}
-            required
-            className="input-field"
-          >
-            <option value="" disabled>
-              {t("genrePlaceholder")}
-            </option>
-            {genreOptions.map((genre) => (
-              <option key={genre} value={genre}>
-                {genre}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => update("genre", value)}
+            ariaLabel={t("genre")}
+            placeholder={t("genrePlaceholder")}
+            options={[
+              { value: "", label: t("genrePlaceholder"), disabled: true },
+              ...genreOptions.map((genre) => ({ value: genre, label: genre }))
+            ]}
+          />
         </Field>
 
         <Field label="BPM">
@@ -381,20 +381,16 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
         </Field>
 
         <Field label={t("turnaround")}>
-          <select
+          <UiSelect
             value={form.turnaround}
-            onChange={(event) => update("turnaround", event.target.value)}
-            className="input-field"
-          >
-            <option value="">
-              {t("turnaroundPlaceholder")}
-            </option>
-            {turnaroundOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => update("turnaround", value)}
+            ariaLabel={t("turnaround")}
+            placeholder={t("turnaroundPlaceholder")}
+            options={[
+              { value: "", label: t("turnaroundPlaceholder") },
+              ...turnaroundOptions.map((option) => ({ value: option, label: option }))
+            ]}
+          />
         </Field>
       </div>
 
