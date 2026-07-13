@@ -15,7 +15,7 @@ import {
   Plus,
   TrendingUp
 } from "lucide-react";
-import { CreatorSocialLinksForm } from "@/components/creator-social-links-form";
+import { CreatorProfileEditor } from "@/components/creator-profile-editor";
 import { CreatorReadiness } from "@/components/creator-readiness";
 import { DashboardState } from "@/components/dashboard-state";
 import { SectionHeading } from "@/components/section-heading";
@@ -239,7 +239,11 @@ export default function CreatorDashboardPage() {
           <CreatorReadiness />
 
           {creatorProfile ? (
-            <CreatorSocialLinksForm creator={creatorProfile} isDemo={isDemo} />
+            <CreatorProfileEditor
+              creator={creatorProfile}
+              isDemo={isDemo}
+              onSaved={dashboard.retry}
+            />
           ) : null}
 
           <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5">

@@ -9,6 +9,7 @@ import {
   Clock,
   HelpCircle,
   MapPin,
+  Settings,
   Sparkles,
   Star,
   XCircle
@@ -18,6 +19,7 @@ import { SocialLinkList } from "@/components/social-link-list";
 import { StatCard } from "@/components/stat-card";
 import { StartConversationButton } from "@/components/start-conversation-button";
 import { useI18n } from "@/components/language-provider";
+import { useCurrentAccount } from "@/lib/use-current-account";
 import { localizeCreator, localizeListing } from "@/lib/i18n";
 import type { Creator, Listing } from "@/lib/types";
 
@@ -28,8 +30,11 @@ type CreatorProfileViewProps = {
 
 export function CreatorProfileView({ creator, listings }: CreatorProfileViewProps) {
   const { language, t } = useI18n();
+  const account = useCurrentAccount();
   const localizedCreator = localizeCreator(creator, language);
   const localizedListings = listings.map((listing) => localizeListing(listing, language));
+  const isOwnProfile =
+    account.state.status === "signed-in" && account.state.profile.id === localizedCreator.id;
 
   return (
     <div>
@@ -94,10 +99,20 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
               </div>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <StartConversationButton
-                artistId={localizedCreator.id}
-                variant="secondary"
-              />
+              {isOwnProfile ? (
+                <Link
+                  href="/dashboard/creator"
+                  className="focus-ring inline-flex items-center justify-center gap-2 rounded-md border border-white/12 px-5 py-3 text-sm font-bold text-white/78 transition hover:border-jam-blue/35 hover:bg-jam-blue/10 hover:text-white"
+                >
+                  <Settings size={17} />
+                  {language === "tr" ? "Profili düzenle" : "Edit profile"}
+                </Link>
+              ) : (
+                <StartConversationButton
+                  artistId={localizedCreator.id}
+                  variant="secondary"
+                />
+              )}
               <Link
                 href="/marketplace"
                 className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-jam-mint"

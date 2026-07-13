@@ -1,0 +1,526 @@
+"use client";
+
+import Image from "next/image";
+import { Camera, Loader2, Save, Sparkles } from "lucide-react";
+import type { ChangeEvent, FormEvent, ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useI18n } from "@/components/language-provider";
+import { SocialLinkList } from "@/components/social-link-list";
+import { cn } from "@/lib/format";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { ensureCurrentProfile } from "@/lib/supabase-data";
+import {
+  socialLinkFormValues,
+  socialLinkRecordFromForm,
+  socialLinksFromRecord,
+  socialPlatforms,
+  type SocialLinkRecord,
+  type SocialPlatform
+} from "@/lib/social-links";
+import type { Creator } from "@/lib/types";
+
+type ProfileFormState = {
+  fullName: string;
+  handle: string;
+  headline: string;
+  location: string;
+  bio: string;
+  specialties: string;
+  avatarUrl: string;
+  coverUrl: string;
+};
+
+type FormStatus =
+  | { type: "idle"; message: string }
+  | { type: "success"; message: string }
+  | { type: "error"; message: string };
+
+type MediaState = {
+  avatarFile: File | null;
+  coverFile: File | null;
+  avatarPreviewUrl: string;
+  coverPreviewUrl: string;
+};
+
+type CreatorProfileEditorProps = {
+  creator: Creator;
+  isDemo: boolean;
+  onSaved?: () => void;
+};
+
+const copy = {
+  tr: {
+    title: "Profil vitrini",
+    description:
+      "Alıcıların güvenmesi için profil fotoğrafınızı, biyografinizi, uzmanlıklarınızı ve sosyal kanıtlarınızı tek yerden düzenleyin.",
+    demo: "Demo modda değişiklikler kaydedilmez. Supabase bağlantısı aktif olduğunda bu alan canlı profile yazılır.",
+    identity: "Temel bilgiler",
+    visuals: "Görsel vitrin",
+    socials: "Sosyal kanıt",
+    fullName: "Görünen ad",
+    handle: "Kullanıcı adı",
+    headline: "Kısa başlık",
+    location: "Konum",
+    bio: "Biyografi",
+    specialties: "Uzmanlıklar",
+    avatarUrl: "Profil fotoğrafı URL",
+    coverUrl: "Kapak görseli URL",
+    avatarFile: "Profil fotoğrafı yükle",
+    coverFile: "Kapak görseli yükle",
+    imageHint: "JPG, PNG veya WebP. Dosya seçerseniz URL alanının yerine yüklenen görsel kullanılır.",
+    specialtiesHint: "Virgülle ayırın: Trap, Vocal hooks, Mix",
+    save: "Profili kaydet",
+    saving: "Kaydediliyor",
+    saved: "Profil vitrini güncellendi.",
+    signIn: "Profili kaydetmek için giriş yapmanız gerekir.",
+    ownerOnly: "Bu profil sadece sahibi tarafından düzenlenebilir.",
+    error: "Profil kaydedilemedi.",
+    preview: "Profilde görünecek bağlantılar"
+  },
+  en: {
+    title: "Profile storefront",
+    description:
+      "Edit your photo, bio, specialties, and proof points in one place so buyers can trust your profile faster.",
+    demo: "Changes are not saved in demo mode. Once Supabase is connected, this writes to the live profile.",
+    identity: "Core details",
+    visuals: "Visual storefront",
+    socials: "Social proof",
+    fullName: "Display name",
+    handle: "Handle",
+    headline: "Short headline",
+    location: "Location",
+    bio: "Biography",
+    specialties: "Specialties",
+    avatarUrl: "Profile photo URL",
+    coverUrl: "Cover image URL",
+    avatarFile: "Upload profile photo",
+    coverFile: "Upload cover image",
+    imageHint: "JPG, PNG, or WebP. If you choose a file, the uploaded image replaces the URL field.",
+    specialtiesHint: "Separate with commas: Trap, Vocal hooks, Mix",
+    save: "Save profile",
+    saving: "Saving",
+    saved: "Profile storefront updated.",
+    signIn: "Sign in to save your profile.",
+    ownerOnly: "Only the profile owner can edit this profile.",
+    error: "Profile could not be saved.",
+    preview: "Links shown on profile"
+  }
+} as const;
+
+export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfileEditorProps) {
+  const { language } = useI18n();
+  const text = copy[language];
+  const [form, setForm] = useState<ProfileFormState>(() => profileToForm(creator));
+  const [socialValues, setSocialValues] = useState<SocialLinkRecord>(() =>
+    socialLinkFormValues(creator.socialLinks)
+  );
+  const [media, setMedia] = useState<MediaState>({
+    avatarFile: null,
+    coverFile: null,
+    avatarPreviewUrl: "",
+    coverPreviewUrl: ""
+  });
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<FormStatus>({
+    type: "idle",
+    message: isDemo ? text.demo : ""
+  });
+
+  useEffect(() => {
+    setForm(profileToForm(creator));
+    setSocialValues(socialLinkFormValues(creator.socialLinks));
+    setStatus({ type: "idle", message: isDemo ? text.demo : "" });
+  }, [creator, isDemo, text.demo]);
+
+  useEffect(() => {
+    return () => {
+      revokePreview(media.avatarPreviewUrl);
+      revokePreview(media.coverPreviewUrl);
+    };
+  }, [media.avatarPreviewUrl, media.coverPreviewUrl]);
+
+  const previewSocialLinks = useMemo(() => socialLinksFromRecord(socialValues), [socialValues]);
+  const previewAvatar = media.avatarPreviewUrl || form.avatarUrl || creator.avatarUrl;
+  const previewCover = media.coverPreviewUrl || form.coverUrl || creator.coverUrl;
+
+  function updateField<K extends keyof ProfileFormState>(key: K, value: ProfileFormState[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateSocial(platform: SocialPlatform, value: string) {
+    setSocialValues((current) => ({ ...current, [platform]: value }));
+  }
+
+  function updateMedia(kind: "avatar" | "cover", event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    const previewUrl = file ? URL.createObjectURL(file) : "";
+
+    setMedia((current) => {
+      revokePreview(kind === "avatar" ? current.avatarPreviewUrl : current.coverPreviewUrl);
+      return kind === "avatar"
+        ? { ...current, avatarFile: file, avatarPreviewUrl: previewUrl }
+        : { ...current, coverFile: file, coverPreviewUrl: previewUrl };
+    });
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (isDemo) {
+      setStatus({ type: "success", message: text.demo });
+      return;
+    }
+
+    const client = getSupabaseBrowserClient();
+    if (!client) {
+      setStatus({ type: "error", message: text.signIn });
+      return;
+    }
+
+    setSaving(true);
+    setStatus({ type: "idle", message: "" });
+
+    try {
+      const { user } = await ensureCurrentProfile(client);
+      if (!user) {
+        throw new Error(text.signIn);
+      }
+      if (user.id !== creator.id) {
+        throw new Error(text.ownerOnly);
+      }
+
+      const [avatarUrl, coverUrl] = await Promise.all([
+        media.avatarFile
+          ? uploadProfileImage(client, user.id, "avatar", media.avatarFile)
+          : Promise.resolve(form.avatarUrl.trim() || null),
+        media.coverFile
+          ? uploadProfileImage(client, user.id, "cover", media.coverFile)
+          : Promise.resolve(form.coverUrl.trim() || null)
+      ]);
+
+      const { error } = await client
+        .from("profiles")
+        .update({
+          full_name: form.fullName.trim(),
+          handle: normalizeHandle(form.handle),
+          headline: form.headline.trim() || null,
+          location: form.location.trim() || null,
+          bio: form.bio.trim() || null,
+          specialties: splitSpecialties(form.specialties),
+          avatar_url: avatarUrl,
+          cover_url: coverUrl,
+          social_links: socialLinkRecordFromForm(socialValues)
+        })
+        .eq("id", user.id);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setStatus({ type: "success", message: text.saved });
+      setMedia({
+        avatarFile: null,
+        coverFile: null,
+        avatarPreviewUrl: "",
+        coverPreviewUrl: ""
+      });
+      onSaved?.();
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : text.error
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="rounded-lg border border-white/10 bg-white/[0.045] p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <Sparkles size={20} className="text-jam-blue" />
+            <h2 className="text-xl font-semibold text-white">{text.title}</h2>
+          </div>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/50">{text.description}</p>
+        </div>
+        <button
+          type="submit"
+          disabled={saving}
+          className="focus-ring inline-flex items-center justify-center gap-2 rounded-full bg-jam-blue px-5 py-3 text-sm font-bold text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-55"
+        >
+          {saving ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}
+          {saving ? text.saving : text.save}
+        </button>
+      </div>
+
+      <div className="mt-6 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="rounded-lg border border-white/10 bg-black/24 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-jam-blue">
+            {text.visuals}
+          </p>
+          <div className="mt-4 overflow-hidden rounded-lg border border-white/10 bg-black/24">
+            <div className="relative h-32">
+              <Image src={previewCover} alt="" fill sizes="480px" className="object-cover" />
+            </div>
+            <div className="-mt-9 px-4 pb-4">
+              <Image
+                src={previewAvatar}
+                alt=""
+                width={88}
+                height={88}
+                className="relative h-[88px] w-[88px] rounded-lg border-4 border-jam-panel object-cover"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3">
+            <FileControl
+              label={text.avatarFile}
+              hint={text.imageHint}
+              onChange={(event) => updateMedia("avatar", event)}
+            />
+            <FileControl
+              label={text.coverFile}
+              hint={text.imageHint}
+              onChange={(event) => updateMedia("cover", event)}
+            />
+            <Field label={text.avatarUrl}>
+              <input
+                type="url"
+                value={form.avatarUrl}
+                onChange={(event) => updateField("avatarUrl", event.target.value)}
+                className="input-field"
+              />
+            </Field>
+            <Field label={text.coverUrl}>
+              <input
+                type="url"
+                value={form.coverUrl}
+                onChange={(event) => updateField("coverUrl", event.target.value)}
+                className="input-field"
+              />
+            </Field>
+          </div>
+        </section>
+
+        <section className="space-y-5">
+          <div className="rounded-lg border border-white/10 bg-black/24 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-jam-blue">
+              {text.identity}
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Field label={text.fullName}>
+                <input
+                  value={form.fullName}
+                  onChange={(event) => updateField("fullName", event.target.value)}
+                  required
+                  className="input-field"
+                />
+              </Field>
+              <Field label={text.handle}>
+                <input
+                  value={form.handle}
+                  onChange={(event) => updateField("handle", event.target.value)}
+                  required
+                  className="input-field"
+                />
+              </Field>
+              <Field label={text.headline}>
+                <input
+                  value={form.headline}
+                  onChange={(event) => updateField("headline", event.target.value)}
+                  className="input-field"
+                />
+              </Field>
+              <Field label={text.location}>
+                <input
+                  value={form.location}
+                  onChange={(event) => updateField("location", event.target.value)}
+                  className="input-field"
+                />
+              </Field>
+            </div>
+            <div className="mt-4 grid gap-4">
+              <Field label={text.bio}>
+                <textarea
+                  value={form.bio}
+                  onChange={(event) => updateField("bio", event.target.value)}
+                  rows={5}
+                  className="input-field min-h-32 resize-y py-3"
+                />
+              </Field>
+              <Field label={text.specialties}>
+                <input
+                  value={form.specialties}
+                  onChange={(event) => updateField("specialties", event.target.value)}
+                  placeholder={text.specialtiesHint}
+                  className="input-field"
+                />
+              </Field>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-black/24 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-jam-blue">
+              {text.socials}
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {socialPlatforms.map((platform) => (
+                <Field key={platform.id} label={platform.label}>
+                  <input
+                    type="url"
+                    value={socialValues[platform.id] ?? ""}
+                    onChange={(event) => updateSocial(platform.id, event.target.value)}
+                    placeholder={platform.placeholder}
+                    className="input-field"
+                  />
+                </Field>
+              ))}
+            </div>
+            <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.035] p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-white/36">
+                {text.preview}
+              </p>
+              {previewSocialLinks.length > 0 ? (
+                <SocialLinkList links={previewSocialLinks} compact />
+              ) : (
+                <p className="text-sm text-white/42">-</p>
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {status.message ? (
+        <p
+          className={cn(
+            "mt-5 text-sm leading-6",
+            status.type === "success"
+              ? "text-jam-blue"
+              : status.type === "error"
+                ? "text-jam-coral"
+                : "text-white/42"
+          )}
+        >
+          {status.message}
+        </p>
+      ) : null}
+    </form>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-white/38">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function FileControl({
+  label,
+  hint,
+  onChange
+}: {
+  label: string;
+  hint: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <label className="block cursor-pointer rounded-lg border border-dashed border-white/14 bg-white/[0.035] p-4 transition hover:border-jam-blue/40 hover:bg-jam-blue/5">
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={onChange}
+        className="sr-only"
+      />
+      <span className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-jam-blue/15 text-jam-blue">
+          <Camera size={18} />
+        </span>
+        <span>
+          <span className="block text-sm font-semibold text-white">{label}</span>
+          <span className="mt-1 block text-xs leading-5 text-white/44">{hint}</span>
+        </span>
+      </span>
+    </label>
+  );
+}
+
+async function uploadProfileImage(
+  client: NonNullable<ReturnType<typeof getSupabaseBrowserClient>>,
+  userId: string,
+  kind: "avatar" | "cover",
+  file: File
+) {
+  const path = `${userId}/${kind}-${Date.now()}-${safeFileName(file.name)}`;
+  const buckets = ["profile-media", "listing-covers"] as const;
+  let lastError = "";
+
+  for (const bucket of buckets) {
+    const { error } = await client.storage.from(bucket).upload(path, file, {
+      cacheControl: "3600",
+      contentType: file.type,
+      upsert: true
+    });
+
+    if (!error) {
+      return client.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+    }
+
+    lastError = error.message;
+  }
+
+  throw new Error(lastError);
+}
+
+function profileToForm(creator: Creator): ProfileFormState {
+  return {
+    fullName: creator.name,
+    handle: creator.handle,
+    headline: creator.headline,
+    location: creator.location,
+    bio: creator.about,
+    specialties: creator.specialties.join(", "),
+    avatarUrl: creator.avatarUrl,
+    coverUrl: creator.coverUrl
+  };
+}
+
+function splitSpecialties(value: string) {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeHandle(value: string) {
+  return (
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 32) || "jamly"
+  );
+}
+
+function safeFileName(fileName: string) {
+  return (
+    fileName
+      .toLowerCase()
+      .replace(/[^a-z0-9.]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "profile"
+  );
+}
+
+function revokePreview(url: string) {
+  if (url.startsWith("blob:")) {
+    URL.revokeObjectURL(url);
+  }
+}

@@ -500,20 +500,25 @@ create trigger on_auth_user_created
 insert into storage.buckets (id, name, public)
 values
   ('listing-covers', 'listing-covers', true),
+  ('profile-media', 'profile-media', true),
   ('audio-previews', 'audio-previews', true),
   ('license-deliverables', 'license-deliverables', false)
 on conflict (id) do nothing;
 
 create policy "Public listing media is readable"
   on storage.objects for select
-  using (bucket_id in ('listing-covers', 'audio-previews'));
+  using (bucket_id in ('listing-covers', 'profile-media', 'audio-previews'));
 
 create policy "Authenticated users can upload listing media"
   on storage.objects for insert
   to authenticated
   with check (
-    bucket_id in ('listing-covers', 'audio-previews')
+    bucket_id in ('listing-covers', 'profile-media', 'audio-previews')
     and owner = auth.uid()
+    and (
+      bucket_id <> 'profile-media'
+      or (storage.foldername(name))[1] = auth.uid()::text
+    )
   );
 
 create policy "Authenticated users can upload private license packages"
