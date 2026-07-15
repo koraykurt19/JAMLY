@@ -9,18 +9,31 @@ export const metadata: Metadata = {
   title: "Jamly - Müzik üreticileri Jam Alanı",
   description:
     "Beat, hook, miks ve özel prodüksiyon işleri için premium müzik üreticileri Jam Alanı.",
+  manifest: "/site.webmanifest",
   icons: {
     icon: [
-      { url: "/favicon-v6.svg", type: "image/svg+xml" },
-      { url: "/favicon-v6.ico", sizes: "any" },
+      { url: "/favicon-v8.svg", type: "image/svg+xml" },
+      { url: "/favicon-v8.ico", sizes: "any" },
       {
-        url: "/brand/jamly-tab-white-v6.png",
+        url: "/brand/favicon-32x32.png",
         type: "image/png",
-        sizes: "1024x1024"
+        sizes: "32x32"
+      },
+      {
+        url: "/icon-192.png",
+        type: "image/png",
+        sizes: "192x192"
       }
     ],
-    shortcut: "/favicon-v6.ico",
-    apple: "/apple-touch-icon.png?v=20260715-6"
+    shortcut: "/favicon-v8.ico",
+    apple: "/apple-touch-icon.png?v=20260715-8",
+    other: [
+      {
+        rel: "mask-icon",
+        url: "/safari-pinned-tab.svg",
+        color: "#4cc9f0"
+      }
+    ]
   }
 };
 
