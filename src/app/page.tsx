@@ -2,7 +2,19 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, ShieldCheck, Sparkles, TrendingUp } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Headphones,
+  Radar,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
+  Waves
+} from "lucide-react";
 import { ListingCard } from "@/components/listing-card";
 import { SectionHeading } from "@/components/section-heading";
 import { StatCard } from "@/components/stat-card";
@@ -15,14 +27,28 @@ const heroImage =
 
 export default function LandingPage() {
   const { language, t } = useI18n();
+  const router = useRouter();
+  const [heroSearch, setHeroSearch] = useState("");
   const featuredListings = getFeaturedListings().map((listing) =>
     localizeListing(listing, language)
   );
   const spotlightCreator = localizeCreator(creators[0], language);
+  const heroCategories = [
+    { label: language === "tr" ? "Beat" : "Beats", query: "beat", icon: Waves },
+    { label: language === "tr" ? "Vokal" : "Vocals", query: "vocal", icon: Headphones },
+    { label: "Mix/Master", query: "mix master", icon: Radar },
+    { label: "Jam Match", query: "custom producer", icon: Sparkles }
+  ];
+
+  function submitHeroSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const query = heroSearch.trim();
+    router.push(query ? `/marketplace?q=${encodeURIComponent(query)}` : "/marketplace");
+  }
 
   return (
     <div>
-      <section className="relative isolate overflow-hidden">
+      <section className="relative isolate overflow-hidden border-b border-white/8">
         <Image
           src={heroImage}
           alt={language === "tr" ? "Premium stüdyoda kayıt alan sanatçı" : "Artist recording in a premium studio"}
@@ -31,20 +57,69 @@ export default function LandingPage() {
           sizes="100vw"
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-black/72" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.42),#050608_96%)]" />
+        <div className="absolute inset-0 bg-black/68" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_22%,rgba(88,197,255,0.28),transparent_26rem),radial-gradient(circle_at_80%_18%,rgba(122,167,255,0.22),transparent_24rem),linear-gradient(180deg,rgba(5,6,8,0.18),#050608_96%)]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-jam-mint/80 to-transparent" />
 
-        <div className="relative mx-auto flex min-h-[calc(88vh-5rem)] w-full max-w-7xl flex-col justify-end px-4 pb-10 pt-24 sm:px-6 lg:px-8">
-          <div className="max-w-4xl pb-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-jam-mint">
+        <div className="relative mx-auto grid min-h-[calc(90vh-5rem)] w-full max-w-7xl items-end gap-10 px-4 pb-10 pt-24 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8">
+          <div className="pb-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-jam-mint/25 bg-jam-mint/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-jam-mint">
+              <span className="h-2 w-2 rounded-full bg-jam-mint shadow-[0_0_20px_rgba(88,197,255,0.8)]" />
               {t("heroEyebrow")}
-            </p>
-            <h1 className="mt-5 text-6xl font-semibold tracking-tight text-white sm:text-7xl lg:text-8xl">
+            </div>
+            <h1 className="mt-6 max-w-4xl text-6xl font-semibold tracking-tight text-white sm:text-7xl lg:text-8xl">
               {t("heroTitle")}
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/72">
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/74">
               {t("heroDescription")}
             </p>
+
+            <form
+              onSubmit={submitHeroSearch}
+              className="mt-8 flex min-h-16 max-w-3xl flex-col gap-3 rounded-lg border border-white/12 bg-white/95 p-2 shadow-[0_24px_90px_rgba(0,0,0,0.42)] sm:flex-row sm:items-center"
+            >
+              <label className="relative min-w-0 flex-1">
+                <span className="sr-only">{t("searchMarketplace")}</span>
+                <Search
+                  size={20}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-black/42"
+                />
+                <input
+                  value={heroSearch}
+                  onChange={(event) => setHeroSearch(event.target.value)}
+                  placeholder={
+                    language === "tr"
+                      ? "Trap beat, vokal hook, mix/master veya özel üretici ara"
+                      : "Search trap beats, vocal hooks, mix/master, or custom producers"
+                  }
+                  className="h-12 w-full rounded-md bg-transparent pl-12 pr-3 text-base font-medium text-black outline-none placeholder:text-black/46"
+                />
+              </label>
+              <button
+                type="submit"
+                className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-md bg-black px-5 text-sm font-bold text-white transition hover:bg-jam-blue hover:text-black"
+              >
+                {language === "tr" ? "Ara" : "Search"}
+                <ArrowRight size={17} />
+              </button>
+            </form>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {heroCategories.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.label}
+                    href={`/marketplace?q=${encodeURIComponent(item.query)}`}
+                    className="focus-ring inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/28 px-4 py-2 text-sm font-semibold text-white/70 backdrop-blur transition hover:border-jam-blue/45 hover:bg-jam-blue/12 hover:text-white"
+                  >
+                    <Icon size={16} className="text-jam-mint" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/marketplace"
@@ -62,7 +137,48 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 border-t border-white/10 pt-5 sm:grid-cols-3">
+          <div className="jamly-float hidden pb-8 lg:block">
+            <div className="rounded-lg border border-white/12 bg-black/42 p-4 shadow-[0_30px_100px_rgba(0,0,0,0.48)] backdrop-blur-2xl">
+              <div className="relative overflow-hidden rounded-lg border border-white/10">
+                <Image
+                  src={featuredListings[0]?.coverImageUrl ?? heroImage}
+                  alt={featuredListings[0]?.title ?? "Jamly"}
+                  width={760}
+                  height={520}
+                  className="h-[360px] w-full object-cover"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/18 to-transparent" />
+                <div className="absolute left-5 right-5 top-5 flex items-center justify-between">
+                  <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-black">
+                    {language === "tr" ? "Canlı vitrin" : "Live storefront"}
+                  </span>
+                  <span className="rounded-full border border-jam-mint/35 bg-jam-mint/15 px-3 py-1 text-xs font-bold text-jam-mint">
+                    {featuredListings[0]?.genre ?? "Jamly"}
+                  </span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-jam-mint">
+                    {language === "tr" ? "Öne çıkan ses" : "Featured sound"}
+                  </p>
+                  <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">
+                    {featuredListings[0]?.title ?? t("featuredTitle")}
+                  </h2>
+                  <div className="mt-4 grid gap-2">
+                    {[0, 1, 2, 3].map((item) => (
+                      <span
+                        key={item}
+                        className="jamly-pulse-line h-2 rounded-full bg-gradient-to-r from-jam-mint via-jam-blue to-transparent"
+                        style={{ animationDelay: `${item * 0.22}s`, width: `${92 - item * 13}%` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-3 border-t border-white/10 pt-5 sm:grid-cols-3 lg:col-span-2">
             <StatCard label={t("statCategories")} value="6" detail={t("statCategoriesDetail")} />
             <StatCard label={t("statOrderFlow")} value={t("statOrderFlowValue")} detail={t("statOrderFlowDetail")} />
             <StatCard label={t("statSupabase")} value="Auth + DB" detail={t("statSupabaseDetail")} />

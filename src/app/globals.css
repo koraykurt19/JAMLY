@@ -170,3 +170,34 @@ select {
 .input-field:focus-visible {
   box-shadow: 0 0 0 3px rgba(88, 197, 255, 0.3);
 }
+
+@keyframes jamly-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0);
+  }
+}
+
+@keyframes jamly-pulse-line {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scaleX(0.72);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scaleX(1);
+  }
+}
+
+.jamly-float {
+  animation: jamly-float 6s ease-in-out infinite;
+}
+
+.jamly-pulse-line {
+  animation: jamly-pulse-line 2.2s ease-in-out infinite;
+  transform-origin: left center;
+}

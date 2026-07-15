@@ -41,7 +41,10 @@ type MarketplaceBrowserProps = {
 
 export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
   const { currencyCode, language, t, usdTryRate } = useI18n();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("q") ?? "";
+  });
   const [category, setCategory] = useState(ALL_FILTER);
   const [genre, setGenre] = useState(ALL_FILTER);
   const [mood, setMood] = useState(ALL_FILTER);
@@ -232,7 +235,20 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
         </div>
       </div>
 
-      <div className="rounded-lg border border-white/10 bg-white/[0.045] p-4">
+      <div className="rounded-lg border border-jam-blue/20 bg-[linear-gradient(135deg,rgba(88,197,255,0.12),rgba(255,255,255,0.045)_36%,rgba(122,167,255,0.10))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-jam-mint">
+              {language === "tr" ? "Ses keşfi" : "Sound discovery"}
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">
+              {language === "tr" ? "Aradığınız hissi yazın, Jamly daraltsın." : "Type the feeling, let Jamly narrow it down."}
+            </h2>
+          </div>
+          <span className="rounded-full border border-white/10 bg-black/28 px-3 py-1 text-xs font-semibold text-white/52">
+            {filteredListings.length} {t("listingsFound")}
+          </span>
+        </div>
         <div className="grid gap-3 lg:grid-cols-[1.35fr_0.72fr_0.72fr_0.8fr_0.76fr_auto]">
           <label className="relative block">
             <span className="sr-only">{t("searchMarketplace")}</span>
@@ -244,7 +260,7 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t("searchPlaceholder")}
-              className="focus-ring h-12 w-full rounded-full border border-white/10 bg-black/35 pl-11 pr-4 text-sm text-white placeholder:text-white/36"
+              className="focus-ring h-12 w-full rounded-full border border-white/12 bg-black/45 pl-11 pr-4 text-sm font-semibold text-white placeholder:text-white/36"
             />
           </label>
 

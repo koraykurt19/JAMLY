@@ -32,7 +32,7 @@ export function ListingCard({ listing, priority = false }: ListingCardProps) {
   ].filter((item): item is { key: string; label: string } => Boolean(item));
 
   return (
-    <article className="group overflow-hidden rounded-lg border border-white/10 bg-white/[0.045] shadow-soft transition duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.07]">
+    <article className="group overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.065),rgba(255,255,255,0.035))] shadow-soft transition duration-300 hover:-translate-y-1 hover:border-jam-blue/40 hover:bg-white/[0.08] hover:shadow-[0_28px_90px_rgba(88,197,255,0.14)]">
       <div className="relative">
         <Link href={`/listing/${listing.id}`} className="block">
           <div className="relative aspect-[4/3] overflow-hidden bg-white/[0.04]">
@@ -44,7 +44,8 @@ export function ListingCard({ listing, priority = false }: ListingCardProps) {
               className="object-cover transition duration-500 group-hover:scale-105"
               priority={priority}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-black/8 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/82 via-black/18 to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-jam-mint/70 to-transparent opacity-0 transition group-hover:opacity-100" />
             <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-jam-mint">
@@ -54,7 +55,7 @@ export function ListingCard({ listing, priority = false }: ListingCardProps) {
                   {listing.title}
                 </h3>
               </div>
-              <p className="rounded-full bg-white px-3 py-1 text-sm font-bold text-black">
+              <p className="rounded-full bg-white px-3 py-1 text-sm font-bold text-black shadow-[0_10px_30px_rgba(0,0,0,0.24)]">
                 {currency(listing.price, language, currencyCode, usdTryRate)}
               </p>
             </div>
@@ -72,7 +73,7 @@ export function ListingCard({ listing, priority = false }: ListingCardProps) {
             alt={listing.creatorName}
             width={36}
             height={36}
-            className="h-9 w-9 rounded-full object-cover"
+            className="h-9 w-9 rounded-full border border-white/10 object-cover"
           />
           <div className="min-w-0">
             <Link
@@ -95,7 +96,7 @@ export function ListingCard({ listing, priority = false }: ListingCardProps) {
           {discoveryPills.map((item) => (
             <span
               key={item.key}
-              className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs font-semibold text-white/54"
+              className="rounded-full border border-white/10 bg-black/24 px-3 py-1 text-xs font-semibold text-white/60"
             >
               {item.label}
             </span>
