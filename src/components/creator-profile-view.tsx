@@ -48,7 +48,7 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
 
   return (
     <div>
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden border-b border-white/8">
         <div className="relative h-[360px]">
           <Image
             src={localizedCreator.coverUrl}
@@ -62,17 +62,19 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
             sizes="100vw"
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-jam-ink via-black/46 to-black/24" />
+          <div className="absolute inset-0 bg-gradient-to-t from-jam-ink via-black/52 to-black/24" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(88,197,255,0.20),transparent_24rem)]" />
         </div>
         <div className="mx-auto -mt-28 w-full max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
-          <div className="relative flex flex-col gap-6 rounded-lg border border-white/10 bg-jam-panel/84 p-5 shadow-soft backdrop-blur-2xl md:flex-row md:items-end md:justify-between">
+          <div className="relative flex flex-col gap-6 overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.09),rgba(13,16,22,0.82))] p-5 shadow-[0_30px_100px_rgba(0,0,0,0.42)] backdrop-blur-2xl md:flex-row md:items-end md:justify-between">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-jam-mint/80 to-transparent" />
             <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
               <Image
                 src={localizedCreator.avatarUrl}
                 alt={localizedCreator.name}
                 width={128}
                 height={128}
-                className="h-28 w-28 rounded-lg border-4 border-jam-panel object-cover"
+                className="h-28 w-28 rounded-xl border-4 border-jam-panel object-cover shadow-[0_18px_50px_rgba(0,0,0,0.36)]"
               />
               <div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -112,7 +114,7 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
               {isOwnProfile ? (
                 <Link
                   href="/dashboard/creator"
-                  className="focus-ring inline-flex items-center justify-center gap-2 rounded-md border border-white/12 px-5 py-3 text-sm font-bold text-white/78 transition hover:border-jam-blue/35 hover:bg-jam-blue/10 hover:text-white"
+                  className="focus-ring inline-flex items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-3 text-sm font-bold text-white/78 transition hover:border-jam-blue/35 hover:bg-jam-blue/10 hover:text-white"
                 >
                   <Settings size={17} />
                   {language === "tr" ? "Profili düzenle" : "Edit profile"}
@@ -125,7 +127,7 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
               )}
               <Link
                 href="#portfolio"
-                className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-jam-mint"
+                className="focus-ring inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-jam-mint"
               >
                 {t("creatorProfileWork")}
                 <ArrowRight size={17} />
@@ -137,7 +139,7 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
 
       <section className="mx-auto grid w-full max-w-7xl gap-8 px-4 pb-20 sm:px-6 lg:grid-cols-[0.72fr_1.28fr] lg:px-8">
         <aside className="space-y-5">
-          <div className="rounded-lg border border-white/10 bg-white/[0.045] p-6">
+          <div className="rounded-lg border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.035))] p-6">
             <h2 className="text-lg font-semibold text-white">{t("about")}</h2>
             <p className="mt-3 text-sm leading-7 text-white/60">{localizedCreator.about}</p>
             {localizedCreator.specialties.length > 0 ? (
@@ -145,7 +147,7 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
                 {localizedCreator.specialties.map((specialty) => (
                   <span
                     key={specialty}
-                    className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-sm text-white/62"
+                    className="rounded-full border border-jam-blue/20 bg-jam-blue/10 px-3 py-1 text-sm text-white/70"
                   >
                     {specialty}
                   </span>
@@ -154,7 +156,7 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
             ) : null}
           </div>
           {hasFitSignals ? (
-            <div className="rounded-lg border border-white/10 bg-white/[0.045] p-6">
+            <div className="rounded-lg border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.035))] p-6">
               {localizedCreator.bestFor.length > 0 ? (
                 <>
                   <div className="flex items-center gap-2">
@@ -175,7 +177,7 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
               ) : null}
             </div>
           ) : null}
-          <div className="rounded-lg border border-white/10 bg-white/[0.045] p-6">
+          <div className="rounded-lg border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.035))] p-6">
             <h2 className="text-lg font-semibold text-white">{t("trustSignals")}</h2>
             <div className="mt-4 grid gap-3">
               <TrustMeter label={t("repeatBuyerRate")} value={localizedCreator.repeatBuyerRate} />
@@ -191,7 +193,7 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
         </aside>
 
         <div id="portfolio" className="scroll-mt-28">
-          <div className="mb-5 flex items-end justify-between gap-4">
+          <div className="mb-5 flex items-end justify-between gap-4 rounded-lg border border-white/10 bg-white/[0.035] p-5">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-jam-mint">
                 {t("portfolio")}

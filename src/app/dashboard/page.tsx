@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, PackageCheck, Search, Store, Upload } from "lucide-react";
+import { ArrowRight, PackageCheck, Search, Sparkles, Store, Upload } from "lucide-react";
 import { DashboardState } from "@/components/dashboard-state";
 import { SectionHeading } from "@/components/section-heading";
 import { StatCard } from "@/components/stat-card";
@@ -45,7 +45,9 @@ export default function DashboardPage() {
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+      <div className="relative overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_18%_10%,rgba(88,197,255,0.20),transparent_22rem),linear-gradient(135deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-6 shadow-soft sm:p-8">
+        <div className="absolute right-6 top-6 hidden h-28 w-28 rounded-full border border-jam-blue/20 bg-jam-blue/10 blur-2xl sm:block" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <SectionHeading
           eyebrow={t("accountDashboardEyebrow")}
           title={t("accountDashboardTitle")}
@@ -68,6 +70,7 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+      </div>
 
       <div className="mt-10 grid gap-4 md:grid-cols-4">
         <StatCard label={t("activeListings")} value={listedCount.toString()} detail={t("profileStorefront")} />
@@ -83,6 +86,7 @@ export default function DashboardPage() {
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <DashboardCard
           icon={<Store size={22} />}
+          accent={<Sparkles size={18} />}
           title={t("sellerModeTitle")}
           description={t("sellerModeCopy")}
           href="/dashboard/creator"
@@ -90,6 +94,7 @@ export default function DashboardPage() {
         />
         <DashboardCard
           icon={<PackageCheck size={22} />}
+          accent={<Search size={18} />}
           title={t("buyerModeTitle")}
           description={t("buyerModeCopy")}
           href="/dashboard/buyer"
@@ -102,12 +107,14 @@ export default function DashboardPage() {
 
 function DashboardCard({
   icon,
+  accent,
   title,
   description,
   href,
   action
 }: {
   icon: React.ReactNode;
+  accent: React.ReactNode;
   title: string;
   description: string;
   href: string;
@@ -116,9 +123,12 @@ function DashboardCard({
   return (
     <Link
       href={href}
-      className="focus-ring group rounded-lg border border-white/10 bg-white/[0.045] p-6 transition hover:border-jam-blue/35 hover:bg-jam-blue/10"
+      className="focus-ring group relative overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.065),rgba(255,255,255,0.032))] p-6 shadow-soft transition hover:-translate-y-1 hover:border-jam-blue/40 hover:bg-jam-blue/10"
     >
-      <span className="flex h-12 w-12 items-center justify-center rounded-md bg-jam-blue/15 text-jam-blue">
+      <span className="absolute right-4 top-4 text-jam-blue/35 transition group-hover:scale-110 group-hover:text-jam-blue">
+        {accent}
+      </span>
+      <span className="flex h-12 w-12 items-center justify-center rounded-md border border-jam-blue/20 bg-jam-blue/15 text-jam-blue">
         {icon}
       </span>
       <h2 className="mt-5 text-2xl font-semibold text-white">{title}</h2>

@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { ListingCard } from "@/components/listing-card";
 import { SectionHeading } from "@/components/section-heading";
-import { StatCard } from "@/components/stat-card";
 import { creators, getFeaturedListings } from "@/lib/data";
 import { localizeCreator, localizeListing } from "@/lib/i18n";
 import { useI18n } from "@/components/language-provider";
@@ -61,7 +60,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_22%,rgba(88,197,255,0.28),transparent_26rem),radial-gradient(circle_at_80%_18%,rgba(122,167,255,0.22),transparent_24rem),linear-gradient(180deg,rgba(5,6,8,0.18),#050608_96%)]" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-jam-mint/80 to-transparent" />
 
-        <div className="relative mx-auto grid min-h-[calc(90vh-5rem)] w-full max-w-7xl items-end gap-10 px-4 pb-10 pt-24 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8">
+        <div className="relative mx-auto grid min-h-[calc(90vh-5rem)] w-full max-w-7xl items-end gap-10 px-4 pb-14 pt-24 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8">
           <div className="pb-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-jam-mint/25 bg-jam-mint/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-jam-mint">
               <span className="h-2 w-2 rounded-full bg-jam-mint shadow-[0_0_20px_rgba(88,197,255,0.8)]" />
@@ -178,11 +177,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 border-t border-white/10 pt-5 sm:grid-cols-3 lg:col-span-2">
-            <StatCard label={t("statCategories")} value="6" detail={t("statCategoriesDetail")} />
-            <StatCard label={t("statOrderFlow")} value={t("statOrderFlowValue")} detail={t("statOrderFlowDetail")} />
-            <StatCard label={t("statSupabase")} value="Auth + DB" detail={t("statSupabaseDetail")} />
-          </div>
         </div>
       </section>
 

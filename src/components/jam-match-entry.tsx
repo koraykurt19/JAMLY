@@ -171,10 +171,11 @@ export function JamMatchEntry() {
 
   return (
     <main className="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden">
-      <div className="absolute inset-x-0 top-0 -z-10 h-[30rem] bg-[linear-gradient(180deg,rgba(88,197,255,0.16),rgba(5,6,8,0))]" />
+      <div className="absolute inset-x-0 top-0 -z-10 h-[34rem] bg-[radial-gradient(circle_at_22%_8%,rgba(88,197,255,0.22),transparent_25rem),radial-gradient(circle_at_82%_0%,rgba(122,167,255,0.16),transparent_22rem),linear-gradient(180deg,rgba(88,197,255,0.10),rgba(5,6,8,0))]" />
+      <div className="absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-jam-mint/70 to-transparent" />
       <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <header className={cn("max-w-3xl", showResults ? "mb-8" : "mx-auto text-center")}>
-          <p className="inline-flex items-center gap-2 text-sm font-bold text-jam-mint">
+          <p className="inline-flex items-center gap-2 rounded-full border border-jam-mint/25 bg-jam-mint/10 px-3 py-2 text-sm font-bold text-jam-mint">
             <WandSparkles size={16} />
             {text.eyebrow}
           </p>
@@ -199,7 +200,8 @@ export function JamMatchEntry() {
           />
         ) : (
           <div className="mx-auto mt-10 grid max-w-5xl gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
-            <section className="rounded-lg border border-white/10 bg-white/[0.055] p-5 shadow-soft backdrop-blur-xl sm:p-8">
+            <section className="relative overflow-hidden rounded-lg border border-jam-blue/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.075),rgba(255,255,255,0.035))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.32)] backdrop-blur-xl sm:p-8">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-jam-blue/80 to-transparent" />
               <JamMatchProgress
                 stepIndex={stepIndex}
                 stepCount={steps.length}

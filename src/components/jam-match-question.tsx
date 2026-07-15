@@ -99,10 +99,10 @@ export function JamMatchAnswerOption({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "focus-ring group flex min-h-20 items-center gap-4 rounded-lg border p-4 text-left transition",
+        "focus-ring group flex min-h-20 items-center gap-4 rounded-lg border p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition",
         active
-          ? "border-jam-mint bg-jam-mint/12"
-          : "border-white/10 bg-black/24 hover:border-white/24 hover:bg-white/[0.07]"
+          ? "border-jam-mint bg-[linear-gradient(135deg,rgba(88,197,255,0.22),rgba(122,167,255,0.10))]"
+          : "border-white/10 bg-black/28 hover:-translate-y-0.5 hover:border-jam-blue/35 hover:bg-jam-blue/10"
       )}
     >
       <span
@@ -145,7 +145,7 @@ export function JamMatchBriefSummary({
 }) {
   const text = jamMatchCopy[language];
   return (
-    <aside className="h-fit rounded-lg border border-white/10 bg-black/24 p-5 lg:sticky lg:top-24">
+    <aside className="h-fit rounded-lg border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(0,0,0,0.24))] p-5 shadow-soft lg:sticky lg:top-24">
       <div className="flex items-center gap-2">
         <Sparkles size={16} className="text-jam-mint" />
         <h2 className="font-semibold text-white">{text.yourBrief}</h2>
