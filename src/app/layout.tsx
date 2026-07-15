@@ -11,16 +11,16 @@ export const metadata: Metadata = {
     "Beat, hook, miks ve özel prodüksiyon işleri için premium müzik üreticileri Jam Alanı.",
   icons: {
     icon: [
-      { url: "/favicon.svg?v=20260715-5", type: "image/svg+xml" },
-      { url: "/favicon-v5.ico", sizes: "any" },
+      { url: "/favicon-v6.svg", type: "image/svg+xml" },
+      { url: "/favicon-v6.ico", sizes: "any" },
       {
-        url: "/brand/jamly-tab-mark-20260715-v5.png",
+        url: "/brand/jamly-tab-white-v6.png",
         type: "image/png",
         sizes: "1024x1024"
       }
     ],
-    shortcut: "/favicon-v5.ico",
-    apple: "/apple-touch-icon.png?v=20260715-5"
+    shortcut: "/favicon-v6.ico",
+    apple: "/apple-touch-icon.png?v=20260715-6"
   }
 };
 
