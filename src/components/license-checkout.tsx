@@ -206,7 +206,7 @@ export function LicenseCheckout({ listing }: { listing: Listing }) {
             <div className="min-w-0">
               <p className="truncate font-semibold text-white">{listing.title}</p>
               <p className="mt-1 text-sm text-white/46">
-                {listing.creatorName} / {listing.bpm ? `${listing.bpm} BPM` : listing.genre}
+                @{listing.creatorHandle} / {listing.bpm ? `${listing.bpm} BPM` : listing.genre}
               </p>
             </div>
           </div>

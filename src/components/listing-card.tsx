@@ -70,7 +70,7 @@ export function ListingCard({ listing, priority = false }: ListingCardProps) {
         <div className="flex items-center gap-3">
           <Image
             src={listing.creatorAvatarUrl}
-            alt={listing.creatorName}
+            alt={`@${listing.creatorHandle}`}
             width={36}
             height={36}
             className="h-9 w-9 rounded-full border border-white/10 object-cover"
@@ -80,7 +80,7 @@ export function ListingCard({ listing, priority = false }: ListingCardProps) {
               href={`/creators/${listing.creatorHandle}`}
               className="flex items-center gap-1 truncate text-sm font-semibold text-white transition hover:text-jam-mint"
             >
-              {listing.creatorName}
+              @{listing.creatorHandle}
               <BadgeCheck size={14} className="text-jam-blue" />
             </Link>
             <p className="text-xs text-white/48">

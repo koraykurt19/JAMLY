@@ -88,6 +88,9 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
                     </span>
                   ) : null}
                 </div>
+                <p className="mt-2 text-sm font-semibold text-jam-blue">
+                  @{localizedCreator.handle}
+                </p>
                 <p className="mt-3 max-w-2xl text-base leading-7 text-white/66">
                   {localizedCreator.headline}
                 </p>

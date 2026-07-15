@@ -171,7 +171,7 @@ export default function BuyerDashboardPage() {
                     <Link href={`/listing/${listing.id}`} className="min-w-0">
                       <p className="truncate font-semibold text-white">{listing.title}</p>
                       <p className="mt-1 text-sm text-white/48">
-                        {listing.genre} / {listing.creatorName}
+                        {listing.genre} / @{listing.creatorHandle}
                       </p>
                     </Link>
                     <ShortlistButton listingId={listing.id} compact />
@@ -237,13 +237,13 @@ export default function BuyerDashboardPage() {
                   <div className="flex items-center gap-3">
                     <Image
                       src={listing.creatorAvatarUrl}
-                      alt={listing.creatorName}
+                      alt={`@${listing.creatorHandle}`}
                       width={42}
                       height={42}
                       className="h-[42px] w-[42px] rounded-full object-cover"
                     />
                     <div>
-                      <p className="font-semibold text-white">{listing.creatorName}</p>
+                      <p className="font-semibold text-white">@{listing.creatorHandle}</p>
                       <p className="text-sm text-white/48">{listing.genre}</p>
                     </div>
                   </div>

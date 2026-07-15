@@ -70,6 +70,7 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
         [
           listing.title,
           listing.creatorName,
+          listing.creatorHandle,
           listing.genre,
           listing.category,
           categoryLabel(listing.category, language),
@@ -223,7 +224,7 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
                   <p className="font-semibold text-white">{listing.title}</p>
                   <p className="mt-1 text-sm text-white/48">
                     {moodLabel(listing.moods[0], language)} /{" "}
-                    {usageLabel(listing.useCases[0], language)} / {listing.creatorName}
+                    {usageLabel(listing.useCases[0], language)} / @{listing.creatorHandle}
                   </p>
                 </div>
                 <span className="self-start rounded-full bg-jam-mint px-3 py-1 text-xs font-bold text-black">

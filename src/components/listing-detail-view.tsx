@@ -206,7 +206,7 @@ export function ListingDetailView({
                     href={`/creators/${localizedCreator.handle}`}
                     className="flex items-center gap-2 text-lg font-semibold text-white transition hover:text-jam-mint"
                   >
-                    {localizedCreator.name}
+                    @{localizedCreator.handle}
                     {localizedCreator.verified ? (
                       <BadgeCheck size={17} className="text-jam-blue" />
                     ) : null}
