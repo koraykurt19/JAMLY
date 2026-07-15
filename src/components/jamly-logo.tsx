@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { cn } from "@/lib/format";
 
-const JAMLY_LOGO_MARK_SRC = "/brand/jamly-logo-mark-20260715.png";
+const JAMLY_LOGO_SRC = "/brand/jamly-logo-20260715.png";
 
 export function JamlyLogoMark({
   alt = "",
@@ -13,22 +13,15 @@ export function JamlyLogoMark({
   priority?: boolean;
 }) {
   return (
-    <span
-      className={cn(
-        "inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-black p-2 shadow-[0_14px_36px_rgba(0,0,0,0.42)] ring-1 ring-white/10",
-        className
-      )}
-    >
-      <Image
-        src={JAMLY_LOGO_MARK_SRC}
-        alt={alt}
-        width={1024}
-        height={1024}
-        priority={priority}
-        sizes="52px"
-        className="h-full w-full object-contain"
-      />
-    </span>
+    <Image
+      src={JAMLY_LOGO_SRC}
+      alt={alt}
+      width={1024}
+      height={1024}
+      priority={priority}
+      sizes="52px"
+      className={cn("h-11 w-11 rounded-xl object-contain", className)}
+    />
   );
 }
 
