@@ -85,7 +85,7 @@ export function SiteHeader() {
                 aria-expanded={accountMenuOpen}
               >
                 <UserRound size={16} className="text-jam-blue" />
-                <span className="max-w-28 truncate">{accountProfile.fullName}</span>
+                <span className="max-w-28 truncate">@{accountProfile.handle}</span>
                 <ChevronDown size={14} className={`text-white/42 transition ${accountMenuOpen ? "rotate-180" : ""}`} />
               </button>
               {accountMenuOpen ? (

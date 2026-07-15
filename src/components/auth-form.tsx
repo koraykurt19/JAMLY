@@ -41,6 +41,33 @@ export function AuthForm({ mode }: AuthFormProps) {
       return;
     }
 
+    const normalizedHandle = normalizeHandle(handle);
+    if (mode === "sign-up") {
+      if (normalizedHandle.length < 2) {
+        setLoading(false);
+        setMessage(t("handleHelp"));
+        return;
+      }
+
+      const { data: existingProfile, error: handleCheckError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("handle", normalizedHandle)
+        .maybeSingle();
+
+      if (handleCheckError) {
+        setLoading(false);
+        setMessage(`${t("authError")}: ${handleCheckError.message}`);
+        return;
+      }
+
+      if (existingProfile) {
+        setLoading(false);
+        setMessage(t("handleTaken"));
+        return;
+      }
+    }
+
     const result =
       mode === "sign-in"
         ? await supabase.auth.signInWithPassword({ email, password })
@@ -50,7 +77,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             options: {
               data: {
                 full_name: fullName,
-                handle,
+                handle: normalizedHandle,
                 role: "buyer"
               }
             }
@@ -113,10 +140,11 @@ export function AuthForm({ mode }: AuthFormProps) {
             <span className="text-sm text-white/64">{t("handle")}</span>
             <input
               value={handle}
-              onChange={(event) => setHandle(event.target.value)}
+              onChange={(event) => setHandle(normalizeHandle(event.target.value))}
               required
               className="focus-ring h-12 w-full rounded-lg border border-white/10 bg-black/35 px-4 text-white"
             />
+            <span className="block text-xs leading-5 text-white/38">{t("handleHelp")}</span>
           </label>
         </div>
       ) : null}
@@ -166,4 +194,14 @@ export function AuthForm({ mode }: AuthFormProps) {
       </p>
     </form>
   );
+}
+
+function normalizeHandle(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32);
 }

@@ -61,6 +61,7 @@ export type ListingAnalytics = {
 export type Creator = {
   id: string;
   handle: string;
+  handleUpdatedAt?: string | null;
   name: string;
   role: "creator";
   headline: string;

@@ -35,6 +35,7 @@ export type Database = {
           id: string;
           role: Database["public"]["Enums"]["profile_role"];
           handle: string;
+          handle_updated_at: string | null;
           full_name: string;
           headline: string | null;
           avatar_url: string | null;
@@ -49,6 +50,7 @@ export type Database = {
           id: string;
           role?: Database["public"]["Enums"]["profile_role"];
           handle: string;
+          handle_updated_at?: string | null;
           full_name: string;
           headline?: string | null;
           avatar_url?: string | null;

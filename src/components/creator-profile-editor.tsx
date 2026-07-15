@@ -92,6 +92,9 @@ const copy = {
     signIn: "Profili kaydetmek için giriş yapmanız gerekir.",
     ownerOnly: "Bu profil sadece sahibi tarafından düzenlenebilir.",
     error: "Profil kaydedilemedi.",
+    handlePolicy: "Kullanıcı adı 30 günde bir değiştirilebilir.",
+    handleLocked: "Kullanıcı adını tekrar değiştirebileceğiniz tarih:",
+    handleTaken: "Bu kullanıcı adı dolu. Lütfen farklı bir kullanıcı adı seçin.",
     preview: "Profilde görünecek bağlantılar"
   },
   en: {
@@ -127,6 +130,9 @@ const copy = {
     signIn: "Sign in to save your profile.",
     ownerOnly: "Only the profile owner can edit this profile.",
     error: "Profile could not be saved.",
+    handlePolicy: "Your handle can be changed once every 30 days.",
+    handleLocked: "You can change your handle again on:",
+    handleTaken: "This handle is already taken. Please choose another one.",
     preview: "Links shown on profile"
   }
 } as const;
@@ -180,6 +186,8 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
   );
   const previewAvatar = media.avatarPreviewUrl || form.avatarUrl || creator.avatarUrl;
   const previewCover = media.coverPreviewUrl || form.coverUrl || creator.coverUrl;
+  const nextHandleChangeDate = getNextHandleChangeDate(creator.handleUpdatedAt);
+  const handleLocked = Boolean(nextHandleChangeDate && nextHandleChangeDate > new Date());
 
   function updateField<K extends keyof ProfileFormState>(key: K, value: ProfileFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -263,7 +271,7 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
     setStatus({ type: "idle", message: "" });
 
     try {
-      const { user } = await ensureCurrentProfile(client);
+      const { user, profile } = await ensureCurrentProfile(client);
       if (!user) {
         throw new Error(text.signIn);
       }
@@ -280,11 +288,21 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
           : Promise.resolve(form.coverUrl.trim() || null)
       ]);
 
+      const nextHandle = normalizeHandle(form.handle);
+      if (nextHandle.length < 2) {
+        throw new Error(text.handlePolicy);
+      }
+      if (profile && nextHandle !== profile.handle && !canChangeHandle(profile.handle_updated_at)) {
+        throw new Error(
+          `${text.handleLocked} ${formatHandleDate(getNextHandleChangeDate(profile.handle_updated_at), language)}`
+        );
+      }
+
       const { error } = await client
         .from("profiles")
         .update({
           full_name: form.fullName.trim(),
-          handle: normalizeHandle(form.handle),
+          handle: nextHandle,
           headline: form.headline.trim() || null,
           location: form.location.trim() || null,
           bio: form.bio.trim() || null,
@@ -308,9 +326,10 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
       });
       onSaved?.();
     } catch (error) {
+      const message = error instanceof Error ? error.message : text.error;
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : text.error
+        message: isUniqueHandleError(message) ? text.handleTaken : message
       });
     } finally {
       setSaving(false);
@@ -412,10 +431,16 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
               <Field label={text.handle}>
                 <input
                   value={form.handle}
-                  onChange={(event) => updateField("handle", event.target.value)}
+                  onChange={(event) => updateField("handle", normalizeHandle(event.target.value))}
                   required
+                  disabled={handleLocked}
                   className="input-field"
                 />
+                <span className="mt-2 block text-xs leading-5 text-white/38">
+                  {handleLocked
+                    ? `${text.handleLocked} ${formatHandleDate(nextHandleChangeDate, language)}`
+                    : text.handlePolicy}
+                </span>
               </Field>
               <Field label={text.headline}>
                 <input
@@ -676,9 +701,38 @@ function normalizeHandle(value: string) {
     value
       .toLowerCase()
       .trim()
-      .replace(/[^a-z0-9_]+/g, "-")
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/-+/g, "-")
       .replace(/^-+|-+$/g, "")
       .slice(0, 32) || "jamly"
+  );
+}
+
+function getNextHandleChangeDate(value?: string | null) {
+  if (!value) return null;
+  const changedAt = new Date(value);
+  if (Number.isNaN(changedAt.getTime())) return null;
+  return new Date(changedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+}
+
+function canChangeHandle(value?: string | null) {
+  const nextDate = getNextHandleChangeDate(value);
+  return !nextDate || nextDate <= new Date();
+}
+
+function formatHandleDate(value: Date | null, language: "tr" | "en") {
+  if (!value) return "";
+  return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : "en-US", {
+    dateStyle: "medium"
+  }).format(value);
+}
+
+function isUniqueHandleError(message: string) {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("duplicate key") ||
+    normalized.includes("unique constraint") ||
+    normalized.includes("profiles_handle_key")
   );
 }
 

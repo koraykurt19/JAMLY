@@ -89,7 +89,7 @@ export async function ensureCurrentProfile(client: SupabaseClient) {
   const rawHandle =
     typeof metadata.handle === "string" && metadata.handle.trim()
       ? metadata.handle
-      : `${emailPrefix}-${user.id.slice(0, 6)}`;
+      : emailPrefix;
   const fullName =
     typeof metadata.full_name === "string" && metadata.full_name.trim()
       ? metadata.full_name
@@ -466,6 +466,7 @@ export function mapProfileToCreator(profile: ProfileRow): Creator {
   return {
     id: profile.id,
     handle: profile.handle,
+    handleUpdatedAt: profile.handle_updated_at,
     name: profile.full_name,
     role: "creator",
     headline: profile.headline ?? "Independent music creator on Jamly",
@@ -531,11 +532,12 @@ function normalizeHandle(value: string) {
   const normalized = value
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9_]+/g, "-")
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 32);
 
-  return normalized || `jamly-${Math.random().toString(36).slice(2, 8)}`;
+  return normalized || "jamly";
 }
 
 function assertClient(

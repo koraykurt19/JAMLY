@@ -35,7 +35,8 @@ create type public.order_status as enum (
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   role public.profile_role not null default 'buyer',
-  handle text not null unique,
+  handle text not null unique check (handle ~ '^[a-z0-9][a-z0-9-]{1,31}$'),
+  handle_updated_at timestamptz default now(),
   full_name text not null,
   headline text,
   avatar_url text,
@@ -172,6 +173,29 @@ create policy "Users can update their profile"
 create policy "Users can insert their profile"
   on public.profiles for insert
   with check (auth.uid() = id);
+
+create or replace function public.enforce_monthly_handle_change()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if new.handle is distinct from old.handle then
+    if old.handle_updated_at is not null
+      and old.handle_updated_at > now() - interval '30 days' then
+      raise exception 'Username can only be changed once every 30 days';
+    end if;
+
+    new.handle_updated_at := now();
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger enforce_monthly_handle_change_before_profile_update
+  before update on public.profiles
+  for each row execute procedure public.enforce_monthly_handle_change();
 
 create policy "Active listings are readable"
   on public.listings for select
@@ -479,13 +503,18 @@ as $$
 declare
   clean_handle text;
 begin
-  clean_handle := lower(regexp_replace(coalesce(new.raw_user_meta_data->>'handle', split_part(new.email, '@', 1)), '[^a-z0-9_]+', '', 'g'));
+  clean_handle := lower(regexp_replace(coalesce(new.raw_user_meta_data->>'handle', split_part(new.email, '@', 1)), '[^a-z0-9-]+', '-', 'g'));
+  clean_handle := regexp_replace(clean_handle, '-+', '-', 'g');
+  clean_handle := trim(both '-' from clean_handle);
+  if clean_handle = '' then
+    clean_handle := 'jamly';
+  end if;
 
   insert into public.profiles (id, role, handle, full_name)
   values (
     new.id,
     coalesce((new.raw_user_meta_data->>'role')::public.profile_role, 'buyer'),
-    clean_handle || '-' || substr(new.id::text, 1, 4),
+    clean_handle,
     coalesce(new.raw_user_meta_data->>'full_name', clean_handle)
   );
 
