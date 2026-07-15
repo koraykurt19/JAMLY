@@ -16,8 +16,8 @@ export function JamlyLogoMark({
     <Image
       src={JAMLY_LOGO_SRC}
       alt={alt}
-      width={1254}
-      height={1254}
+      width={1024}
+      height={1024}
       priority={priority}
       sizes="44px"
       className={cn("h-9 w-9 rounded-xl object-contain", className)}
