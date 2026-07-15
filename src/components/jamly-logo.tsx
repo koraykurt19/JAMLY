@@ -19,17 +19,17 @@ export function JamlyLogoMark({
       width={1024}
       height={1024}
       priority={priority}
-      sizes="44px"
-      className={cn("h-9 w-9 rounded-xl object-contain", className)}
+      sizes="52px"
+      className={cn("h-11 w-11 rounded-xl object-contain", className)}
     />
   );
 }
 
 export function JamlyWordmark({ className }: { className?: string }) {
   return (
-    <div className={cn("flex items-center gap-3", className)}>
+    <div className={cn("flex items-center gap-3.5", className)}>
       <JamlyLogoMark priority />
-      <span className="text-lg font-semibold tracking-tight text-white">Jamly</span>
+      <span className="text-xl font-semibold tracking-tight text-white">Jamly</span>
     </div>
   );
 }

@@ -24,7 +24,14 @@ const config: Config = {
         soft: "0 24px 80px rgba(0, 0, 0, 0.35)"
       },
       fontFamily: {
-        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]
+        sans: [
+          "Neue Montreal",
+          "NeueMontreal",
+          "Inter",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif"
+        ]
       },
       opacity: {
         "8": "0.08",
