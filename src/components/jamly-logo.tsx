@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { cn } from "@/lib/format";
 
-const JAMLY_LOGO_SRC = "/brand/jamly-logo.png";
+const JAMLY_LOGO_SRC = "/brand/jamly-logo-20260715.png";
 
 export function JamlyLogoMark({
   alt = "",

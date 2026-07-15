@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   description:
     "Beat, hook, miks ve özel prodüksiyon işleri için premium müzik üreticileri Jam Alanı.",
   icons: {
-    icon: "/brand/jamly-logo.png",
-    apple: "/brand/jamly-logo.png"
+    icon: "/brand/jamly-logo-20260715.png",
+    apple: "/brand/jamly-logo-20260715.png"
   }
 };
 
