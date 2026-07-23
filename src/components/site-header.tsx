@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -16,12 +17,20 @@ import { useRef, useState } from "react";
 import { JamlyWordmark } from "@/components/jamly-logo";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/components/language-provider";
-import { MobileNavigationDrawer } from "@/components/mobile-navigation-drawer";
 import { useCurrentAccount } from "@/lib/use-current-account";
+
+const MobileNavigationDrawer = dynamic(
+  () =>
+    import("@/components/mobile-navigation-drawer").then(
+      (module) => module.MobileNavigationDrawer
+    ),
+  { ssr: false }
+);
 
 export function SiteHeader() {
   const { t } = useI18n();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileDrawerMounted, setMobileDrawerMounted] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const account = useCurrentAccount();
@@ -142,7 +151,10 @@ export function SiteHeader() {
         <button
           ref={mobileMenuButtonRef}
           type="button"
-          onClick={() => setMobileMenuOpen(true)}
+          onClick={() => {
+            setMobileDrawerMounted(true);
+            setMobileMenuOpen(true);
+          }}
           className="focus-ring flex h-11 w-11 items-center justify-center rounded-md border border-white/10 bg-white/[0.045] text-white/76 transition hover:border-white/20 hover:bg-white/8 hover:text-white md:hidden"
           aria-label={t("openMenu")}
           aria-expanded={mobileMenuOpen}
@@ -152,14 +164,16 @@ export function SiteHeader() {
         </button>
       </div>
 
-      <MobileNavigationDrawer
-        open={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-        navigationItems={navItems}
-        triggerRef={mobileMenuButtonRef}
-        account={accountProfile}
-        onSignOut={account.signOut}
-      />
+      {mobileDrawerMounted ? (
+        <MobileNavigationDrawer
+          open={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+          navigationItems={navItems}
+          triggerRef={mobileMenuButtonRef}
+          account={accountProfile}
+          onSignOut={account.signOut}
+        />
+      ) : null}
     </header>
   );
 }

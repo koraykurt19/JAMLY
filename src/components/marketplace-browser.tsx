@@ -431,7 +431,7 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
       {filteredListings.length > 0 ? (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {filteredListings.map((listing, index) => (
-            <ListingCard key={listing.id} listing={listing} priority={index < 3} />
+            <ListingCard key={listing.id} listing={listing} priority={index === 0} />
           ))}
         </div>
       ) : (

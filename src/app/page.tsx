@@ -145,7 +145,7 @@ export default function LandingPage() {
                   width={760}
                   height={520}
                   className="h-[360px] w-full object-cover"
-                  priority
+                  sizes="(min-width: 1024px) 45vw, 0px"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/18 to-transparent" />
                 <div className="absolute left-5 right-5 top-5 flex items-center justify-between">
@@ -197,8 +197,8 @@ export default function LandingPage() {
         </div>
 
         <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {featuredListings.map((listing, index) => (
-            <ListingCard key={listing.id} listing={listing} priority={index === 0} />
+          {featuredListings.map((listing) => (
+            <ListingCard key={listing.id} listing={listing} />
           ))}
         </div>
       </section>
