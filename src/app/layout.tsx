@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { LanguageProvider } from "@/components/language-provider";
+import { NavigationPerformance } from "@/components/navigation-performance";
 
 export const metadata: Metadata = {
   title: "Jamly - Müzik üreticileri Jam Alanı",
@@ -47,6 +48,9 @@ export default function RootLayout({
       <body className="font-sans">
         <LanguageProvider>
           <div className="min-h-screen bg-jam-ink text-white">
+            <Suspense fallback={null}>
+              <NavigationPerformance />
+            </Suspense>
             <SiteHeader />
             <main>{children}</main>
             <SiteFooter />

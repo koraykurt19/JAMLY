@@ -22,11 +22,11 @@ type MarketplaceState =
 
 export default function MarketplacePage() {
   const { language, t } = useI18n();
-  const [state, setState] = useState<MarketplaceState>(() =>
-    isSupabaseConfigured()
-      ? { status: "loading" }
-      : { status: "ready", listings, isDemo: true }
-  );
+  const [state, setState] = useState<MarketplaceState>({
+    status: "ready",
+    listings,
+    isDemo: true
+  });
 
   useEffect(() => {
     const client = getSupabaseBrowserClient();
@@ -69,7 +69,9 @@ export default function MarketplacePage() {
           description={t("marketplaceDescription")}
         />
         <div className="rounded-lg border border-white/10 bg-white/[0.045] px-5 py-4 text-sm text-white/58">
-          {state.status === "loading" ? <Loader2 size={16} className="mr-2 inline animate-spin" /> : null}
+          {isSupabaseConfigured() && state.status === "ready" && state.isDemo ? (
+            <Loader2 size={16} className="mr-2 inline animate-spin" />
+          ) : null}
           <span className="font-semibold text-white">{localizedListings.length}</span>{" "}
           {state.status === "ready" && state.isDemo ? t("demoListingsReady") : t("listingsFound")}
         </div>

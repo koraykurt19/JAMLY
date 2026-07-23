@@ -31,6 +31,12 @@ type DashboardState =
   | { status: "signed-out" }
   | { status: "error"; message: string };
 
+const DASHBOARD_CACHE_TTL_MS = 45_000;
+const dashboardCache = new Map<Role, { expiresAt: number; state: ReadyDashboard }>();
+let currentProfileRequest:
+  | Promise<Awaited<ReturnType<typeof ensureCurrentProfile>>>
+  | null = null;
+
 export function useDashboardData(role: Role) {
   const [reloadKey, setReloadKey] = useState(0);
   const [state, setState] = useState<DashboardState>(() => getInitialState(role));
@@ -43,13 +49,15 @@ export function useDashboardData(role: Role) {
     }
 
     let active = true;
-    setState({ status: "loading" });
+    const cachedState = getCachedDashboardState(role);
+    setState(cachedState ?? { status: "loading" });
 
     async function load() {
       try {
-        const { user, profile } = await ensureCurrentProfile(client);
+        const { user, profile } = await getCachedCurrentProfile(client);
         if (!active) return;
         if (!user) {
+          dashboardCache.clear();
           setState({ status: "signed-out" });
           return;
         }
@@ -65,13 +73,15 @@ export function useDashboardData(role: Role) {
         ]);
 
         if (active) {
-          setState({
+          const readyState: ReadyDashboard = {
             status: "ready",
             listings: dashboardListings,
             orders,
             isDemo: false,
             profile: role === "creator" ? mapProfileToCreator(profile) : null
-          });
+          };
+          setCachedDashboardState(role, readyState);
+          setState(readyState);
         }
       } catch (error) {
         if (active) {
@@ -98,7 +108,35 @@ export function useDashboardData(role: Role) {
 }
 
 function getInitialState(role: Role): DashboardState {
-  return isSupabaseConfigured() ? { status: "loading" } : getDemoState(role);
+  return isSupabaseConfigured() ? getCachedDashboardState(role) ?? { status: "loading" } : getDemoState(role);
+}
+
+function getCachedDashboardState(role: Role) {
+  const cached = dashboardCache.get(role);
+  if (!cached || cached.expiresAt < Date.now()) {
+    dashboardCache.delete(role);
+    return null;
+  }
+
+  return cached.state;
+}
+
+function setCachedDashboardState(role: Role, state: ReadyDashboard) {
+  dashboardCache.set(role, { state, expiresAt: Date.now() + DASHBOARD_CACHE_TTL_MS });
+}
+
+async function getCachedCurrentProfile(client: ReturnType<typeof getSupabaseBrowserClient>) {
+  if (!currentProfileRequest) {
+    currentProfileRequest = ensureCurrentProfile(client);
+  }
+
+  try {
+    return await currentProfileRequest;
+  } finally {
+    window.setTimeout(() => {
+      currentProfileRequest = null;
+    }, 250);
+  }
 }
 
 function getDemoState(role: Role): ReadyDashboard {
