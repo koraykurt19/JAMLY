@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
@@ -20,6 +20,14 @@ import { SectionHeading } from "@/components/section-heading";
 import { creators, getFeaturedListings } from "@/lib/data";
 import { localizeCreator, localizeListing } from "@/lib/i18n";
 import { useI18n } from "@/components/language-provider";
+import {
+  fetchMarketplaceListings
+} from "@/lib/supabase-data";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
+import type { Listing } from "@/lib/types";
 
 const heroImage =
   "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1800&q=85";
@@ -28,8 +36,16 @@ export default function LandingPage() {
   const { language, t } = useI18n();
   const router = useRouter();
   const [heroSearch, setHeroSearch] = useState("");
-  const featuredListings = getFeaturedListings().map((listing) =>
+  const [showcaseSeed] = useState(() => Math.random());
+  const [showcaseListings, setShowcaseListings] = useState<Listing[]>(() =>
+    getFeaturedListings()
+  );
+  const featuredListings = showcaseListings.map((listing) =>
     localizeListing(listing, language)
+  );
+  const showcaseListing = useMemo(
+    () => chooseShowcaseListing(featuredListings, showcaseSeed),
+    [featuredListings, showcaseSeed]
   );
   const spotlightCreator = localizeCreator(creators[0], language);
   const heroCategories = [
@@ -44,6 +60,27 @@ export default function LandingPage() {
     const query = heroSearch.trim();
     router.push(query ? `/marketplace?q=${encodeURIComponent(query)}` : "/marketplace");
   }
+
+  useEffect(() => {
+    const client = getSupabaseBrowserClient();
+    if (!client) return;
+
+    let active = true;
+    fetchMarketplaceListings(client)
+      .then((liveListings) => {
+        if (!active) return;
+        const activeListings = liveListings.filter((listing) => listing.isActive);
+        setShowcaseListings(activeListings.length > 0 ? activeListings : getFeaturedListings());
+      })
+      .catch((error: unknown) => {
+        if (!active || !isSupabaseRecoverableError(error)) return;
+        setShowcaseListings(getFeaturedListings());
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div>
@@ -139,40 +176,55 @@ export default function LandingPage() {
           <div className="jamly-float hidden pb-8 lg:block">
             <div className="rounded-lg border border-white/12 bg-black/42 p-4 shadow-[0_30px_100px_rgba(0,0,0,0.48)] backdrop-blur-2xl">
               <div className="relative overflow-hidden rounded-lg border border-white/10">
-                <Image
-                  src={featuredListings[0]?.coverImageUrl ?? heroImage}
-                  alt={featuredListings[0]?.title ?? "Jamly"}
-                  width={760}
-                  height={520}
-                  className="h-[360px] w-full object-cover"
-                  sizes="(min-width: 1024px) 45vw, 0px"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/18 to-transparent" />
-                <div className="absolute left-5 right-5 top-5 flex items-center justify-between">
-                  <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-black">
-                    {language === "tr" ? "Canlı vitrin" : "Live storefront"}
-                  </span>
-                  <span className="rounded-full border border-jam-mint/35 bg-jam-mint/15 px-3 py-1 text-xs font-bold text-jam-mint">
-                    {featuredListings[0]?.genre ?? "Jamly"}
-                  </span>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-jam-mint">
-                    {language === "tr" ? "Öne çıkan ses" : "Featured sound"}
-                  </p>
-                  <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">
-                    {featuredListings[0]?.title ?? t("featuredTitle")}
-                  </h2>
-                  <div className="mt-4 grid gap-2">
-                    {[0, 1, 2, 3].map((item) => (
-                      <span
-                        key={item}
-                        className="jamly-pulse-line h-2 rounded-full bg-gradient-to-r from-jam-mint via-jam-blue to-transparent"
-                        style={{ animationDelay: `${item * 0.22}s`, width: `${92 - item * 13}%` }}
-                      />
-                    ))}
+                <Link href={`/listing/${showcaseListing?.id ?? ""}`} className="block">
+                  <Image
+                    src={showcaseListing?.coverImageUrl ?? heroImage}
+                    alt={showcaseListing?.title ?? "Jamly"}
+                    width={760}
+                    height={520}
+                    className="h-[360px] w-full object-cover transition duration-700 hover:scale-[1.025]"
+                    sizes="(min-width: 1024px) 45vw, 0px"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/18 to-transparent" />
+                  <div className="absolute left-5 right-5 top-5 flex items-center justify-between">
+                    <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-black">
+                      {language === "tr" ? "Canlı vitrin" : "Live storefront"}
+                    </span>
+                    <span className="rounded-full border border-jam-mint/35 bg-jam-mint/15 px-3 py-1 text-xs font-bold text-jam-mint">
+                      {showcaseListing?.genre ?? "Jamly"}
+                    </span>
                   </div>
-                </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-jam-mint">
+                      {language === "tr" ? "Revaçtaki iş" : "Trending pick"}
+                    </p>
+                    <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">
+                      {showcaseListing?.title ?? t("featuredTitle")}
+                    </h2>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-white/70">
+                      <span className="rounded-full border border-white/10 bg-black/32 px-3 py-1">
+                        @{showcaseListing?.creatorHandle ?? "jamly"}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-black/32 px-3 py-1">
+                        {formatCompact(showcaseListing?.analytics.plays ?? 0, language)}{" "}
+                        {language === "tr" ? "dinleme" : "plays"}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-black/32 px-3 py-1">
+                        {formatCompact(showcaseListing?.analytics.saves ?? 0, language)}{" "}
+                        {language === "tr" ? "kayıt" : "saves"}
+                      </span>
+                    </div>
+                    <div className="mt-4 grid gap-2">
+                      {[0, 1, 2, 3].map((item) => (
+                        <span
+                          key={item}
+                          className="jamly-pulse-line h-2 rounded-full bg-gradient-to-r from-jam-mint via-jam-blue to-transparent"
+                          style={{ animationDelay: `${item * 0.22}s`, width: `${92 - item * 13}%` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </Link>
               </div>
             </div>
           </div>
@@ -311,4 +363,54 @@ export default function LandingPage() {
       </section>
     </div>
   );
+}
+
+function chooseShowcaseListing(listings: Listing[], seed: number) {
+  const activeListings = listings.filter((listing) => listing.isActive && !listing.exclusiveSold);
+  const candidates = (activeListings.length > 0 ? activeListings : listings)
+    .map((listing) => ({
+      listing,
+      score: getShowcaseScore(listing)
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 6);
+
+  if (candidates.length === 0) return null;
+
+  const totalWeight = candidates.reduce((sum, item) => sum + item.score, 0);
+  let cursor = seed * totalWeight;
+
+  for (const candidate of candidates) {
+    cursor -= candidate.score;
+    if (cursor <= 0) return candidate.listing;
+  }
+
+  return candidates[candidates.length - 1]?.listing ?? null;
+}
+
+function getShowcaseScore(listing: Listing) {
+  const creator = creators.find((item) => item.id === listing.creatorId);
+  const trendScore =
+    listing.analytics.views * 0.24 +
+    listing.analytics.plays * 0.36 +
+    listing.analytics.saves * 6 +
+    listing.analytics.conversionRate * 70;
+  const creatorFitScore =
+    (creator?.profileStrength ?? 70) * 4 +
+    (creator?.responseRate ?? 80) * 2 +
+    (creator?.repeatBuyerRate ?? 40) * 2;
+  const availabilityScore =
+    (listing.featured ? 420 : 0) +
+    (listing.deliverySpeed === "instant" ? 180 : 0) +
+    (listing.commercialUse ? 120 : 0) +
+    (listing.exclusiveAvailable ? 80 : 0);
+
+  return Math.max(1, trendScore + creatorFitScore + availabilityScore);
+}
+
+function formatCompact(value: number, language: "tr" | "en") {
+  return new Intl.NumberFormat(language === "tr" ? "tr-TR" : "en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1
+  }).format(value);
 }
