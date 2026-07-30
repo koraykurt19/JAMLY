@@ -68,7 +68,20 @@
 
 :root {
   color-scheme: dark;
-  background: #050608;
+  --background-primary: #080a0f;
+  --background-secondary: #0d1118;
+  --surface-primary: #121722;
+  --surface-secondary: #171d29;
+  --surface-hover: #1c2432;
+  --border-primary: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text-primary: #f7f9fc;
+  --text-secondary: #a8b0c0;
+  --text-muted: #747e91;
+  --brand-primary: #4d7cff;
+  --brand-secondary: #76b4ff;
+  --brand-soft: rgba(77, 124, 255, 0.14);
+  background: var(--background-primary);
 }
 
 * {
@@ -83,10 +96,9 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at 15% 0%, rgba(88, 197, 255, 0.13), transparent 34rem),
-    radial-gradient(circle at 85% 8%, rgba(122, 167, 255, 0.12), transparent 30rem),
-    #050608;
-  color: #f7f7fb;
+    linear-gradient(180deg, rgba(77, 124, 255, 0.035), transparent 28rem),
+    var(--background-primary);
+  color: var(--text-primary);
   font-family:
     "Neue Montreal",
     "NeueMontreal",
@@ -120,7 +132,7 @@ select {
 
 .glass-panel {
   border: 1px solid rgba(255, 255, 255, 0.09);
-  background: rgba(13, 16, 22, 0.76);
+  background: rgba(13, 17, 24, 0.82);
   box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(22px);
 }
@@ -131,7 +143,7 @@ select {
 
 .waveform {
   background:
-    linear-gradient(90deg, rgba(88, 197, 255, 0.95), rgba(122, 167, 255, 0.95)),
+    linear-gradient(90deg, rgba(118, 180, 255, 0.95), rgba(77, 124, 255, 0.95)),
     repeating-linear-gradient(
       90deg,
       rgba(255, 255, 255, 0.75) 0 2px,
@@ -149,7 +161,7 @@ select {
 }
 
 .focus-ring:focus-visible {
-  box-shadow: 0 0 0 3px rgba(88, 197, 255, 0.3);
+  box-shadow: 0 0 0 3px rgba(77, 124, 255, 0.38);
 }
 
 .input-field {
@@ -168,7 +180,42 @@ select {
 }
 
 .input-field:focus-visible {
-  box-shadow: 0 0 0 3px rgba(88, 197, 255, 0.3);
+  box-shadow: 0 0 0 3px rgba(77, 124, 255, 0.38);
+}
+
+.audio-progress {
+  appearance: none;
+  background: transparent;
+}
+
+.audio-progress::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.audio-progress::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  appearance: none;
+  border: 2px solid #080a0f;
+  border-radius: 999px;
+  background: #76b4ff;
+}
+
+.audio-progress::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.audio-progress::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #080a0f;
+  border-radius: 999px;
+  background: #76b4ff;
 }
 
 @keyframes jamly-float {
@@ -200,4 +247,19 @@ select {
 .jamly-pulse-line {
   animation: jamly-pulse-line 2.2s ease-in-out infinite;
   transform-origin: left center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -10,18 +10,22 @@ const config: Config = {
     extend: {
       colors: {
         jam: {
-          ink: "#050608",
-          panel: "#0d1016",
-          line: "#202632",
-          mint: "#58c5ff",
-          blue: "#7aa7ff",
-          coral: "#ff6b75",
-          gold: "#ffcc66"
+          ink: "#080A0F",
+          panel: "#0D1118",
+          surface: "#121722",
+          raised: "#171D29",
+          hover: "#1C2432",
+          line: "#252C39",
+          mint: "#76B4FF",
+          blue: "#4D7CFF",
+          coral: "#FF6B7A",
+          gold: "#F4B860",
+          success: "#42D6A4"
         }
       },
       boxShadow: {
-        glow: "0 0 50px rgba(88, 197, 255, 0.18)",
-        soft: "0 24px 80px rgba(0, 0, 0, 0.35)"
+        glow: "0 0 40px rgba(77, 124, 255, 0.16)",
+        soft: "0 20px 60px rgba(0, 0, 0, 0.32)"
       },
       fontFamily: {
         sans: [

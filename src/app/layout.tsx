@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { LanguageProvider } from "@/components/language-provider";
 import { NavigationPerformance } from "@/components/navigation-performance";
+import { AudioPlayerProvider } from "@/components/audio-player-provider";
 
 export const metadata: Metadata = {
   title: "Jamly - Müzik üreticileri Jam Alanı",
@@ -47,14 +48,16 @@ export default function RootLayout({
     <html lang="tr">
       <body className="font-sans">
         <LanguageProvider>
-          <div className="min-h-screen bg-jam-ink text-white">
-            <Suspense fallback={null}>
-              <NavigationPerformance />
-            </Suspense>
-            <SiteHeader />
-            <main>{children}</main>
-            <SiteFooter />
-          </div>
+          <AudioPlayerProvider>
+            <div className="min-h-screen bg-jam-ink text-white">
+              <Suspense fallback={null}>
+                <NavigationPerformance />
+              </Suspense>
+              <SiteHeader />
+              <main>{children}</main>
+              <SiteFooter />
+            </div>
+          </AudioPlayerProvider>
         </LanguageProvider>
       </body>
     </html>

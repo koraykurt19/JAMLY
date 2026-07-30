@@ -1,132 +1,241 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { BadgeCheck, Clock, Gauge, Tag } from "lucide-react";
+import {
+  ArrowUpRight,
+  BadgeCheck,
+  Clock3,
+  Gauge,
+  Layers3,
+  Pause,
+  Play,
+  SlidersHorizontal
+} from "lucide-react";
 import type { Listing } from "@/lib/types";
 import { currency } from "@/lib/format";
-import { categoryLabel, licenseLabel, moodLabel, usageLabel } from "@/lib/labels";
+import { categoryLabel } from "@/lib/labels";
 import { useI18n } from "@/components/language-provider";
-import { AudioPreview } from "@/components/audio-preview";
+import { useAudioPlayer } from "@/components/audio-player-provider";
 import { ShortlistButton } from "@/components/shortlist-button";
-import { StartConversationButton } from "@/components/start-conversation-button";
 import { isBeatLicenseListing } from "@/lib/beat-licenses";
+import { SafeImage } from "@/components/safe-image";
 
 type ListingCardProps = {
   listing: Listing;
   priority?: boolean;
+  creatorVerified?: boolean;
+  density?: "standard" | "compact";
 };
 
-export function ListingCard({ listing, priority = false }: ListingCardProps) {
-  const { currencyCode, language, t, usdTryRate } = useI18n();
-  const discoveryPills = [
-    listing.moods[0]
-      ? { key: `mood-${listing.moods[0]}`, label: moodLabel(listing.moods[0], language) }
-      : null,
-    listing.useCases[0]
-      ? {
-          key: `use-${listing.useCases[0]}`,
-          label: usageLabel(listing.useCases[0], language)
-        }
-      : null
-  ].filter((item): item is { key: string; label: string } => Boolean(item));
+export function ListingCard({
+  listing,
+  priority = false,
+  creatorVerified = false,
+  density = "standard"
+}: ListingCardProps) {
+  const { currencyCode, language, usdTryRate } = useI18n();
+  const player = useAudioPlayer();
+  const isBeat = isBeatLicenseListing(listing);
+  const trackId = `listing-${listing.id}`;
+  const isActive = player.activeTrack?.id === trackId;
+  const isPlaying = isActive && player.isPlaying;
+  const hasAudio = Boolean(listing.audioPreviewUrl.trim());
+  const startingPrice =
+    isBeat && listing.licensePrices
+      ? Math.min(...Object.values(listing.licensePrices))
+      : listing.price;
+
+  function togglePreview() {
+    void player.playTrack({
+      id: trackId,
+      src: listing.audioPreviewUrl,
+      title: listing.title,
+      creatorHandle: listing.creatorHandle,
+      coverImageUrl: listing.coverImageUrl,
+      listingHref: `/listing/${listing.id}`,
+      listingId: listing.id
+    });
+  }
 
   return (
-    <article className="group overflow-hidden rounded-lg border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.065),rgba(255,255,255,0.035))] shadow-soft transition duration-300 hover:-translate-y-1 hover:border-jam-blue/40 hover:bg-white/[0.08] hover:shadow-[0_28px_90px_rgba(88,197,255,0.14)]">
+    <article className="group min-w-0 overflow-hidden rounded-lg border border-white/[0.09] bg-[#121722] transition duration-200 hover:-translate-y-0.5 hover:border-jam-blue/45 hover:bg-[#151b27] focus-within:border-jam-blue/45">
       <div className="relative">
-        <Link href={`/listing/${listing.id}`} className="block">
-          <div className="relative aspect-[4/3] overflow-hidden bg-white/[0.04]">
-            <Image
+        <Link
+          href={`/listing/${listing.id}`}
+          className="focus-ring block"
+          aria-label={`${listing.title} ${language === "tr" ? "detaylarını aç" : "view details"}`}
+        >
+          <div
+            className={
+              density === "compact"
+                ? "relative aspect-[5/4] overflow-hidden bg-white/[0.04]"
+                : "relative aspect-[4/3] overflow-hidden bg-white/[0.04]"
+            }
+          >
+            <SafeImage
               src={listing.coverImageUrl}
-              alt={listing.title}
+              alt={`${listing.title} kapak görseli`}
               fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover transition duration-500 group-hover:scale-105"
+              sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 25vw"
+              className="object-cover transition duration-300 group-hover:scale-[1.025]"
               priority={priority}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/82 via-black/18 to-transparent" />
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-jam-mint/70 to-transparent opacity-0 transition group-hover:opacity-100" />
-            <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-jam-mint">
-                  {categoryLabel(listing.category, language)}
-                </p>
-                <h3 className="mt-1 line-clamp-2 text-xl font-semibold tracking-tight text-white">
-                  {listing.title}
-                </h3>
-              </div>
-              <p className="rounded-full bg-white px-3 py-1 text-sm font-bold text-black shadow-[0_10px_30px_rgba(0,0,0,0.24)]">
-                {currency(listing.price, language, currencyCode, usdTryRate)}
-              </p>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#080a0f]/88 via-transparent to-black/20" />
           </div>
         </Link>
-        <div className="absolute right-4 top-4">
+
+        <div className="absolute left-3 top-3 flex items-center gap-2">
+          <span className="rounded-md border border-white/10 bg-[#080a0f]/84 px-2.5 py-1 text-[11px] font-semibold text-white/80 backdrop-blur-md">
+            {categoryLabel(listing.category, language)}
+          </span>
+          {listing.featured ? (
+            <span className="rounded-md bg-jam-mint px-2.5 py-1 text-[11px] font-bold text-[#071018]">
+              {language === "tr" ? "Öne çıkan" : "Featured"}
+            </span>
+          ) : null}
+        </div>
+
+        <div className="absolute right-3 top-3">
           <ShortlistButton listingId={listing.id} compact />
         </div>
+
+        <button
+          type="button"
+          onClick={togglePreview}
+          disabled={!hasAudio}
+          className="focus-ring absolute bottom-3 left-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black shadow-[0_12px_32px_rgba(0,0,0,0.35)] transition duration-200 hover:scale-105 hover:bg-jam-mint disabled:cursor-not-allowed disabled:bg-white/14 disabled:text-white/30"
+          aria-label={
+            hasAudio
+              ? isPlaying
+                ? `${listing.title} ${language === "tr" ? "duraklat" : "pause"}`
+                : `${listing.title} ${language === "tr" ? "oynat" : "play"}`
+              : language === "tr"
+                ? "Ses önizlemesi bulunmuyor"
+                : "No audio preview"
+          }
+        >
+          {isPlaying ? <Pause size={19} /> : <Play size={19} fill="currentColor" />}
+        </button>
+
+        <span className="absolute bottom-3 right-3 rounded-md border border-white/10 bg-[#080a0f]/88 px-3 py-2 text-sm font-bold text-white backdrop-blur-md">
+          <span className="mr-1 text-[10px] font-medium uppercase text-white/48">
+            {language === "tr" ? "Başlangıç" : "From"}
+          </span>
+          {currency(startingPrice, language, currencyCode, usdTryRate)}
+        </span>
+
+        {isActive && player.duration > 0 ? (
+          <div className="absolute inset-x-0 bottom-0 h-0.5 bg-white/14">
+            <span
+              className="block h-full bg-jam-mint transition-[width] duration-150"
+              style={{
+                width: `${Math.min((player.currentTime / player.duration) * 100, 100)}%`
+              }}
+            />
+          </div>
+        ) : null}
       </div>
 
-      <div className="space-y-4 p-4">
-        <div className="flex items-center gap-3">
-          <Image
-            src={listing.creatorAvatarUrl}
-            alt={`@${listing.creatorHandle}`}
-            width={36}
-            height={36}
-            className="h-9 w-9 rounded-full border border-white/10 object-cover"
-          />
-          <div className="min-w-0">
-            <Link
-              href={`/creators/${listing.creatorHandle}`}
-              className="flex items-center gap-1 truncate text-sm font-semibold text-white transition hover:text-jam-mint"
-            >
+      <div className={density === "compact" ? "p-4" : "p-5"}>
+        <Link
+          href={`/listing/${listing.id}`}
+          className="focus-ring block rounded-sm"
+        >
+          <h3 className="line-clamp-1 text-[17px] font-semibold text-white transition group-hover:text-jam-mint">
+            {listing.title}
+          </h3>
+        </Link>
+
+        <div className="mt-3 flex min-w-0 items-center justify-between gap-3">
+          <Link
+            href={`/creators/${listing.creatorHandle}`}
+            className="focus-ring flex min-w-0 items-center gap-2 rounded-md"
+          >
+            <SafeImage
+              src={listing.creatorAvatarUrl}
+              alt={`@${listing.creatorHandle}`}
+              width={32}
+              height={32}
+              sizes="32px"
+              className="h-8 w-8 shrink-0 rounded-full border border-white/10 object-cover"
+            />
+            <span className="min-w-0 truncate text-sm font-medium text-white/66 transition hover:text-white">
               @{listing.creatorHandle}
-              <BadgeCheck size={14} className="text-jam-blue" />
-            </Link>
-            <p className="text-xs text-white/48">
-              {listing.genre}
-              {listing.bpm ? ` / ${listing.bpm} BPM` : ""}
-            </p>
-          </div>
-        </div>
-
-        <AudioPreview src={listing.audioPreviewUrl} title={listing.title} compact />
-
-        <div className="flex flex-wrap gap-2">
-          {discoveryPills.map((item) => (
-            <span
-              key={item.key}
-              className="rounded-full border border-white/10 bg-black/24 px-3 py-1 text-xs font-semibold text-white/60"
-            >
-              {item.label}
             </span>
-          ))}
+            {creatorVerified ? (
+              <BadgeCheck
+                size={14}
+                className="shrink-0 text-jam-mint"
+                aria-label={language === "tr" ? "Doğrulanmış üretici" : "Verified creator"}
+              />
+            ) : null}
+          </Link>
+          <span className="truncate text-xs text-white/42">{listing.genre}</span>
         </div>
 
-        <div className="grid gap-2 text-xs text-white/58 sm:grid-cols-3">
-          <span className="flex items-center gap-1 rounded-md bg-black/24 px-2 py-2">
-            <Tag size={13} />
-            {isBeatLicenseListing(listing)
-              ? t("threeLicenseOptions")
-              : licenseLabel(listing.licenseType, language)}
-          </span>
-          <span className="flex items-center gap-1 rounded-md bg-black/24 px-2 py-2">
-            <Clock size={13} />
-            {listing.turnaround}
-          </span>
-          <span className="flex items-center gap-1 rounded-md bg-black/24 px-2 py-2">
-            <Gauge size={13} />
-            {listing.bpm ?? t("bpmOpen")}
-          </span>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {isBeat ? (
+            <>
+              {listing.bpm ? (
+                <Metadata icon={Gauge} label={`${listing.bpm} BPM`} />
+              ) : null}
+              <Metadata
+                icon={Layers3}
+                label={language === "tr" ? "3 lisans" : "3 licenses"}
+              />
+              {listing.filesIncluded.some((file) =>
+                file.toLowerCase().includes("stem")
+              ) ? (
+                <Metadata icon={SlidersHorizontal} label="Stems" />
+              ) : null}
+            </>
+          ) : (
+            <>
+              {listing.turnaround ? (
+                <Metadata icon={Clock3} label={listing.turnaround} />
+              ) : null}
+              {listing.deliverables[0] ? (
+                <Metadata icon={Layers3} label={listing.deliverables[0]} />
+              ) : null}
+            </>
+          )}
         </div>
 
-        <StartConversationButton
-          artistId={listing.creatorId}
-          listingId={listing.id}
-          label={listing.licenseType === "Service" ? "offer" : "message"}
-          variant="compact"
-        />
+        {density === "standard" ? (
+          <p className="mt-4 line-clamp-2 min-h-10 text-sm leading-5 text-white/48">
+            {listing.description}
+          </p>
+        ) : null}
+
+        <Link
+          href={`/listing/${listing.id}`}
+          className="focus-ring mt-5 flex min-h-11 items-center justify-between rounded-md border border-white/[0.09] px-3.5 text-sm font-semibold text-white/72 transition hover:border-jam-blue/40 hover:bg-jam-blue/10 hover:text-white"
+        >
+          {isBeat
+            ? language === "tr"
+              ? "Lisansları incele"
+              : "View licenses"
+            : language === "tr"
+              ? "Hizmeti incele"
+              : "View service"}
+          <ArrowUpRight size={16} />
+        </Link>
       </div>
     </article>
+  );
+}
+
+function Metadata({
+  icon: Icon,
+  label
+}: {
+  icon: typeof Gauge;
+  label: string;
+}) {
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-white/[0.07] bg-black/20 px-2 py-1 text-[11px] font-medium text-white/54">
+      <Icon size={12} className="shrink-0 text-jam-blue" />
+      <span className="truncate">{label}</span>
+    </span>
   );
 }

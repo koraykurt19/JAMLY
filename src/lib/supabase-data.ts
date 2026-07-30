@@ -30,6 +30,11 @@ const DEFAULT_AVATAR =
   "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=300&q=80";
 const DEFAULT_COVER =
   "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1400&q=80";
+const PROFILE_CACHE_TTL = 2 * 60 * 1000;
+const profileCache = new Map<
+  string,
+  { profile: ProfileRow; cachedAt: number }
+>();
 
 export type OrderSummary = OrderRequest & {
   buyerId: string;
@@ -73,6 +78,7 @@ export async function getCurrentProfile(client: SupabaseClient) {
     throw new Error(profileError.message);
   }
 
+  if (profile) cacheProfiles([profile]);
   return { user, profile };
 }
 
@@ -111,6 +117,7 @@ export async function ensureCurrentProfile(client: SupabaseClient) {
     throw new Error(error.message);
   }
 
+  cacheProfiles([data]);
   return { user, profile: data };
 }
 
@@ -166,6 +173,9 @@ export async function fetchCreatorListings(client: SupabaseClient, creatorId: st
 
 export async function fetchCreator(client: SupabaseClient, creatorId: string) {
   assertClient(client);
+  const cached = getCachedProfile(creatorId);
+  if (cached) return mapProfileToCreator(cached);
+
   const { data, error } = await client
     .from("profiles")
     .select("*")
@@ -176,11 +186,18 @@ export async function fetchCreator(client: SupabaseClient, creatorId: string) {
     throw new Error(error.message);
   }
 
+  if (data) cacheProfiles([data]);
   return data ? mapProfileToCreator(data) : null;
 }
 
 export async function fetchCreatorByHandle(client: SupabaseClient, handle: string) {
   assertClient(client);
+  const cached = Array.from(profileCache.values()).find(
+    (item) =>
+      isFreshProfile(item.cachedAt) && item.profile.handle === handle
+  )?.profile;
+  if (cached) return mapProfileToCreator(cached);
+
   const { data, error } = await client
     .from("profiles")
     .select("*")
@@ -191,6 +208,7 @@ export async function fetchCreatorByHandle(client: SupabaseClient, handle: strin
     throw new Error(error.message);
   }
 
+  if (data) cacheProfiles([data]);
   return data ? mapProfileToCreator(data) : null;
 }
 
@@ -205,6 +223,7 @@ export async function fetchCreators(client: SupabaseClient) {
     throw new Error(error.message);
   }
 
+  cacheProfiles(data);
   return data.map(mapProfileToCreator);
 }
 
@@ -380,12 +399,42 @@ async function fetchProfiles(client: SupabaseClient, ids: string[]) {
     return [];
   }
 
-  const { data, error } = await client.from("profiles").select("*").in("id", uniqueIds);
-  if (error) {
-    throw new Error(error.message);
+  const missingIds = uniqueIds.filter((id) => !getCachedProfile(id));
+  if (missingIds.length > 0) {
+    const { data, error } = await client
+      .from("profiles")
+      .select("*")
+      .in("id", missingIds);
+    if (error) {
+      throw new Error(error.message);
+    }
+    cacheProfiles(data);
   }
 
-  return data;
+  return uniqueIds
+    .map((id) => getCachedProfile(id))
+    .filter((profile): profile is ProfileRow => Boolean(profile));
+}
+
+function cacheProfiles(profiles: ProfileRow[]) {
+  const cachedAt = Date.now();
+  profiles.forEach((profile) => {
+    profileCache.set(profile.id, { profile, cachedAt });
+  });
+}
+
+function getCachedProfile(id: string) {
+  const cached = profileCache.get(id);
+  if (!cached) return null;
+  if (!isFreshProfile(cached.cachedAt)) {
+    profileCache.delete(id);
+    return null;
+  }
+  return cached.profile;
+}
+
+function isFreshProfile(cachedAt: number) {
+  return Date.now() - cachedAt < PROFILE_CACHE_TTL;
 }
 
 async function fetchListingRows(client: SupabaseClient, ids: string[]) {

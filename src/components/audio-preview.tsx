@@ -1,10 +1,14 @@
 "use client";
 
-import { Pause, Play } from "lucide-react";
+import { AlertCircle, Pause, Play } from "lucide-react";
 import type { ChangeEvent, PointerEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/format";
 import { useI18n } from "@/components/language-provider";
+import {
+  useAudioPlayer,
+  type AudioPlayerTrack
+} from "@/components/audio-player-provider";
 import type { AudioMarker } from "@/lib/types";
 
 type AudioPreviewProps = {
@@ -12,73 +16,34 @@ type AudioPreviewProps = {
   title: string;
   compact?: boolean;
   markers?: AudioMarker[];
+  track?: Omit<AudioPlayerTrack, "src" | "title">;
 };
 
-export function AudioPreview({ src, title, compact = false, markers = [] }: AudioPreviewProps) {
+export function AudioPreview({
+  src,
+  title,
+  compact = false,
+  markers = [],
+  track
+}: AudioPreviewProps) {
   const { language, t } = useI18n();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const player = useAudioPlayer();
   const isScrubbingRef = useRef(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
   const [scrubTime, setScrubTime] = useState<number | null>(null);
-  const [duration, setDuration] = useState(0);
+  const trackId = track?.id ?? `${title}-${src}`;
+  const isActive = player.activeTrack?.id === trackId;
+  const isPlaying = isActive && player.isPlaying;
+  const currentTime = isActive ? player.currentTime : 0;
+  const duration = isActive ? player.duration : 0;
+  const error = isActive ? player.error : null;
   const visibleTime = scrubTime ?? currentTime;
   const progress = useMemo(
     () => (duration > 0 ? (visibleTime / duration) * 100 : 0),
     [duration, visibleTime]
   );
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) {
-      return;
-    }
-
-    const syncDuration = () => {
-      setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
-    };
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
-
-    const handleEnded = () => {
-      audio.currentTime = 0;
-      setIsPlaying(false);
-      setCurrentTime(0);
-    };
-
-    syncDuration();
-    audio.addEventListener("loadedmetadata", syncDuration);
-    audio.addEventListener("durationchange", syncDuration);
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("play", handlePlay);
-    audio.addEventListener("pause", handlePause);
-    audio.addEventListener("ended", handleEnded);
-
-    return () => {
-      audio.removeEventListener("loadedmetadata", syncDuration);
-      audio.removeEventListener("durationchange", syncDuration);
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("play", handlePlay);
-      audio.removeEventListener("pause", handlePause);
-      audio.removeEventListener("ended", handleEnded);
-    };
-  }, [src]);
-
   async function toggle() {
-    const audio = audioRef.current;
-    if (!audio) {
-      return;
-    }
-
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-      return;
-    }
-
-    await audio.play();
-    setIsPlaying(true);
+    await player.playTrack({ id: trackId, src, title, ...track });
   }
 
   function previewSeek(event: ChangeEvent<HTMLInputElement>) {
@@ -112,16 +77,11 @@ export function AudioPreview({ src, title, compact = false, markers = [] }: Audi
   }
 
   function commitSeek(nextTime: number) {
-    const audio = audioRef.current;
     const safeTime = getSafeTime(nextTime, duration);
 
     isScrubbingRef.current = false;
     setScrubTime(null);
-    setCurrentTime(safeTime);
-
-    if (audio) {
-      audio.currentTime = safeTime;
-    }
+    if (isActive) player.seek(safeTime);
   }
 
   function jumpToMarker(time: number) {
@@ -135,14 +95,12 @@ export function AudioPreview({ src, title, compact = false, markers = [] }: Audi
         compact ? "p-3" : "p-4"
       )}
     >
-      <audio ref={audioRef} src={src} preload="metadata">
-        <track kind="captions" />
-      </audio>
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={toggle}
-          className="focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-black transition hover:bg-jam-mint"
+          disabled={!src.trim()}
+          className="focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-black transition hover:bg-jam-mint disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/30"
           aria-label={
             isPlaying
               ? language === "tr"
@@ -153,7 +111,13 @@ export function AudioPreview({ src, title, compact = false, markers = [] }: Audi
                 : `Play ${title}`
           }
         >
-          {isPlaying ? <Pause size={18} /> : <Play size={18} fill="currentColor" />}
+          {error ? (
+            <AlertCircle size={18} />
+          ) : isPlaying ? (
+            <Pause size={18} />
+          ) : (
+            <Play size={18} fill="currentColor" />
+          )}
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-4 text-xs text-white/48">

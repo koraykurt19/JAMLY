@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ChevronDown,
   LayoutDashboard,
@@ -13,7 +14,7 @@ import {
   Upload,
   UserRound
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { JamlyWordmark } from "@/components/jamly-logo";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/components/language-provider";
@@ -28,49 +29,101 @@ const MobileNavigationDrawer = dynamic(
 );
 
 export function SiteHeader() {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileDrawerMounted, setMobileDrawerMounted] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const account = useCurrentAccount();
   const navItems = [
-    { href: "/marketplace", label: t("navMarketplace") },
-    { href: "/jam-match", label: "Jam Match" },
-    { href: "/dashboard", label: t("navDashboard") }
+    { href: "/marketplace", label: language === "tr" ? "Keşfet" : "Discover" },
+    { href: "/marketplace?q=Beat", label: language === "tr" ? "Beatler" : "Beats" },
+    {
+      href: "/marketplace?q=Mixing",
+      label: language === "tr" ? "Hizmetler" : "Services"
+    },
+    {
+      href: "/#creators",
+      label: language === "tr" ? "Üreticiler" : "Producers"
+    },
+    { href: "/jam-match", label: "Jam Match" }
   ];
-  const accountProfile = account.state.status === "signed-in" ? account.state.profile : null;
+  const accountProfile =
+    account.state.status === "signed-in" ? account.state.profile : null;
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (
+        accountMenuRef.current &&
+        !accountMenuRef.current.contains(event.target as Node)
+      ) {
+        setAccountMenuOpen(false);
+      }
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setAccountMenuOpen(false);
+    }
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [accountMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/8 bg-jam-ink/76 shadow-[0_1px_0_rgba(88,197,255,0.08),0_18px_70px_rgba(0,0,0,0.24)] backdrop-blur-2xl">
-      <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="focus-ring rounded-lg">
+    <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#080a0f]/88 backdrop-blur-xl">
+      <div className="mx-auto flex h-[72px] w-full max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
+        <Link href="/" className="focus-ring shrink-0 rounded-md">
           <JamlyWordmark />
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="focus-ring rounded-full px-4 py-2 text-sm font-medium text-white/68 transition hover:bg-jam-blue/10 hover:text-white"
-            >
-              {item.label}
-            </Link>
-          ))}
+        <nav
+          className="hidden items-center gap-0.5 xl:flex"
+          aria-label={language === "tr" ? "Ana navigasyon" : "Main navigation"}
+        >
+          {navItems.map((item) => {
+            const basePath = item.href.split("?")[0]?.split("#")[0] ?? item.href;
+            const active =
+              basePath !== "/" &&
+              (pathname === basePath || pathname.startsWith(`${basePath}/`));
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`focus-ring relative rounded-md px-3 py-2 text-sm font-medium transition ${
+                  active
+                    ? "bg-white/[0.06] text-white"
+                    : "text-white/58 hover:bg-white/[0.045] hover:text-white"
+                }`}
+              >
+                {item.label}
+                {active ? (
+                  <span className="absolute inset-x-3 -bottom-[17px] h-0.5 bg-jam-mint" />
+                ) : null}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 xl:flex">
           <Link
             href="/marketplace"
-            className="focus-ring flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.035] text-white/72 transition hover:border-jam-blue/35 hover:bg-jam-blue/10 hover:text-white"
+            className="focus-ring flex h-10 w-10 items-center justify-center rounded-md border border-white/[0.09] text-white/62 transition hover:border-jam-blue/40 hover:bg-jam-blue/10 hover:text-white"
             aria-label={t("searchMarketplace")}
           >
             <Search size={18} />
           </Link>
           <Link
             href="/messages"
-            className="focus-ring flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.035] text-white/72 transition hover:border-jam-blue/35 hover:bg-jam-blue/10 hover:text-white"
+            className="focus-ring flex h-10 w-10 items-center justify-center rounded-md border border-white/[0.09] text-white/62 transition hover:border-jam-blue/40 hover:bg-jam-blue/10 hover:text-white"
             aria-label={t("navMessages")}
             title={t("navMessages")}
           >
@@ -79,50 +132,49 @@ export function SiteHeader() {
           <LanguageToggle />
           <Link
             href="/upload"
-            className="focus-ring inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black shadow-[0_12px_40px_rgba(255,255,255,0.08)] transition hover:bg-jam-mint"
+            className="focus-ring inline-flex min-h-10 items-center gap-2 rounded-md bg-jam-mint px-4 text-sm font-bold text-[#071018] transition hover:bg-white"
           >
             <Upload size={16} />
             {t("navUpload")}
           </Link>
           {accountProfile ? (
-            <div className="relative">
+            <div ref={accountMenuRef} className="relative">
               <button
                 type="button"
                 onClick={() => setAccountMenuOpen((open) => !open)}
-                className="focus-ring inline-flex h-10 items-center gap-2 rounded-full border border-white/12 px-3 text-sm font-semibold text-white/82 transition hover:border-white/24 hover:bg-white/8"
+                className="focus-ring inline-flex h-10 items-center gap-2 rounded-md border border-white/[0.09] px-3 text-sm font-semibold text-white/76 transition hover:border-white/20 hover:bg-white/[0.05]"
                 aria-label={t("accountMenu")}
                 aria-expanded={accountMenuOpen}
               >
                 <UserRound size={16} className="text-jam-blue" />
                 <span className="max-w-28 truncate">@{accountProfile.handle}</span>
-                <ChevronDown size={14} className={`text-white/42 transition ${accountMenuOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  size={14}
+                  className={`text-white/42 transition ${
+                    accountMenuOpen ? "rotate-180" : ""
+                  }`}
+                />
               </button>
               {accountMenuOpen ? (
-                <div className="absolute right-0 top-12 z-50 w-64 rounded-lg border border-white/10 bg-jam-panel/95 p-1.5 shadow-soft backdrop-blur-xl">
-                  <Link
+                <div className="absolute right-0 top-12 z-50 w-64 rounded-lg border border-white/10 bg-[#10151f] p-1.5 shadow-[0_24px_70px_rgba(0,0,0,0.45)]">
+                  <AccountLink
                     href="/dashboard"
+                    label={t("navDashboard")}
+                    icon={LayoutDashboard}
                     onClick={() => setAccountMenuOpen(false)}
-                    className="focus-ring flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white/72 transition hover:bg-white/8 hover:text-white"
-                  >
-                    <LayoutDashboard size={16} className="text-jam-blue" />
-                    {t("navDashboard")}
-                  </Link>
-                  <Link
+                  />
+                  <AccountLink
                     href="/dashboard/creator"
+                    label={t("openSellerWorkspace")}
+                    icon={Store}
                     onClick={() => setAccountMenuOpen(false)}
-                    className="focus-ring flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white/72 transition hover:bg-white/8 hover:text-white"
-                  >
-                    <Store size={16} className="text-jam-blue" />
-                    {t("openSellerWorkspace")}
-                  </Link>
-                  <Link
+                  />
+                  <AccountLink
                     href={`/creators/${accountProfile.handle}`}
+                    label={t("navProfile")}
+                    icon={UserRound}
                     onClick={() => setAccountMenuOpen(false)}
-                    className="focus-ring flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white/72 transition hover:bg-white/8 hover:text-white"
-                  >
-                    <UserRound size={16} className="text-jam-blue" />
-                    {t("navProfile")}
-                  </Link>
+                  />
                   <div className="my-1 h-px bg-white/10" />
                   <button
                     type="button"
@@ -130,7 +182,7 @@ export function SiteHeader() {
                       setAccountMenuOpen(false);
                       void account.signOut();
                     }}
-                    className="focus-ring flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-white/72 transition hover:bg-white/8 hover:text-white"
+                    className="focus-ring flex min-h-11 w-full items-center gap-2 rounded-md px-3 text-left text-sm font-semibold text-white/66 transition hover:bg-white/[0.06] hover:text-white"
                   >
                     <LogOut size={16} className="text-jam-blue" />
                     {t("signOut")}
@@ -141,7 +193,7 @@ export function SiteHeader() {
           ) : (
             <Link
               href="/auth/sign-in"
-              className="focus-ring inline-flex rounded-full border border-white/12 px-4 py-2 text-sm font-semibold text-white/82 transition hover:border-white/24 hover:bg-white/8"
+              className="focus-ring inline-flex min-h-10 items-center rounded-md border border-white/[0.09] px-4 text-sm font-semibold text-white/76 transition hover:border-white/20 hover:bg-white/[0.05]"
             >
               {t("navSignIn")}
             </Link>
@@ -155,7 +207,7 @@ export function SiteHeader() {
             setMobileDrawerMounted(true);
             setMobileMenuOpen(true);
           }}
-          className="focus-ring flex h-11 w-11 items-center justify-center rounded-md border border-white/10 bg-white/[0.045] text-white/76 transition hover:border-white/20 hover:bg-white/8 hover:text-white md:hidden"
+          className="focus-ring flex h-11 w-11 items-center justify-center rounded-md border border-white/[0.09] bg-white/[0.035] text-white/76 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white xl:hidden"
           aria-label={t("openMenu")}
           aria-expanded={mobileMenuOpen}
           aria-controls="jamly-mobile-navigation"
@@ -175,5 +227,28 @@ export function SiteHeader() {
         />
       ) : null}
     </header>
+  );
+}
+
+function AccountLink({
+  href,
+  label,
+  icon: Icon,
+  onClick
+}: {
+  href: string;
+  label: string;
+  icon: typeof UserRound;
+  onClick: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className="focus-ring flex min-h-11 items-center gap-2 rounded-md px-3 text-sm font-semibold text-white/66 transition hover:bg-white/[0.06] hover:text-white"
+    >
+      <Icon size={16} className="text-jam-blue" />
+      {label}
+    </Link>
   );
 }

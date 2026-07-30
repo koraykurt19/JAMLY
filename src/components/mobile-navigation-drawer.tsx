@@ -80,7 +80,7 @@ export function MobileNavigationDrawer({
       if (event.matches) onClose();
     }
 
-    const desktopQuery = window.matchMedia("(min-width: 768px)");
+    const desktopQuery = window.matchMedia("(min-width: 1280px)");
     document.addEventListener("keydown", handleEscape);
     desktopQuery.addEventListener("change", handleDesktopResize);
 
@@ -115,7 +115,7 @@ export function MobileNavigationDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] md:hidden" aria-hidden={!open}>
+    <div className="fixed inset-0 z-[70] xl:hidden" aria-hidden={!open}>
       <div
         data-testid="mobile-navigation-overlay"
         onClick={onClose}

@@ -474,7 +474,7 @@ export const listings: Listing[] = [
     audioPreviewUrl:
       "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
     coverImageUrl:
-      "https://images.unsplash.com/photo-1461784180009-27c4f04c5a03?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1000&q=80",
     licenseType: "Service",
     turnaround: "48 saat",
     tags: ["Mastering", "Loudness", "Yayına hazır"],
