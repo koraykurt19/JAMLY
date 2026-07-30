@@ -13,8 +13,8 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
   icons: {
     icon: [
-      { url: "/favicon-v8.svg", type: "image/svg+xml" },
-      { url: "/favicon-v8.ico", sizes: "any" },
+      { url: "/favicon-v9.svg", type: "image/svg+xml" },
+      { url: "/favicon-v9.ico", sizes: "any" },
       {
         url: "/brand/favicon-32x32.png",
         type: "image/png",
@@ -26,8 +26,8 @@ export const metadata: Metadata = {
         sizes: "192x192"
       }
     ],
-    shortcut: "/favicon-v8.ico",
-    apple: "/apple-touch-icon.png?v=20260715-8",
+    shortcut: "/favicon-v9.ico",
+    apple: "/apple-touch-icon.png?v=20260730-1",
     other: [
       {
         rel: "mask-icon",
