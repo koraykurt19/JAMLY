@@ -8,6 +8,11 @@ import { useI18n } from "@/components/language-provider";
 import { SocialLinkList } from "@/components/social-link-list";
 import { UiSelect } from "@/components/ui-select";
 import { cn } from "@/lib/format";
+import {
+  canUseProfileHeadline,
+  isJamlyFounderAccount,
+  JAMLY_FOUNDER_HEADLINE
+} from "@/lib/profile-policy";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { ensureCurrentProfile } from "@/lib/supabase-data";
 import {
@@ -95,6 +100,8 @@ const copy = {
     handlePolicy: "Kullanıcı adı 30 günde bir değiştirilebilir.",
     handleLocked: "Kullanıcı adını tekrar değiştirebileceğiniz tarih:",
     handleTaken: "Bu kullanıcı adı dolu. Lütfen farklı bir kullanıcı adı seçin.",
+    founderHeadlineAvailable: "Kurucu unvanı bu hesap için doğrulandı.",
+    founderHeadlineReserved: '"Founder of Jamly" unvanı yalnızca doğrulanmış kurucu hesabına aittir.',
     preview: "Profilde görünecek bağlantılar"
   },
   en: {
@@ -133,6 +140,9 @@ const copy = {
     handlePolicy: "Your handle can be changed once every 30 days.",
     handleLocked: "You can change your handle again on:",
     handleTaken: "This handle is already taken. Please choose another one.",
+    founderHeadlineAvailable: "The founder title is verified for this account.",
+    founderHeadlineReserved:
+      '"Founder of Jamly" is reserved for the verified founder account.',
     preview: "Links shown on profile"
   }
 } as const;
@@ -159,6 +169,7 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
     coverPreviewUrl: ""
   });
   const [saving, setSaving] = useState(false);
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const socialUrlInputRef = useRef<HTMLInputElement>(null);
   const customLabelInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<FormStatus>({
@@ -172,6 +183,20 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
     setCustomSocialLinks(customSocialLinksFromLinks(creator.socialLinks));
     setStatus({ type: "idle", message: isDemo ? text.demo : "" });
   }, [creator, isDemo, text.demo]);
+
+  useEffect(() => {
+    const client = getSupabaseBrowserClient();
+    if (!client) return;
+
+    let active = true;
+    void client.auth.getUser().then(({ data }) => {
+      if (active) setAccountEmail(data.user?.email ?? null);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -257,6 +282,10 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
     event.preventDefault();
 
     if (isDemo) {
+      if (!canUseProfileHeadline(form.headline, accountEmail)) {
+        setStatus({ type: "error", message: text.founderHeadlineReserved });
+        return;
+      }
       setStatus({ type: "success", message: text.demo });
       return;
     }
@@ -277,6 +306,9 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
       }
       if (user.id !== creator.id) {
         throw new Error(text.ownerOnly);
+      }
+      if (!canUseProfileHeadline(form.headline, user.email)) {
+        throw new Error(text.founderHeadlineReserved);
       }
 
       const [avatarUrl, coverUrl] = await Promise.all([
@@ -446,8 +478,20 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
                 <input
                   value={form.headline}
                   onChange={(event) => updateField("headline", event.target.value)}
+                  aria-describedby="profile-headline-policy"
                   className="input-field"
                 />
+                <span
+                  id="profile-headline-policy"
+                  className={cn(
+                    "mt-2 block text-xs leading-5",
+                    isJamlyFounderAccount(accountEmail) ? "text-jam-blue" : "text-white/38"
+                  )}
+                >
+                  {isJamlyFounderAccount(accountEmail)
+                    ? `${text.founderHeadlineAvailable} ${JAMLY_FOUNDER_HEADLINE}`
+                    : text.founderHeadlineReserved}
+                </span>
               </Field>
               <Field label={text.location}>
                 <input

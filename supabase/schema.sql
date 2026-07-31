@@ -197,6 +197,37 @@ create trigger enforce_monthly_handle_change_before_profile_update
   before update on public.profiles
   for each row execute procedure public.enforce_monthly_handle_change();
 
+create or replace function public.enforce_reserved_profile_headline()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  account_email text;
+begin
+  if lower(trim(coalesce(new.headline, ''))) = lower('Founder of Jamly') then
+    select users.email
+    into account_email
+    from auth.users
+    where users.id = new.id;
+
+    if lower(coalesce(account_email, '')) <> 'koraykurt.vrdn@gmail.com' then
+      raise exception 'Founder of Jamly is a reserved profile headline'
+        using errcode = '42501';
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_reserved_profile_headline() from public;
+
+create trigger enforce_reserved_profile_headline_before_write
+  before insert or update of headline on public.profiles
+  for each row execute procedure public.enforce_reserved_profile_headline();
+
 create policy "Active listings are readable"
   on public.listings for select
   using (is_active = true);
