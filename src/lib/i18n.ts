@@ -325,6 +325,10 @@ export const messages = {
     invalidLicensePrices: "Üç lisans fiyatı da 0'dan büyük olmalıdır.",
     missingLicenseFiles: "MP3, Unlimited ZIP ve Exclusive ZIP teslim paketlerini seçin.",
     invalidServicePrice: "Hizmet fiyatı 0'dan büyük olmalıdır.",
+    storageSetupRequired:
+      "Dosya yükleme henüz etkin değil. Supabase Storage bucket kurulumunu tamamlayıp tekrar deneyin.",
+    storageConnectionFailed:
+      "Dosya yükleme bağlantısı kurulamadı. İnternet bağlantınızı kontrol edin ve tekrar deneyin.",
     unknownError: "Bilinmeyen hata",
     licenseType: "Lisans tipi",
     beatLicensePricing: "Sabit lisans yapısı",
@@ -792,6 +796,10 @@ export const messages = {
     invalidLicensePrices: "All three license prices must be greater than zero.",
     missingLicenseFiles: "Select the MP3, Unlimited ZIP, and Exclusive ZIP delivery packages.",
     invalidServicePrice: "The service price must be greater than zero.",
+    storageSetupRequired:
+      "File uploads are not enabled yet. Complete the Supabase Storage bucket setup and try again.",
+    storageConnectionFailed:
+      "The file upload connection could not be established. Check your internet connection and try again.",
     unknownError: "Unknown error",
     licenseType: "License type",
     beatLicensePricing: "Fixed license structure",

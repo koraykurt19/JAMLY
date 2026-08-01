@@ -36,6 +36,7 @@ export function isSupabaseRecoverableError(error: unknown) {
     normalized.includes("pgrst205") ||
     (normalized.includes("relation") && normalized.includes("does not exist")) ||
     normalized.includes("jwt") ||
+    normalized.includes("load failed") ||
     normalized.includes("failed to fetch") ||
     normalized.includes("networkerror")
   );

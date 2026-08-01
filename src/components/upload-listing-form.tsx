@@ -13,7 +13,11 @@ import {
 } from "lucide-react";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
 import { listingCategories } from "@/lib/data";
 import {
   beatLicenseTiers,
@@ -251,6 +255,17 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
 
       if (supabase) {
         if (creatorId) {
+          const {
+            data: { user },
+            error: sessionError
+          } = await supabase.auth.getUser();
+
+          if (sessionError || !user || user.id !== creatorId) {
+            throw new Error(t("creatorSessionRequired"));
+          }
+
+          await assertListingStorageReady(supabase, isBeat);
+
           const listingId = createUuid();
           const [uploadedMedia, deliveryFiles] = await Promise.all([
             uploadListingMedia(
@@ -317,7 +332,7 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
     } catch (error) {
       setLoading(false);
       setMessage(
-        `${t("listingError")}: ${error instanceof Error ? error.message : t("unknownError")}`
+        `${t("listingError")}: ${getListingSaveErrorMessage(error, t)}`
       );
     }
   }
@@ -599,6 +614,47 @@ async function uploadListingMedia(
   return { audioPreviewUrl, coverImageUrl };
 }
 
+async function assertListingStorageReady(
+  supabase: SupabaseBrowserClient,
+  requiresLicenseDelivery: boolean
+) {
+  try {
+    const { data: buckets, error } = await supabase.storage.listBuckets();
+
+    if (error) {
+      throw error;
+    }
+
+    const availableBuckets = new Set(buckets.map((bucket) => bucket.id));
+    const requiredBuckets = [
+      "audio-previews",
+      "listing-covers"
+    ];
+
+    if (requiresLicenseDelivery) {
+      requiredBuckets.push("license-deliverables");
+    }
+
+    const missingBuckets = requiredBuckets.filter(
+      (bucket) => !availableBuckets.has(bucket)
+    );
+
+    if (missingBuckets.length > 0) {
+      throw new StorageSetupError();
+    }
+  } catch (error) {
+    if (error instanceof StorageSetupError) {
+      throw error;
+    }
+
+    if (isSupabaseRecoverableError(error) || isLoadFailure(error)) {
+      throw new StorageConnectionError();
+    }
+
+    throw error;
+  }
+}
+
 async function uploadLicensePackages(
   supabase: SupabaseBrowserClient,
   userId: string,
@@ -617,9 +673,7 @@ async function uploadLicensePackages(
           upsert: false
         });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
       return [tier, path] as const;
     })
@@ -641,11 +695,46 @@ async function uploadPublicFile(
     upsert: false
   });
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+}
+
+class StorageSetupError extends Error {
+  constructor() {
+    super("storage-setup-required");
+    this.name = "StorageSetupError";
+  }
+}
+
+class StorageConnectionError extends Error {
+  constructor() {
+    super("storage-connection-failed");
+    this.name = "StorageConnectionError";
+  }
+}
+
+function getListingSaveErrorMessage(
+  error: unknown,
+  t: (
+    key:
+      | "creatorSessionRequired"
+      | "storageSetupRequired"
+      | "storageConnectionFailed"
+      | "unknownError"
+  ) => string
+) {
+  if (error instanceof StorageSetupError) return t("storageSetupRequired");
+  if (error instanceof StorageConnectionError || isLoadFailure(error)) {
+    return t("storageConnectionFailed");
+  }
+  if (isSupabaseRecoverableError(error)) return t("storageConnectionFailed");
+  return error instanceof Error ? error.message : t("unknownError");
+}
+
+function isLoadFailure(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return /load failed|failed to fetch|networkerror/i.test(message);
 }
 
 function randomId() {
