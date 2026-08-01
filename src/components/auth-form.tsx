@@ -161,7 +161,17 @@ export function AuthForm({ mode }: AuthFormProps) {
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm text-white/64">{t("password")}</span>
+        <span className="flex items-center justify-between gap-3 text-sm text-white/64">
+          {t("password")}
+          {mode === "sign-in" ? (
+            <Link
+              href="/auth/forgot-password"
+              className="focus-ring rounded-sm text-xs font-semibold text-jam-blue transition hover:text-white"
+            >
+              {t("forgotPassword")}
+            </Link>
+          ) : null}
+        </span>
         <input
           value={password}
           type="password"

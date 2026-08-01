@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Camera, Loader2, Plus, Save, Sparkles, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Camera, Loader2, Plus, Save, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/components/language-provider";
@@ -102,6 +103,9 @@ const copy = {
     handleTaken: "Bu kullanıcı adı dolu. Lütfen farklı bir kullanıcı adı seçin.",
     founderHeadlineAvailable: "Kurucu unvanı bu hesap için doğrulandı.",
     founderHeadlineReserved: '"Founder of Jamly" unvanı yalnızca doğrulanmış kurucu hesabına aittir.',
+    accountSecurity: "Hesap güvenliği",
+    accountSecurityCopy: "Parolanızı ve güvenlik ayarlarınızı ayrı bir ekranda yönetin.",
+    changePassword: "Şifremi değiştir",
     preview: "Profilde görünecek bağlantılar"
   },
   en: {
@@ -143,6 +147,9 @@ const copy = {
     founderHeadlineAvailable: "The founder title is verified for this account.",
     founderHeadlineReserved:
       '"Founder of Jamly" is reserved for the verified founder account.',
+    accountSecurity: "Account security",
+    accountSecurityCopy: "Manage your password and security settings on a separate screen.",
+    changePassword: "Change password",
     preview: "Links shown on profile"
   }
 } as const;
@@ -622,6 +629,24 @@ export function CreatorProfileEditor({ creator, isDemo, onSaved }: CreatorProfil
                 <p className="text-sm text-white/42">-</p>
               )}
             </div>
+          </div>
+
+          <div className="flex flex-col gap-4 rounded-lg border border-white/10 bg-black/24 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-jam-blue/20 bg-jam-blue/10 text-jam-blue">
+                <ShieldCheck size={18} />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-white">{text.accountSecurity}</p>
+                <p className="mt-1 text-sm leading-6 text-white/48">{text.accountSecurityCopy}</p>
+              </div>
+            </div>
+            <Link
+              href="/account/settings"
+              className="focus-ring inline-flex min-h-11 shrink-0 items-center justify-center rounded-md border border-white/12 px-4 text-sm font-semibold text-white/76 transition hover:border-jam-blue/40 hover:bg-jam-blue/10 hover:text-white"
+            >
+              {text.changePassword}
+            </Link>
           </div>
         </section>
       </div>

@@ -10,6 +10,7 @@ import {
   Menu,
   MessageCircle,
   Search,
+  ShieldCheck,
   Store,
   Upload,
   UserRound
@@ -173,6 +174,12 @@ export function SiteHeader() {
                     href={`/creators/${accountProfile.handle}`}
                     label={t("navProfile")}
                     icon={UserRound}
+                    onClick={() => setAccountMenuOpen(false)}
+                  />
+                  <AccountLink
+                    href="/account/settings"
+                    label={t("accountSecurity")}
+                    icon={ShieldCheck}
                     onClick={() => setAccountMenuOpen(false)}
                   />
                   <div className="my-1 h-px bg-white/10" />

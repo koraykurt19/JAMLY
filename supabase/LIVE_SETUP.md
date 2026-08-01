@@ -99,6 +99,17 @@ https://your-git-branch-your-team.vercel.app
 https://your-domain.com
 ```
 
+For password recovery, also add the exact reset page for every deployed domain:
+
+```text
+http://localhost:3000/auth/reset-password
+https://your-vercel-project.vercel.app/auth/reset-password
+https://your-domain.com/auth/reset-password
+```
+
+Use Supabase's default recovery email template with `{{ .ConfirmationURL }}` so the
+secure link reaches this page.
+
 ## 6. Storage Buckets
 
 The SQL creates these buckets:
