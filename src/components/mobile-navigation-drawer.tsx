@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { KeyboardEvent, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { JamlyWordmark } from "@/components/jamly-logo";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/components/language-provider";
@@ -45,6 +46,11 @@ export function MobileNavigationDrawer({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [present, setPresent] = useState(open);
   const [visible, setVisible] = useState(false);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalTarget(document.body);
+  }, []);
 
   useEffect(() => {
     let mountFrame = 0;
@@ -68,9 +74,22 @@ export function MobileNavigationDrawer({
 
   useEffect(() => {
     if (!open) return;
-    const previousOverflow = document.body.style.overflow;
+    const scrollY = window.scrollY;
+    const previousBody = {
+      overflow: document.body.style.overflow,
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
+      overscrollBehavior: document.body.style.overscrollBehavior
+    };
+    const previousRootOverflow = document.documentElement.style.overflow;
     const triggerElement = triggerRef.current;
+    document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+    document.body.style.overscrollBehavior = "none";
     closeButtonRef.current?.focus();
 
     function handleEscape(event: globalThis.KeyboardEvent) {
@@ -86,14 +105,20 @@ export function MobileNavigationDrawer({
     desktopQuery.addEventListener("change", handleDesktopResize);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
+      document.body.style.overflow = previousBody.overflow;
+      document.body.style.position = previousBody.position;
+      document.body.style.top = previousBody.top;
+      document.body.style.width = previousBody.width;
+      document.body.style.overscrollBehavior = previousBody.overscrollBehavior;
+      window.scrollTo({ top: scrollY, left: 0, behavior: "instant" });
       document.removeEventListener("keydown", handleEscape);
       desktopQuery.removeEventListener("change", handleDesktopResize);
       triggerElement?.focus();
     };
   }, [onClose, open, triggerRef]);
 
-  if (!present) return null;
+  if (!present || !portalTarget) return null;
 
   function keepFocusInside(event: KeyboardEvent<HTMLElement>) {
     if (event.key !== "Tab" || !panelRef.current) return;
@@ -115,8 +140,8 @@ export function MobileNavigationDrawer({
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-[70] xl:hidden" aria-hidden={!open}>
+  return createPortal(
+    <div className="fixed inset-0 z-[100] h-[100dvh] overflow-hidden overscroll-none xl:hidden" aria-hidden={!open}>
       <div
         data-testid="mobile-navigation-overlay"
         onClick={onClose}
@@ -135,7 +160,7 @@ export function MobileNavigationDrawer({
         aria-label={t("mobileNavigation")}
         onKeyDown={keepFocusInside}
         className={cn(
-          "absolute right-0 top-0 flex h-[100dvh] w-[min(22rem,90vw)] transform-gpu flex-col border-l border-white/10 bg-jam-panel shadow-soft transition-transform duration-[520ms] ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform motion-reduce:duration-0",
+          "absolute right-0 top-0 flex h-[100dvh] max-h-[100dvh] w-[min(22rem,90vw)] transform-gpu flex-col border-l border-white/10 bg-jam-panel shadow-soft transition-transform duration-[520ms] ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform motion-reduce:duration-0",
           visible ? "translate-x-0" : "translate-x-full"
         )}
       >
@@ -200,7 +225,8 @@ export function MobileNavigationDrawer({
           <LanguageToggle menuPlacement="top" layout="drawer" />
         </div>
       </aside>
-    </div>
+    </div>,
+    portalTarget
   );
 }
 

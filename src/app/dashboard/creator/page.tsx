@@ -16,7 +16,6 @@ import {
   Plus,
   TrendingUp
 } from "lucide-react";
-import { CreatorProfileEditor } from "@/components/creator-profile-editor";
 import { DashboardState } from "@/components/dashboard-state";
 import { ListingVisibilityControl } from "@/components/listing-visibility-control";
 import { SectionHeading } from "@/components/section-heading";
@@ -48,7 +47,6 @@ export default function CreatorDashboardPage() {
   );
   const creatorOrders = dashboard.state.orders.map((order) => localizeOrder(order, language));
   const isDemo = dashboard.state.isDemo;
-  const creatorProfile = dashboard.state.profile;
   const revenue = creatorOrders.reduce((sum, order) => sum + order.price, 0);
   const totalViews = creatorListings.reduce((sum, listing) => sum + listing.analytics.views, 0);
   const totalSaves = creatorListings.reduce((sum, listing) => sum + listing.analytics.saves, 0);
@@ -124,16 +122,6 @@ export default function CreatorDashboardPage() {
           detail={t("requestOrder")}
         />
       </div>
-
-      {creatorProfile ? (
-        <div className="mt-8">
-          <CreatorProfileEditor
-            creator={creatorProfile}
-            isDemo={isDemo}
-            onSaved={dashboard.retry}
-          />
-        </div>
-      ) : null}
 
       <div className="mt-10 flex flex-col gap-2 border-t border-white/10 pt-8">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-jam-blue">
