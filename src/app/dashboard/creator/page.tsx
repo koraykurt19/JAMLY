@@ -11,6 +11,7 @@ import {
   Eye,
   Heart,
   Inbox,
+  Pencil,
   PlayCircle,
   Plus,
   TrendingUp
@@ -231,6 +232,13 @@ export default function CreatorDashboardPage() {
                     isDemo={isDemo}
                     onChanged={dashboard.retry}
                   />
+                  <Link
+                    href={`/dashboard/creator/listings/${listing.id}`}
+                    className="focus-ring inline-flex min-h-10 items-center gap-2 rounded-md border border-white/12 bg-black/20 px-3 text-xs font-bold text-white/72 transition hover:border-jam-blue/55 hover:bg-jam-blue/10 hover:text-white"
+                  >
+                    <Pencil size={15} />
+                    {language === "tr" ? "Düzenle" : "Edit"}
+                  </Link>
                 </div>
               </div>
             )) : (

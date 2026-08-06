@@ -18,16 +18,33 @@ const headers = {
 
 const auth = await request(`${supabaseUrl}/auth/v1/settings`, { headers: { apikey: supabaseKey } });
 const profiles = await request(`${supabaseUrl}/rest/v1/profiles?select=id&limit=1`, { headers });
+const buckets = await request(`${supabaseUrl}/storage/v1/bucket`, { headers });
 
 const schemaMissing =
   profiles.status === 404 ||
   profiles.body.includes("PGRST205") ||
   profiles.body.includes("schema cache");
 
+const requiredBuckets = [
+  "listing-covers",
+  "profile-media",
+  "audio-previews",
+  "license-deliverables"
+];
+const bucketIds = parseBucketIds(buckets.body);
+const missingBuckets = bucketIds
+  ? requiredBuckets.filter((bucket) => !bucketIds.has(bucket))
+  : [];
+
 const result = {
-  ok: auth.ok && profiles.ok,
+  ok: auth.ok && profiles.ok && buckets.ok && missingBuckets.length === 0,
   auth: auth.ok ? "ready" : `http_${auth.status}`,
-  database: profiles.ok ? "ready" : schemaMissing ? "schema_missing" : `http_${profiles.status}`
+  database: profiles.ok ? "ready" : schemaMissing ? "schema_missing" : `http_${profiles.status}`,
+  storage: buckets.ok
+    ? missingBuckets.length === 0
+      ? "ready"
+      : `buckets_missing:${missingBuckets.join(",")}`
+    : `http_${buckets.status}`
 };
 
 console.log(JSON.stringify(result, null, 2));
@@ -65,5 +82,19 @@ function loadDotEnvLocal() {
     const key = trimmed.slice(0, separator).trim();
     const value = trimmed.slice(separator + 1).trim();
     if (!process.env[key]) process.env[key] = value;
+  }
+}
+
+function parseBucketIds(body) {
+  try {
+    const parsed = JSON.parse(body);
+    if (!Array.isArray(parsed)) return null;
+    return new Set(
+      parsed
+        .map((bucket) => (bucket && typeof bucket.id === "string" ? bucket.id : null))
+        .filter(Boolean)
+    );
+  } catch {
+    return null;
   }
 }

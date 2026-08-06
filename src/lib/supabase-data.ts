@@ -326,6 +326,35 @@ export async function setListingActiveState(
   }
 }
 
+export type ListingUpdateInput = Pick<
+  Database["public"]["Tables"]["listings"]["Update"],
+  | "title"
+  | "category"
+  | "genre"
+  | "bpm"
+  | "price"
+  | "price_non_exclusive"
+  | "price_unlimited"
+  | "price_exclusive"
+  | "description"
+  | "turnaround"
+  | "tags"
+  | "is_active"
+>;
+
+export async function updateListingDetails(
+  client: SupabaseClient,
+  listingId: string,
+  input: ListingUpdateInput
+) {
+  assertClient(client);
+  const { error } = await client.from("listings").update(input).eq("id", listingId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 export async function updateOrderStatus(
   client: SupabaseClient,
   orderId: string,

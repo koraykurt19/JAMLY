@@ -291,16 +291,29 @@ Expected live result:
 {
   "ok": true,
   "auth": "ready",
-  "database": "ready"
+  "database": "ready",
+  "storage": "ready"
 }
 ```
 
-If the result says `schema_missing`, apply the schema with a direct Supabase
-Postgres connection string:
+For an empty Supabase project, if the result says `schema_missing`, apply the
+complete schema with a direct Supabase Postgres connection string:
 
 ```bash
 SUPABASE_DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require" npm run supabase:apply-schema
 ```
+
+For an existing project where the database is ready but `storage` reports
+`buckets_missing`, apply only the safe, repeatable storage migration instead:
+
+```bash
+SUPABASE_DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require" npm run supabase:apply-migration -- 20260801_ensure_listing_storage.sql
+```
+
+This creates the public cover, profile-media, and audio-preview buckets plus
+the private license-delivery bucket and their access policies. Re-run
+`npm run supabase:check` afterwards; it must return `storage: "ready"` before
+testing uploads.
 
 Use the database password or connection string from Supabase Dashboard. Do not
 commit this value, and do not put it in Vercel frontend environment variables.
