@@ -158,9 +158,9 @@ export const messages = {
     portfolio: "Portföy",
     beatsServices: "Beatler ve hizmetler",
     creatorDashboardEyebrow: "Üretici paneli",
-    creatorDashboardTitle: "Vitrininizi, talepleri ve teslim ritmini yönetin.",
+    creatorDashboardTitle: "İlanlarınızı, talepleri ve teslim ritmini yönetin.",
     creatorDashboardDescription:
-      "İşlerini yayında tutmak, alıcı taleplerini önceliklendirmek ve profil güvenini artırmak için sade bir operasyon alanı.",
+      "İşlerinizi yayında tutmak, alıcı taleplerini önceliklendirmek ve teslim akışını takip etmek için sade bir operasyon alanı.",
     accountDashboardEyebrow: "Hesap paneli",
     accountDashboardTitle: "Tek hesapla hem keşfedin hem satış vitrininizi yönetin.",
     accountDashboardDescription:
@@ -170,7 +170,7 @@ export const messages = {
     buyerWorkspace: "Alım tarafı",
     sellerModeTitle: "Satış vitrini",
     sellerModeCopy:
-      "Yayınladığınız beatleri, hizmetleri, lisans fiyatlarını, talepleri ve profil güven sinyallerini yönetin.",
+      "Yayınladığınız beatleri, hizmetleri, lisans fiyatlarını, talepleri ve teslim akışını yönetin.",
     buyerModeTitle: "Alım çalışma alanı",
     buyerModeCopy:
       "Kısa listenizi, proje özetlerinizi, açık taleplerinizi ve konuşmalarınızı tek yerden takip edin.",
@@ -629,9 +629,9 @@ export const messages = {
     portfolio: "Portfolio",
     beatsServices: "Beats and services",
     creatorDashboardEyebrow: "Creator dashboard",
-    creatorDashboardTitle: "Manage your storefront, requests, and delivery rhythm.",
+    creatorDashboardTitle: "Manage your listings, requests, and delivery rhythm.",
     creatorDashboardDescription:
-      "A focused operating surface for creators: listing performance, buyer intent, profile readiness, and next delivery actions.",
+      "A focused operating surface for creators: listing performance, buyer intent, and next delivery actions.",
     accountDashboardEyebrow: "Account dashboard",
     accountDashboardTitle: "Discover and sell from one Jamly account.",
     accountDashboardDescription:
@@ -641,7 +641,7 @@ export const messages = {
     buyerWorkspace: "Buyer side",
     sellerModeTitle: "Seller workspace",
     sellerModeCopy:
-      "Manage published beats, services, license prices, requests, and profile trust signals.",
+      "Manage published beats, services, license prices, requests, and delivery flow.",
     buyerModeTitle: "Buyer workspace",
     buyerModeCopy:
       "Track your shortlist, briefs, open requests, and project conversations in one place.",

@@ -73,7 +73,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-10 grid gap-4 md:grid-cols-4">
-        <StatCard label={t("activeListings")} value={listedCount.toString()} detail={t("profileStorefront")} />
+        <StatCard label={t("activeListings")} value={listedCount.toString()} detail={t("activeListingsDetail")} />
         <StatCard label={t("openRequests")} value={soldRequestCount.toString()} detail={t("sellerRequests")} />
         <StatCard label={t("sentBriefs")} value={buyingRequestCount.toString()} detail={t("buyerWorkspace")} />
         <StatCard
