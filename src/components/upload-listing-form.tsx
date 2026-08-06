@@ -264,8 +264,6 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
             throw new Error(t("creatorSessionRequired"));
           }
 
-          await assertListingStorageReady(supabase, isBeat);
-
           const listingId = createUuid();
           const [uploadedMedia, deliveryFiles] = await Promise.all([
             uploadListingMedia(
@@ -614,47 +612,6 @@ async function uploadListingMedia(
   return { audioPreviewUrl, coverImageUrl };
 }
 
-async function assertListingStorageReady(
-  supabase: SupabaseBrowserClient,
-  requiresLicenseDelivery: boolean
-) {
-  try {
-    const { data: buckets, error } = await supabase.storage.listBuckets();
-
-    if (error) {
-      throw error;
-    }
-
-    const availableBuckets = new Set(buckets.map((bucket) => bucket.id));
-    const requiredBuckets = [
-      "audio-previews",
-      "listing-covers"
-    ];
-
-    if (requiresLicenseDelivery) {
-      requiredBuckets.push("license-deliverables");
-    }
-
-    const missingBuckets = requiredBuckets.filter(
-      (bucket) => !availableBuckets.has(bucket)
-    );
-
-    if (missingBuckets.length > 0) {
-      throw new StorageSetupError();
-    }
-  } catch (error) {
-    if (error instanceof StorageSetupError) {
-      throw error;
-    }
-
-    if (isSupabaseRecoverableError(error) || isLoadFailure(error)) {
-      throw new StorageConnectionError();
-    }
-
-    throw error;
-  }
-}
-
 async function uploadLicensePackages(
   supabase: SupabaseBrowserClient,
   userId: string,
@@ -700,20 +657,6 @@ async function uploadPublicFile(
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
 
-class StorageSetupError extends Error {
-  constructor() {
-    super("storage-setup-required");
-    this.name = "StorageSetupError";
-  }
-}
-
-class StorageConnectionError extends Error {
-  constructor() {
-    super("storage-connection-failed");
-    this.name = "StorageConnectionError";
-  }
-}
-
 function getListingSaveErrorMessage(
   error: unknown,
   t: (
@@ -724,8 +667,8 @@ function getListingSaveErrorMessage(
       | "unknownError"
   ) => string
 ) {
-  if (error instanceof StorageSetupError) return t("storageSetupRequired");
-  if (error instanceof StorageConnectionError || isLoadFailure(error)) {
+  if (isBucketMissing(error)) return t("storageSetupRequired");
+  if (isLoadFailure(error)) {
     return t("storageConnectionFailed");
   }
   if (isSupabaseRecoverableError(error)) return t("storageConnectionFailed");
@@ -735,6 +678,11 @@ function getListingSaveErrorMessage(
 function isLoadFailure(error: unknown) {
   const message = error instanceof Error ? error.message : String(error ?? "");
   return /load failed|failed to fetch|networkerror/i.test(message);
+}
+
+function isBucketMissing(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return /bucket not found|no such bucket/i.test(message);
 }
 
 function randomId() {
