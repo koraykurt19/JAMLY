@@ -228,7 +228,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-x-clip">
       <section className="relative isolate border-b border-white/[0.08]">
         <Image
           src={heroImage}
@@ -245,15 +245,15 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-[#080a0f]/76" />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,#080a0f_3%,rgba(8,10,15,0.82)_48%,rgba(8,10,15,0.48)),linear-gradient(180deg,transparent_55%,#080a0f_100%)]" />
 
-        <div className="relative mx-auto grid min-h-[620px] w-full max-w-[1440px] items-center gap-12 px-4 py-14 sm:px-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.72fr)] lg:px-8 lg:py-10 xl:px-10">
-          <div className="max-w-3xl">
-            <p className="inline-flex items-center gap-2 rounded-md border border-jam-mint/24 bg-jam-mint/10 px-3 py-2 text-xs font-semibold uppercase text-jam-mint">
+        <div className="relative mx-auto grid min-h-[620px] w-full max-w-[1440px] items-center gap-12 px-4 py-12 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.72fr)] lg:px-8 lg:py-10 xl:px-10">
+          <div className="min-w-0 max-w-3xl">
+            <p className="inline-flex max-w-full items-center gap-2 rounded-md border border-jam-mint/24 bg-jam-mint/10 px-3 py-2 text-xs font-semibold uppercase leading-5 text-jam-mint">
               <span className="h-1.5 w-1.5 rounded-full bg-jam-mint" />
               {language === "tr"
                 ? "Beat lisansları ve profesyonel müzik hizmetleri"
                 : "Beat licenses and professional music services"}
             </p>
-            <h1 className="mt-6 break-words text-[2.75rem] font-semibold leading-[1.02] text-white sm:text-[3.5rem] lg:text-[4.25rem] xl:text-[4.6rem]">
+            <h1 className="mt-6 max-w-[19rem] text-[2.35rem] font-semibold leading-[1.04] text-white sm:max-w-none sm:text-[3.5rem] lg:text-[4.25rem] xl:text-[4.6rem]">
               {language === "tr"
                 ? "Aradığın sesi bul. Projeni doğru kişiyle tamamla."
                 : "Find your sound. Finish with the right collaborator."}
@@ -266,7 +266,7 @@ export default function LandingPage() {
 
             <form
               onSubmit={submitSearch}
-              className="mt-8 flex max-w-3xl flex-col gap-2 rounded-lg border border-white/14 bg-[#f7f9fc] p-2 shadow-[0_20px_60px_rgba(0,0,0,0.32)] sm:flex-row"
+              className="mt-8 flex w-full max-w-3xl flex-col gap-2 rounded-lg border border-white/14 bg-[#f7f9fc] p-2 shadow-[0_20px_60px_rgba(0,0,0,0.32)] sm:flex-row"
             >
               <label className="relative min-w-0 flex-1">
                 <span className="sr-only">
@@ -289,14 +289,14 @@ export default function LandingPage() {
               </label>
               <button
                 type="submit"
-                className="focus-ring inline-flex min-h-[52px] items-center justify-center gap-2 rounded-md bg-[#080a0f] px-6 text-sm font-bold text-white transition hover:bg-jam-blue"
+                className="focus-ring inline-flex min-h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-md bg-[#080a0f] px-6 text-sm font-bold text-white transition hover:bg-jam-blue sm:w-auto"
               >
                 {language === "tr" ? "Keşfet" : "Discover"}
                 <ArrowRight size={17} />
               </button>
             </form>
 
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-2 sm:flex-wrap sm:overflow-visible">
+            <div className="-mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
               {["Trap", "R&B", "Afrobeat", "Drill", "Female Vocal", "Mix & Master"].map(
                 (query) => (
                   <Link

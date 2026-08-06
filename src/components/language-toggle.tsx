@@ -12,11 +12,14 @@ const currencies: DisplayCurrency[] = ["USD", "TRY"];
 
 type OpenMenu = "language" | "currency" | null;
 type MenuPlacement = "top" | "bottom";
+type ToggleLayout = "inline" | "drawer";
 
 export function LanguageToggle({
-  menuPlacement = "bottom"
+  menuPlacement = "bottom",
+  layout = "inline"
 }: {
   menuPlacement?: MenuPlacement;
+  layout?: ToggleLayout;
 }) {
   const {
     language,
@@ -43,13 +46,19 @@ export function LanguageToggle({
   }, []);
 
   return (
-    <div ref={containerRef} className="flex items-center gap-2">
+    <div
+      ref={containerRef}
+      className={`flex items-center gap-2 ${
+        layout === "drawer" ? "w-full" : ""
+      }`}
+    >
       <PreferenceDropdown
         icon={<Languages size={15} />}
         label={t("language")}
         value={languageNames[language]}
         shortValue={language.toUpperCase()}
         placement={menuPlacement}
+        layout={layout}
         open={openMenu === "language"}
         onToggle={() => setOpenMenu(openMenu === "language" ? null : "language")}
       >
@@ -73,6 +82,7 @@ export function LanguageToggle({
         value={currencyCode === "USD" ? t("currencyUsd") : t("currencyTry")}
         shortValue={currencyCode}
         placement={menuPlacement}
+        layout={layout}
         open={openMenu === "currency"}
         onToggle={() => setOpenMenu(openMenu === "currency" ? null : "currency")}
       >
@@ -99,6 +109,7 @@ function PreferenceDropdown({
   value,
   shortValue,
   placement,
+  layout,
   open,
   onToggle,
   children
@@ -108,6 +119,7 @@ function PreferenceDropdown({
   value: string;
   shortValue: string;
   placement: MenuPlacement;
+  layout: ToggleLayout;
   open: boolean;
   onToggle: () => void;
   children: ReactNode;
@@ -115,11 +127,13 @@ function PreferenceDropdown({
   const chevronPointsUp = placement === "top" ? !open : open;
 
   return (
-    <div className="relative">
+    <div className={`relative ${layout === "drawer" ? "min-w-0 flex-1" : ""}`}>
       <button
         type="button"
         onClick={onToggle}
-        className="focus-ring inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.045] px-3 text-xs font-bold uppercase text-white/76 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
+        className={`focus-ring inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.045] px-3 text-xs font-bold uppercase text-white/76 transition hover:border-white/20 hover:bg-white/8 hover:text-white ${
+          layout === "drawer" ? "w-full justify-between" : ""
+        }`}
         aria-label={label}
         aria-expanded={open}
       >
@@ -136,9 +150,9 @@ function PreferenceDropdown({
           role="menu"
           aria-label={label}
           data-placement={placement}
-          className={`absolute right-0 z-50 max-h-64 min-w-44 overflow-y-auto overscroll-contain rounded-lg border border-white/10 bg-jam-panel/95 p-1 shadow-soft backdrop-blur-xl ${
+          className={`absolute z-50 max-h-64 overflow-y-auto overscroll-contain rounded-lg border border-white/10 bg-jam-panel/95 p-1 shadow-soft backdrop-blur-xl ${
             placement === "top" ? "bottom-12" : "top-12"
-          }`}
+          } ${layout === "drawer" ? "inset-x-0 min-w-0" : "right-0 min-w-44"}`}
         >
           <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">
             {label}

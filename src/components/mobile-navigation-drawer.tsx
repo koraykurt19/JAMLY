@@ -197,7 +197,7 @@ export function MobileNavigationDrawer({
         </nav>
 
         <div className="relative z-10 shrink-0 border-t border-white/10 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <LanguageToggle menuPlacement="top" />
+          <LanguageToggle menuPlacement="top" layout="drawer" />
         </div>
       </aside>
     </div>
