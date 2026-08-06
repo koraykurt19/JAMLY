@@ -7,6 +7,7 @@ import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/components/language-provider";
 import { LicenseDeliveryPanel } from "@/components/license-delivery-panel";
+import { OrderStatusControl } from "@/components/order-status-control";
 import { currency, shortDate } from "@/lib/format";
 import { orderStatusLabel } from "@/lib/labels";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
@@ -32,6 +33,24 @@ export default function OrderPage({ params }: OrderPageProps) {
   const [state, setState] = useState<OrderPageState>(() =>
     isSupabaseConfigured() ? { status: "loading" } : { status: "demo" }
   );
+
+  function updateVisibleOrderStatus(status: OrderDetail["order"]["statusCode"]) {
+    setState((current) =>
+      current.status === "ready"
+        ? {
+            ...current,
+            detail: {
+              ...current.detail,
+              order: {
+                ...current.detail.order,
+                statusCode: status,
+                status: status === "requested" ? "Requested" : status === "in_review" ? "In Review" : status === "delivered" ? "Delivered" : "Cancelled"
+              }
+            }
+          }
+        : current
+    );
+  }
 
   useEffect(() => {
     const client = getSupabaseBrowserClient();
@@ -152,6 +171,11 @@ export default function OrderPage({ params }: OrderPageProps) {
             <Meta label={t("participantCreator")} value={detail.order.creatorName} />
             <Meta label={t("projectValue")} value={currency(detail.order.price, language, currencyCode, usdTryRate)} />
           </div>
+          <OrderStatusControl
+            order={detail.order}
+            isCreator={role === "creator"}
+            onChanged={updateVisibleOrderStatus}
+          />
         </aside>
 
         <Conversation initialDetail={detail} />

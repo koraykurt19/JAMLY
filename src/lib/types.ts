@@ -132,6 +132,6 @@ export type OrderRequest = {
   price: number;
   licenseTier: OrderLicenseTier;
   licenseTermsVersion: string | null;
-  status: "Draft" | "Requested" | "In Review" | "Delivered";
+  status: "Draft" | "Requested" | "In Review" | "Delivered" | "Cancelled";
   createdAt: string;
 };

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { CreatorProfileEditor } from "@/components/creator-profile-editor";
 import { DashboardState } from "@/components/dashboard-state";
+import { ListingVisibilityControl } from "@/components/listing-visibility-control";
 import { SectionHeading } from "@/components/section-heading";
 import { StatCard } from "@/components/stat-card";
 import { useI18n } from "@/components/language-provider";
@@ -171,19 +172,20 @@ export default function CreatorDashboardPage() {
           </div>
           <div className="divide-y divide-white/8">
             {visibleListings.length > 0 ? visibleListings.map((listing) => (
-              <Link
+              <div
                 key={listing.id}
-                href={`/listing/${listing.id}`}
-                className="grid gap-4 p-5 transition hover:bg-white/[0.035] sm:grid-cols-[72px_1fr_auto]"
+                className="grid gap-4 p-5 transition hover:bg-white/[0.035] sm:grid-cols-[72px_minmax(0,1fr)_auto]"
               >
-                <Image
-                  src={listing.coverImageUrl}
-                  alt={listing.title}
-                  width={72}
-                  height={72}
-                  className="h-[72px] w-[72px] rounded-lg object-cover"
-                />
-                <div>
+                <Link href={`/listing/${listing.id}`} className="focus-ring rounded-lg">
+                  <Image
+                    src={listing.coverImageUrl}
+                    alt={listing.title}
+                    width={72}
+                    height={72}
+                    className="h-[72px] w-[72px] rounded-lg object-cover"
+                  />
+                </Link>
+                <Link href={`/listing/${listing.id}`} className="focus-ring min-w-0 rounded-lg">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-semibold text-white">{listing.title}</p>
                     {listing.exclusiveSold ? (
@@ -214,14 +216,23 @@ export default function CreatorDashboardPage() {
                     <MetricChip icon={PlayCircle} value={formatNumber(listing.analytics.plays)} />
                     <MetricChip icon={BarChart3} value={`${listing.analytics.conversionRate}%`} />
                   </div>
-                </div>
-                <div className="text-left sm:text-right">
+                </Link>
+                <div className="flex flex-col gap-3 text-left sm:items-end sm:text-right">
+                  <div>
                   <p className="font-semibold text-white">
                     {currency(listing.price, language, currencyCode, usdTryRate)}
                   </p>
                   <p className="mt-1 text-sm text-white/46">{listing.turnaround}</p>
+                  </div>
+                  <ListingVisibilityControl
+                    listingId={listing.id}
+                    isActive={listing.isActive}
+                    exclusiveSold={listing.exclusiveSold}
+                    isDemo={isDemo}
+                    onChanged={dashboard.retry}
+                  />
                 </div>
-              </Link>
+              </div>
             )) : (
               <div className="p-6 text-center">
                 <p className="font-semibold text-white">{t("noCreatorListings")}</p>

@@ -1676,13 +1676,15 @@ export function orderStatusLabel(status: OrderRequest["status"], language: Langu
       Draft: "Taslak",
       Requested: "Talep Edildi",
       "In Review": "İncelemede",
-      Delivered: "Teslim Edildi"
+      Delivered: "Teslim Edildi",
+      Cancelled: "İptal Edildi"
     },
     en: {
       Draft: "Draft",
       Requested: "Requested",
       "In Review": "In Review",
-      Delivered: "Delivered"
+      Delivered: "Delivered",
+      Cancelled: "Cancelled"
     }
   };
 

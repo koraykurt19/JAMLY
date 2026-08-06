@@ -310,6 +310,38 @@ export async function sendOrderMessage(
   return sendConversationMessage(client, conversationId, senderId, body);
 }
 
+export async function setListingActiveState(
+  client: SupabaseClient,
+  listingId: string,
+  isActive: boolean
+) {
+  assertClient(client);
+  const { error } = await client
+    .from("listings")
+    .update({ is_active: isActive })
+    .eq("id", listingId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function updateOrderStatus(
+  client: SupabaseClient,
+  orderId: string,
+  status: Database["public"]["Enums"]["order_status"]
+) {
+  assertClient(client);
+  const { error } = await client
+    .from("order_requests")
+    .update({ status })
+    .eq("id", orderId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 export async function purchaseBeatLicense(
   client: SupabaseClient,
   listingId: string,
@@ -561,7 +593,7 @@ function mapOrderStatus(status: OrderRow["status"]): OrderRequest["status"] {
     requested: "Requested",
     in_review: "In Review",
     delivered: "Delivered",
-    cancelled: "Draft"
+    cancelled: "Cancelled"
   };
   return statuses[status];
 }

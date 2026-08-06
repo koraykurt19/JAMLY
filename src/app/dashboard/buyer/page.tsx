@@ -23,6 +23,7 @@ import { localizeListing, localizeOrder } from "@/lib/i18n";
 import { useShortlist } from "@/lib/use-shortlist";
 import { useDashboardData } from "@/lib/use-dashboard-data";
 import { getBeatLicenseCopy } from "@/lib/beat-licenses";
+import { useSavedSearches } from "@/lib/use-saved-searches";
 
 const DEFAULT_SHORTLIST = ["night-shift-bounce", "velvet-hook-package"];
 
@@ -30,6 +31,7 @@ export default function BuyerDashboardPage() {
   const { currencyCode, language, t, usdTryRate } = useI18n();
   const shortlist = useShortlist(DEFAULT_SHORTLIST);
   const dashboard = useDashboardData("buyer");
+  const savedSearches = useSavedSearches();
 
   if (dashboard.state.status !== "ready") {
     return (
@@ -77,7 +79,7 @@ export default function BuyerDashboardPage() {
       <div className="mt-10 grid gap-4 md:grid-cols-4">
         <StatCard label={t("openRequests")} value={buyerOrders.length.toString()} detail={t("demoOrderFlow")} />
         <StatCard label={t("savedListings")} value={savedListings.length.toString()} detail={t("readyCompare")} />
-        <StatCard label={t("savedSearches")} value={isDemo ? "3" : "0"} detail={t("jamMatchTitle")} />
+        <StatCard label={t("savedSearches")} value={savedSearches.searches.length.toString()} detail={t("jamMatchTitle")} />
         <StatCard label={t("pendingReplies")} value={pendingReplies.toString()} detail={t("avgResponse")} />
       </div>
 
@@ -257,7 +259,7 @@ export default function BuyerDashboardPage() {
             <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5">
               <BookmarkCheck size={20} className="text-jam-mint" />
               <p className="mt-3 text-sm font-semibold text-white">{t("savedSearches")}</p>
-              <p className="mt-1 text-2xl font-semibold text-white">{isDemo ? 3 : 0}</p>
+              <p className="mt-1 text-2xl font-semibold text-white">{savedSearches.searches.length}</p>
             </div>
             <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5">
               <MessageCircle size={20} className="text-jam-blue" />

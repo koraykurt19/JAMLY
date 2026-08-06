@@ -4,6 +4,7 @@ import {
   ArrowDownUp,
   BadgeCheck,
   BriefcaseBusiness,
+  BookmarkPlus,
   Crown,
   Search,
   ShieldCheck,
@@ -26,6 +27,7 @@ import {
 } from "@/lib/labels";
 import type { DeliverySpeed, Listing, ListingMood, ListingUseCase } from "@/lib/types";
 import { useI18n } from "@/components/language-provider";
+import { useSavedSearches, type SavedSearch } from "@/lib/use-saved-searches";
 
 const ALL_FILTER = "All";
 type SortMode = "recommended" | "low-price" | "high-price" | "newest";
@@ -53,6 +55,7 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
   const [maxPrice, setMaxPrice] = useState("500");
   const [sortMode, setSortMode] = useState<SortMode>("recommended");
   const [quickFilters, setQuickFilters] = useState<QuickFilter[]>([]);
+  const savedSearches = useSavedSearches();
   const genreOptions = localizedGenres(language);
 
   const filteredListings = useMemo(() => {
@@ -178,6 +181,30 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
         ? current.filter((item) => item !== filter)
         : [...current, filter]
     );
+  }
+
+  function saveCurrentSearch() {
+    const label = [query.trim(), category !== ALL_FILTER ? categoryLabel(category as Listing["category"], language) : "", genre !== ALL_FILTER ? genre : ""]
+      .filter(Boolean)
+      .join(" / ") || (language === "tr" ? "Yeni keşif" : "New discovery");
+    savedSearches.save({
+      label,
+      query,
+      category,
+      genre,
+      mood,
+      useCase,
+      maxPrice
+    });
+  }
+
+  function applySavedSearch(search: SavedSearch) {
+    setQuery(search.query);
+    setCategory(search.category);
+    setGenre(search.genre);
+    setMood(search.mood);
+    setUseCase(search.useCase);
+    setMaxPrice(search.maxPrice);
   }
 
   return (
@@ -377,14 +404,24 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
             />
           </label>
 
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/10 px-4 text-sm font-semibold text-white/70 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
-          >
-            <X size={16} />
-            {t("reset")}
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={saveCurrentSearch}
+              className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-full border border-jam-blue/30 bg-jam-blue/10 px-4 text-sm font-semibold text-jam-blue transition hover:border-jam-blue/60 hover:bg-jam-blue/18"
+            >
+              <BookmarkPlus size={16} />
+              {language === "tr" ? "Aramayı kaydet" : "Save search"}
+            </button>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="focus-ring inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/10 px-4 text-sm font-semibold text-white/70 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
+            >
+              <X size={16} />
+              {t("reset")}
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -418,6 +455,33 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
           })}
         </div>
       </div>
+
+      {savedSearches.searches.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 border-b border-white/8 pb-5">
+          <span className="mr-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/38">
+            {language === "tr" ? "Kayıtlı aramalar" : "Saved searches"}
+          </span>
+          {savedSearches.searches.slice(0, 4).map((search) => (
+            <div key={search.id} className="inline-flex overflow-hidden rounded-full border border-white/10 bg-black/22">
+              <button
+                type="button"
+                onClick={() => applySavedSearch(search)}
+                className="focus-ring min-h-9 px-3 text-xs font-semibold text-white/68 transition hover:bg-white/[0.07] hover:text-white"
+              >
+                {search.label}
+              </button>
+              <button
+                type="button"
+                onClick={() => savedSearches.remove(search.id)}
+                className="focus-ring flex w-9 items-center justify-center border-l border-white/10 text-white/38 transition hover:bg-white/[0.07] hover:text-white"
+                aria-label={language === "tr" ? `${search.label} aramasını sil` : `Delete ${search.label} search`}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm text-white/56">
