@@ -123,7 +123,7 @@ export function JamMatchResults({
               <SlidersHorizontal size={16} />
             </button>
             <Link
-              href="/marketplace"
+              href="/discover"
               className="focus-ring inline-flex items-center justify-center gap-2 rounded-md border border-white/12 px-5 py-3 text-sm font-bold text-white/72 transition hover:bg-white/8 hover:text-white"
             >
               {text.browseManually}

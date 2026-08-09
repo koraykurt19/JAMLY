@@ -39,10 +39,10 @@ export function SiteHeader() {
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const account = useCurrentAccount();
   const navItems = [
-    { href: "/marketplace", label: language === "tr" ? "Keşfet" : "Discover" },
-    { href: "/marketplace?q=Beat", label: language === "tr" ? "Beatler" : "Beats" },
+    { href: "/discover", label: language === "tr" ? "Keşfet" : "Discover" },
+    { href: "/beats", label: language === "tr" ? "Beatler" : "Beats" },
     {
-      href: "/marketplace?q=Mixing",
+      href: "/services",
       label: language === "tr" ? "Hizmetler" : "Services"
     },
     {
@@ -79,7 +79,7 @@ export function SiteHeader() {
   }, [accountMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#080a0f]/88 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#080a0f] shadow-[0_12px_34px_rgba(0,0,0,0.34)]">
       <div className="mx-auto flex h-[72px] w-full max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8 xl:px-10">
         <Link href="/" className="focus-ring shrink-0 rounded-md">
           <JamlyWordmark />
@@ -116,7 +116,7 @@ export function SiteHeader() {
 
         <div className="hidden items-center gap-2 xl:flex">
           <Link
-            href="/marketplace"
+            href="/discover"
             className="focus-ring flex h-10 w-10 items-center justify-center rounded-md border border-white/[0.09] text-white/62 transition hover:border-jam-blue/40 hover:bg-jam-blue/10 hover:text-white"
             aria-label={t("searchMarketplace")}
           >

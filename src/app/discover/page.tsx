@@ -1,10 +1,10 @@
 import { MarketplacePageContent } from "@/components/marketplace-page-content";
 
-type MarketplacePageProps = {
+type DiscoverPageProps = {
   searchParams?: Record<string, string | string[] | undefined>;
 };
 
-export default function MarketplacePage({ searchParams }: MarketplacePageProps) {
+export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   return (
     <MarketplacePageContent
       mode="discover"
@@ -13,7 +13,7 @@ export default function MarketplacePage({ searchParams }: MarketplacePageProps) 
   );
 }
 
-function getSearchQuery(searchParams: MarketplacePageProps["searchParams"]) {
+function getSearchQuery(searchParams: DiscoverPageProps["searchParams"]) {
   const value = searchParams?.q;
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }

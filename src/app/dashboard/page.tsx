@@ -55,7 +55,7 @@ export default function DashboardPage() {
         />
         <div className="flex flex-wrap gap-3">
           <Link
-            href="/marketplace"
+            href="/discover"
             className="focus-ring inline-flex items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-3 text-sm font-semibold text-white/76 transition hover:bg-white/8 hover:text-white"
           >
             <Search size={18} />

@@ -14,7 +14,7 @@ import {
   Zap
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ListingCard } from "@/components/listing-card";
 import { UiSelect } from "@/components/ui-select";
 import { creators } from "@/lib/data";
@@ -41,14 +41,12 @@ type QuickFilter = "instant" | "verified" | "stems" | "commercial" | "exclusive"
 
 type MarketplaceBrowserProps = {
   listings: Listing[];
+  initialQuery?: string;
 };
 
-export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
+export function MarketplaceBrowser({ listings, initialQuery = "" }: MarketplaceBrowserProps) {
   const { currencyCode, language, t, usdTryRate } = useI18n();
-  const [query, setQuery] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return new URLSearchParams(window.location.search).get("q") ?? "";
-  });
+  const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState(ALL_FILTER);
   const [genre, setGenre] = useState(ALL_FILTER);
   const [mood, setMood] = useState(ALL_FILTER);
@@ -59,6 +57,10 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
   const [quickFilters, setQuickFilters] = useState<QuickFilter[]>([]);
   const savedSearches = useSavedSearches();
   const genreOptions = localizedGenres(language);
+
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
 
   const filteredListings = useMemo(() => {
     const search = query.trim().toLowerCase();
