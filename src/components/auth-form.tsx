@@ -1,0 +1,217 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import type { FormEvent } from "react";
+import { useState } from "react";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
+import { ensureCurrentProfile } from "@/lib/supabase-data";
+import { useI18n } from "@/components/language-provider";
+
+type AuthFormProps = {
+  mode: "sign-in" | "sign-up";
+};
+
+export function AuthForm({ mode }: AuthFormProps) {
+  const router = useRouter();
+  const { t } = useI18n();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [handle, setHandle] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const configured = isSupabaseConfigured();
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase) {
+      setLoading(false);
+      setMessage(t("liveAuthMissing"));
+      return;
+    }
+
+    const normalizedHandle = normalizeHandle(handle);
+    if (mode === "sign-up") {
+      if (normalizedHandle.length < 2) {
+        setLoading(false);
+        setMessage(t("handleHelp"));
+        return;
+      }
+
+      const { data: existingProfile, error: handleCheckError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("handle", normalizedHandle)
+        .maybeSingle();
+
+      if (handleCheckError) {
+        setLoading(false);
+        setMessage(`${t("authError")}: ${handleCheckError.message}`);
+        return;
+      }
+
+      if (existingProfile) {
+        setLoading(false);
+        setMessage(t("handleTaken"));
+        return;
+      }
+    }
+
+    const result =
+      mode === "sign-in"
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                full_name: fullName,
+                handle: normalizedHandle,
+                role: "buyer"
+              }
+            }
+          });
+
+    if (result.error) {
+      setLoading(false);
+      setMessage(
+        isSupabaseRecoverableError(result.error)
+          ? t("supabaseInvalidConfig")
+          : `${t("authError")}: ${result.error.message}`
+      );
+      return;
+    }
+
+    if (!result.data.session) {
+      setLoading(false);
+      setMessage(t("accountCreated"));
+      return;
+    }
+
+    try {
+      const { profile } = await ensureCurrentProfile(supabase);
+      if (!profile && mode === "sign-in") {
+        throw new Error(t("profileMissing"));
+      }
+
+      router.replace("/dashboard");
+      router.refresh();
+    } catch (error) {
+      setLoading(false);
+      setMessage(
+        isSupabaseRecoverableError(error)
+          ? t("supabaseInvalidConfig")
+          : `${t("authError")}: ${error instanceof Error ? error.message : t("unknownError")}`
+      );
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      {!configured ? (
+        <div className="rounded-lg border border-jam-blue/25 bg-jam-blue/10 p-4 text-sm leading-6 text-jam-blue">
+          {t("authDemoMode")}
+        </div>
+      ) : null}
+
+      {mode === "sign-up" ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-sm text-white/64">{t("fullName")}</span>
+            <input
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              required
+              className="focus-ring h-12 w-full rounded-lg border border-white/10 bg-black/35 px-4 text-white"
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm text-white/64">{t("handle")}</span>
+            <input
+              value={handle}
+              onChange={(event) => setHandle(normalizeHandle(event.target.value))}
+              required
+              className="focus-ring h-12 w-full rounded-lg border border-white/10 bg-black/35 px-4 text-white"
+            />
+            <span className="block text-xs leading-5 text-white/38">{t("handleHelp")}</span>
+          </label>
+        </div>
+      ) : null}
+
+      <label className="space-y-2">
+        <span className="text-sm text-white/64">{t("email")}</span>
+        <input
+          value={email}
+          type="email"
+          onChange={(event) => setEmail(event.target.value)}
+          required
+          className="focus-ring h-12 w-full rounded-lg border border-white/10 bg-black/35 px-4 text-white"
+        />
+      </label>
+
+      <label className="space-y-2">
+        <span className="flex items-center justify-between gap-3 text-sm text-white/64">
+          {t("password")}
+          {mode === "sign-in" ? (
+            <Link
+              href="/auth/forgot-password"
+              className="focus-ring rounded-sm text-xs font-semibold text-jam-blue transition hover:text-white"
+            >
+              {t("forgotPassword")}
+            </Link>
+          ) : null}
+        </span>
+        <input
+          value={password}
+          type="password"
+          minLength={6}
+          onChange={(event) => setPassword(event.target.value)}
+          required
+          className="focus-ring h-12 w-full rounded-lg border border-white/10 bg-black/35 px-4 text-white"
+        />
+      </label>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="focus-ring inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-jam-mint px-5 text-sm font-bold text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        {loading ? <Loader2 size={18} className="animate-spin" /> : null}
+        {mode === "sign-in" ? t("navSignIn") : t("createAccount")}
+      </button>
+
+      {message ? <p className="text-sm text-jam-mint">{message}</p> : null}
+
+      <p className="text-center text-sm text-white/52">
+        {mode === "sign-in" ? t("newToJamly") : t("alreadyAccount")}{" "}
+        <Link
+          href={mode === "sign-in" ? "/auth/sign-up" : "/auth/sign-in"}
+          className="font-semibold text-white transition hover:text-jam-mint"
+        >
+          {mode === "sign-in" ? t("createAccount") : t("navSignIn")}
+        </Link>
+      </p>
+    </form>
+  );
+}
+
+function normalizeHandle(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32);
+}

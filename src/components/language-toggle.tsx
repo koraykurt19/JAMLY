@@ -1,0 +1,193 @@
+"use client";
+
+import { ChevronDown, Coins, Languages } from "lucide-react";
+import type { ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
+import { languageNames, type Language } from "@/lib/i18n";
+import type { DisplayCurrency } from "@/lib/format";
+import { useI18n } from "@/components/language-provider";
+
+const languages: Language[] = ["tr", "en"];
+const currencies: DisplayCurrency[] = ["USD", "TRY"];
+
+type OpenMenu = "language" | "currency" | null;
+type MenuPlacement = "top" | "bottom";
+type ToggleLayout = "inline" | "drawer";
+
+export function LanguageToggle({
+  menuPlacement = "bottom",
+  layout = "inline"
+}: {
+  menuPlacement?: MenuPlacement;
+  layout?: ToggleLayout;
+}) {
+  const {
+    language,
+    setLanguage,
+    currencyCode,
+    setCurrencyCode,
+    t
+  } = useI18n();
+  const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpenMenu(null);
+      }
+    }
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`flex items-center gap-2 ${
+        layout === "drawer" ? "w-full" : ""
+      }`}
+    >
+      <PreferenceDropdown
+        icon={<Languages size={15} />}
+        label={t("language")}
+        value={languageNames[language]}
+        shortValue={language.toUpperCase()}
+        placement={menuPlacement}
+        layout={layout}
+        open={openMenu === "language"}
+        onToggle={() => setOpenMenu(openMenu === "language" ? null : "language")}
+      >
+        {languages.map((item) => (
+          <MenuButton
+            key={item}
+            active={language === item}
+            label={languageNames[item]}
+            value={item.toUpperCase()}
+            onClick={() => {
+              setLanguage(item);
+              setOpenMenu(null);
+            }}
+          />
+        ))}
+      </PreferenceDropdown>
+
+      <PreferenceDropdown
+        icon={<Coins size={15} />}
+        label={t("currency")}
+        value={currencyCode === "USD" ? t("currencyUsd") : t("currencyTry")}
+        shortValue={currencyCode}
+        placement={menuPlacement}
+        layout={layout}
+        open={openMenu === "currency"}
+        onToggle={() => setOpenMenu(openMenu === "currency" ? null : "currency")}
+      >
+        {currencies.map((item) => (
+          <MenuButton
+            key={item}
+            active={currencyCode === item}
+            label={item === "USD" ? t("currencyUsd") : t("currencyTry")}
+            value={item}
+            onClick={() => {
+              setCurrencyCode(item);
+              setOpenMenu(null);
+            }}
+          />
+        ))}
+      </PreferenceDropdown>
+    </div>
+  );
+}
+
+function PreferenceDropdown({
+  icon,
+  label,
+  value,
+  shortValue,
+  placement,
+  layout,
+  open,
+  onToggle,
+  children
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  shortValue: string;
+  placement: MenuPlacement;
+  layout: ToggleLayout;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const chevronPointsUp = placement === "top" ? !open : open;
+
+  return (
+    <div className={`relative ${layout === "drawer" ? "min-w-0 flex-1" : ""}`}>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`focus-ring inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.045] px-3 text-xs font-bold uppercase text-white/76 transition hover:border-white/20 hover:bg-white/8 hover:text-white ${
+          layout === "drawer" ? "w-full justify-between" : ""
+        }`}
+        aria-label={label}
+        aria-expanded={open}
+      >
+        <span className="text-white/48">{icon}</span>
+        <span>{shortValue}</span>
+        <ChevronDown
+          size={14}
+          className={`text-white/42 transition ${chevronPointsUp ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          aria-label={label}
+          data-placement={placement}
+          className={`absolute z-50 max-h-64 overflow-y-auto overscroll-contain rounded-lg border border-white/10 bg-jam-panel/95 p-1 shadow-soft backdrop-blur-xl ${
+            placement === "top" ? "bottom-12" : "top-12"
+          } ${layout === "drawer" ? "inset-x-0 min-w-0" : "right-0 min-w-44"}`}
+        >
+          <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/38">
+            {label}
+          </p>
+          {children}
+          <p className="sr-only">{value}</p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function MenuButton({
+  active,
+  label,
+  value,
+  onClick
+}: {
+  active: boolean;
+  label: string;
+  value: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`focus-ring flex w-full items-center justify-between gap-4 rounded-md px-3 py-2 text-left text-sm transition ${
+        active
+          ? "bg-jam-mint text-black"
+          : "text-white/66 hover:bg-white/8 hover:text-white"
+      }`}
+    >
+      <span>{label}</span>
+      <span className="text-xs font-bold uppercase opacity-70">{value}</span>
+    </button>
+  );
+}
