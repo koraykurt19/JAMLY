@@ -14,21 +14,21 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
   icons: {
     icon: [
-      { url: "/favicon-v9.svg", type: "image/svg+xml" },
-      { url: "/favicon-v9.ico", sizes: "any" },
+      { url: "/favicon-v10.svg", type: "image/svg+xml" },
+      { url: "/favicon-v10.ico", sizes: "any" },
       {
         url: "/brand/favicon-32x32.png",
         type: "image/png",
         sizes: "32x32"
       },
       {
-        url: "/icon-192.png",
+        url: "/icon-192-v10.png",
         type: "image/png",
         sizes: "192x192"
       }
     ],
-    shortcut: "/favicon-v9.ico",
-    apple: "/apple-touch-icon.png?v=20260730-1",
+    shortcut: "/favicon-v10.ico",
+    apple: "/apple-touch-icon-v10.png",
     other: [
       {
         rel: "mask-icon",

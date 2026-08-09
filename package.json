@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "supabase:check": "node scripts/check-supabase.mjs",
     "supabase:apply-schema": "node scripts/apply-supabase-schema.mjs",
-    "supabase:apply-migration": "node scripts/apply-supabase-migration.mjs"
+    "supabase:apply-migration": "node scripts/apply-supabase-migration.mjs",
+    "brand:generate-favicon": "node scripts/generate-jamly-favicon.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
