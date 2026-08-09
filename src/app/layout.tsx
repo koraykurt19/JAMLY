@@ -11,24 +11,24 @@ export const metadata: Metadata = {
   title: "Jamly - Müzik üreticileri Jam Alanı",
   description:
     "Beat, hook, miks ve özel prodüksiyon işleri için premium müzik üreticileri Jam Alanı.",
-  manifest: "/site.webmanifest",
+  manifest: "/site.webmanifest?v=20260809-2",
   icons: {
     icon: [
-      { url: "/favicon-v11.svg", type: "image/svg+xml" },
-      { url: "/favicon-v11.ico", sizes: "any" },
+      { url: "/favicon-v12.svg?v=20260809-2", type: "image/svg+xml" },
+      { url: "/favicon-v12.ico?v=20260809-2", sizes: "any" },
       {
-        url: "/brand/favicon-32x32.png",
+        url: "/brand/favicon-32x32.png?v=20260809-2",
         type: "image/png",
         sizes: "32x32"
       },
       {
-        url: "/icon-192-v11.png",
+        url: "/icon-192-v12.png?v=20260809-2",
         type: "image/png",
         sizes: "192x192"
       }
     ],
-    shortcut: "/favicon-v11.ico",
-    apple: "/apple-touch-icon-v11.png",
+    shortcut: "/favicon-v12.ico?v=20260809-2",
+    apple: "/apple-touch-icon-v12.png?v=20260809-2",
     other: [
       {
         rel: "mask-icon",

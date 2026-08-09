@@ -29,6 +29,44 @@ const csp = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
 ].join("; ");
 
+const noStoreAssetHeaders = [
+  {
+    key: "Cache-Control",
+    value: "no-store, max-age=0, must-revalidate"
+  }
+];
+
+const faviconAssetRoutes = [
+  "/favicon.ico",
+  "/favicon.svg",
+  "/favicon-v10.ico",
+  "/favicon-v10.png",
+  "/favicon-v10.svg",
+  "/favicon-v11.ico",
+  "/favicon-v11.png",
+  "/favicon-v11.svg",
+  "/favicon-v12.ico",
+  "/favicon-v12.png",
+  "/favicon-v12.svg",
+  "/apple-touch-icon.png",
+  "/apple-touch-icon-v10.png",
+  "/apple-touch-icon-v11.png",
+  "/apple-touch-icon-v12.png",
+  "/icon.png",
+  "/icon-192.png",
+  "/icon-192-v10.png",
+  "/icon-192-v11.png",
+  "/icon-192-v12.png",
+  "/icon-512.png",
+  "/icon-512-v10.png",
+  "/icon-512-v11.png",
+  "/icon-512-v12.png",
+  "/brand/favicon-32x32.png",
+  "/brand/favicon-48x48.png",
+  "/brand/jamly-favicon.png",
+  "/site.webmanifest"
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -65,7 +103,11 @@ const nextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" }
         ]
-      }
+      },
+      ...faviconAssetRoutes.map((source) => ({
+        source,
+        headers: noStoreAssetHeaders
+      }))
     ];
   }
 };
