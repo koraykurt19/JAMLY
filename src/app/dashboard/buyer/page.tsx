@@ -64,7 +64,7 @@ export default function BuyerDashboardPage() {
           description={t("buyerDashboardDescription")}
         />
         <Link
-          href="/marketplace"
+          href="/discover"
           className="focus-ring inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-jam-mint"
         >
           <Search size={18} />

@@ -1,4 +1,8 @@
 import type { Creator, Listing, ListingCategory } from "@/lib/types";
+import {
+  jamMatchCategorySignals,
+  jamMatchGenreSignals
+} from "@/lib/marketplace-config";
 
 export type JamMatchBudget = {
   min: number;
@@ -41,13 +45,13 @@ export type JamMatchResult = {
 };
 
 type MatchSignal = {
-  categories: ListingCategory[];
-  tokens: string[];
+  categories: readonly ListingCategory[];
+  tokens: readonly string[];
   label: Record<JamMatchInput["language"], string>;
 };
 
 type GenreSignal = {
-  tokens: string[];
+  tokens: readonly string[];
   label: Record<JamMatchInput["language"], string>;
 };
 
@@ -65,103 +69,8 @@ type ScoredListing = {
   reasons: string[];
 };
 
-const categorySignals: Record<string, MatchSignal> = {
-  beat: {
-    categories: ["Beat"],
-    tokens: ["beat", "instrumental", "808"],
-    label: { tr: "Beat ihtiyacı", en: "Beat fit" }
-  },
-  vocal: {
-    categories: ["Vocal Feature"],
-    tokens: ["vocal", "vokal", "singer", "şarkıcı", "harmon", "armon"],
-    label: { tr: "Vokal ihtiyacı", en: "Vocal fit" }
-  },
-  lyrics: {
-    categories: ["Lyrics", "Songwriting"],
-    tokens: ["lyrics", "lyric", "söz", "hook", "topline", "chorus"],
-    label: { tr: "Söz yazımı", en: "Lyrics fit" }
-  },
-  "mixing-mastering": {
-    categories: ["Mixing", "Mastering"],
-    tokens: ["mix", "miks", "master", "mastering", "loudness", "stem"],
-    label: { tr: "Miks/master", en: "Mix/master fit" }
-  },
-  mix: {
-    categories: ["Mixing"],
-    tokens: ["mix", "miks", "stem", "vocal chain", "low-end", "low end"],
-    label: { tr: "Miks", en: "Mix" }
-  },
-  master: {
-    categories: ["Mastering"],
-    tokens: ["master", "mastering", "loudness", "spotify", "release", "yayın"],
-    label: { tr: "Master", en: "Master" }
-  },
-  "guitar-riff": {
-    categories: ["Guitar"],
-    tokens: ["guitar", "gitar", "riff", "session", "akustik", "electric"],
-    label: { tr: "Enstrüman/riff", en: "Instrument riff" }
-  },
-  guitar: {
-    categories: ["Guitar"],
-    tokens: ["guitar", "gitar", "riff", "session", "akustik", "electric"],
-    label: { tr: "Gitar", en: "Guitar" }
-  },
-  jingle: {
-    categories: ["Jingle"],
-    tokens: ["jingle", "brand", "marka", "slogan", "podcast intro", "reklam"],
-    label: { tr: "Jingle", en: "Jingle" }
-  },
-  "sample-pack": {
-    categories: ["Beat"],
-    tokens: ["sample pack", "sample", "paket", "pack", "loop", "one-shot", "oneshot"],
-    label: { tr: "Sample paketi", en: "Sample pack" }
-  },
-  "custom-producer": {
-    categories: ["Custom Production"],
-    tokens: ["custom production", "custom producer", "özel prodüksiyon", "prodüksiyon", "producer"],
-    label: { tr: "Özel prodüksiyon", en: "Custom production" }
-  },
-  "cover-art": {
-    categories: ["Cover Art"],
-    tokens: ["cover art", "kapak", "görsel", "artwork", "release kit", "tasarım"],
-    label: { tr: "Kapak görseli", en: "Cover art" }
-  }
-};
-
-const genreSignals: Record<string, GenreSignal> = {
-  "hip-hop": {
-    tokens: ["hip-hop", "hip hop", "hiphop", "rap"],
-    label: { tr: "Hip-Hop türü", en: "Hip-Hop genre" }
-  },
-  trap: {
-    tokens: ["trap", "trap soul", "808"],
-    label: { tr: "Trap türü", en: "Trap genre" }
-  },
-  drill: {
-    tokens: ["drill"],
-    label: { tr: "Drill türü", en: "Drill genre" }
-  },
-  "r-and-b": {
-    tokens: ["r&b", "rnb", "rhythm and blues", "trap soul"],
-    label: { tr: "R&B türü", en: "R&B genre" }
-  },
-  pop: {
-    tokens: ["pop", "indie pop", "pop/r&b"],
-    label: { tr: "Pop türü", en: "Pop genre" }
-  },
-  afrobeat: {
-    tokens: ["afrobeat", "afrobeats", "afro"],
-    label: { tr: "Afrobeat türü", en: "Afrobeat genre" }
-  },
-  rock: {
-    tokens: ["rock", "alternative rock", "indie rock"],
-    label: { tr: "Rock türü", en: "Rock genre" }
-  },
-  electronic: {
-    tokens: ["electronic", "elektronik", "edm", "house", "techno"],
-    label: { tr: "Elektronik türü", en: "Electronic genre" }
-  }
-};
+const categorySignals: Record<string, MatchSignal> = jamMatchCategorySignals;
+const genreSignals: Record<string, GenreSignal> = jamMatchGenreSignals;
 
 const promptSynonyms: Array<{
   label: Record<JamMatchInput["language"], string>;

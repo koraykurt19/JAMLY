@@ -14,10 +14,10 @@ import {
   Zap
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ListingCard } from "@/components/listing-card";
 import { UiSelect } from "@/components/ui-select";
-import { creators, listingCategories } from "@/lib/data";
+import { creators } from "@/lib/data";
 import { currency } from "@/lib/format";
 import { categoryLabel, localizedGenres } from "@/lib/i18n";
 import {
@@ -25,28 +25,28 @@ import {
   moodLabel,
   usageLabel
 } from "@/lib/labels";
-import type { DeliverySpeed, Listing, ListingMood, ListingUseCase } from "@/lib/types";
+import type { Listing, ListingMood, ListingUseCase } from "@/lib/types";
 import { useI18n } from "@/components/language-provider";
 import { useSavedSearches, type SavedSearch } from "@/lib/use-saved-searches";
+import {
+  deliverySpeeds,
+  listingCategories,
+  listingMoods,
+  listingUseCases
+} from "@/lib/marketplace-config";
 
 const ALL_FILTER = "All";
 type SortMode = "recommended" | "low-price" | "high-price" | "newest";
 type QuickFilter = "instant" | "verified" | "stems" | "commercial" | "exclusive";
 
-const moods: ListingMood[] = ["Dark", "Bright", "Smooth", "Club", "Cinematic", "Warm"];
-const useCases: ListingUseCase[] = ["Single", "YouTube", "TikTok", "Sync", "Podcast", "Ad"];
-const deliverySpeeds: DeliverySpeed[] = ["instant", "fast", "standard"];
-
 type MarketplaceBrowserProps = {
   listings: Listing[];
+  initialQuery?: string;
 };
 
-export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
+export function MarketplaceBrowser({ listings, initialQuery = "" }: MarketplaceBrowserProps) {
   const { currencyCode, language, t, usdTryRate } = useI18n();
-  const [query, setQuery] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return new URLSearchParams(window.location.search).get("q") ?? "";
-  });
+  const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState(ALL_FILTER);
   const [genre, setGenre] = useState(ALL_FILTER);
   const [mood, setMood] = useState(ALL_FILTER);
@@ -57,6 +57,10 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
   const [quickFilters, setQuickFilters] = useState<QuickFilter[]>([]);
   const savedSearches = useSavedSearches();
   const genreOptions = localizedGenres(language);
+
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
 
   const filteredListings = useMemo(() => {
     const search = query.trim().toLowerCase();
@@ -332,7 +336,7 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
               variant="pill"
               options={[
                 { value: ALL_FILTER, label: t("selectMood") },
-                ...moods.map((item) => ({ value: item, label: moodLabel(item, language) }))
+                ...listingMoods.map((item) => ({ value: item, label: moodLabel(item, language) }))
               ]}
             />
           </label>
@@ -346,7 +350,7 @@ export function MarketplaceBrowser({ listings }: MarketplaceBrowserProps) {
               variant="pill"
               options={[
                 { value: ALL_FILTER, label: t("selectUseCase") },
-                ...useCases.map((item) => ({ value: item, label: usageLabel(item, language) }))
+                ...listingUseCases.map((item) => ({ value: item, label: usageLabel(item, language) }))
               ]}
             />
           </label>

@@ -18,7 +18,6 @@ import {
   isSupabaseConfigured,
   isSupabaseRecoverableError
 } from "@/lib/supabase";
-import { listingCategories } from "@/lib/data";
 import {
   beatLicenseTiers,
   getBeatLicenseCopy,
@@ -30,6 +29,11 @@ import type { BeatLicenseTier, ListingCategory } from "@/lib/types";
 import { useI18n } from "@/components/language-provider";
 import { UiSelect } from "@/components/ui-select";
 import { currency } from "@/lib/format";
+import {
+  listingCategories,
+  listingGenreOptions,
+  listingTurnaroundOptions
+} from "@/lib/marketplace-config";
 
 type FormState = {
   title: string;
@@ -81,6 +85,30 @@ const initialMediaState: MediaState = {
   deliveryExclusiveFile: null
 };
 
+const MB = 1024 * 1024;
+const uploadRules = {
+  audio: {
+    maxSize: 50 * MB,
+    mimeTypes: ["audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp4", "audio/x-m4a"],
+    extensions: [".mp3", ".wav", ".m4a"]
+  },
+  cover: {
+    maxSize: 8 * MB,
+    mimeTypes: ["image/jpeg", "image/png", "image/webp"],
+    extensions: [".jpg", ".jpeg", ".png", ".webp"]
+  },
+  mp3Delivery: {
+    maxSize: 80 * MB,
+    mimeTypes: ["audio/mpeg"],
+    extensions: [".mp3"]
+  },
+  zipDelivery: {
+    maxSize: 500 * MB,
+    mimeTypes: ["application/zip", "application/x-zip-compressed", "application/octet-stream"],
+    extensions: [".zip"]
+  }
+} as const;
+
 const priceFieldByTier: Record<
   BeatLicenseTier,
   "priceNonExclusive" | "priceUnlimited" | "priceExclusive"
@@ -89,20 +117,6 @@ const priceFieldByTier: Record<
   unlimited: "priceUnlimited",
   exclusive: "priceExclusive"
 };
-
-const genreOptions = [
-  "Hip-Hop",
-  "Trap",
-  "Drill",
-  "R&B",
-  "Pop",
-  "Afrobeat",
-  "Rock",
-  "Electronic",
-  "Other"
-];
-
-const turnaroundOptions = ["24 saat", "3 gün", "1 hafta", "Esnek"];
 
 type UploadListingFormProps = {
   creatorId?: string;
@@ -145,6 +159,16 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
 
   function updateMedia(kind: "audio" | "cover", event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
+    const validationError = file
+      ? validateUploadFile(file, uploadRules[kind], language)
+      : "";
+    if (validationError) {
+      event.target.value = "";
+      setMessage(`${t("listingError")}: ${validationError}`);
+      return;
+    }
+
+    setMessage("");
     const nextPreviewUrl = file ? registerPreviewUrl(file) : "";
 
     setMedia((current) => {
@@ -174,6 +198,16 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
     event: ChangeEvent<HTMLInputElement>
   ) {
     const file = event.target.files?.[0] ?? null;
+    const rule =
+      kind === "deliveryMp3File" ? uploadRules.mp3Delivery : uploadRules.zipDelivery;
+    const validationError = file ? validateUploadFile(file, rule, language) : "";
+    if (validationError) {
+      event.target.value = "";
+      setMessage(`${t("listingError")}: ${validationError}`);
+      return;
+    }
+
+    setMessage("");
     setMedia((current) => ({ ...current, [kind]: file }));
   }
 
@@ -376,7 +410,7 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
             placeholder={t("genrePlaceholder")}
             options={[
               { value: "", label: t("genrePlaceholder"), disabled: true },
-              ...genreOptions.map((genre) => ({ value: genre, label: genre }))
+              ...listingGenreOptions.map((genre) => ({ value: genre, label: genre }))
             ]}
           />
         </Field>
@@ -401,7 +435,7 @@ export function UploadListingForm({ creatorId }: UploadListingFormProps) {
             placeholder={t("turnaroundPlaceholder")}
             options={[
               { value: "", label: t("turnaroundPlaceholder") },
-              ...turnaroundOptions.map((option) => ({ value: option, label: option }))
+              ...listingTurnaroundOptions.map((option) => ({ value: option, label: option }))
             ]}
           />
         </Field>
@@ -714,6 +748,40 @@ function convertInputPriceToUsd(value: number, displayCurrency: "USD" | "TRY", u
   if (!Number.isFinite(value)) return value;
   if (displayCurrency === "TRY") return Number((value / usdTryRate).toFixed(2));
   return Number(value.toFixed(2));
+}
+
+function validateUploadFile(
+  file: File,
+  rule: {
+    maxSize: number;
+    mimeTypes: readonly string[];
+    extensions: readonly string[];
+  },
+  language: "tr" | "en"
+) {
+  const lowerName = file.name.toLowerCase();
+  const hasAllowedExtension = rule.extensions.some((extension) =>
+    lowerName.endsWith(extension)
+  );
+  const hasAllowedMime = !file.type || rule.mimeTypes.includes(file.type);
+
+  if (!hasAllowedExtension || !hasAllowedMime) {
+    return language === "tr"
+      ? `Dosya tipi desteklenmiyor. İzin verilen uzantılar: ${rule.extensions.join(", ")}`
+      : `Unsupported file type. Allowed extensions: ${rule.extensions.join(", ")}`;
+  }
+
+  if (file.size > rule.maxSize) {
+    return language === "tr"
+      ? `Dosya çok büyük. Üst sınır ${formatFileSize(rule.maxSize)}.`
+      : `File is too large. Maximum size is ${formatFileSize(rule.maxSize)}.`;
+  }
+
+  if (file.size === 0) {
+    return language === "tr" ? "Boş dosya yüklenemez." : "Empty files cannot be uploaded.";
+  }
+
+  return "";
 }
 
 function formatFileSize(size: number) {

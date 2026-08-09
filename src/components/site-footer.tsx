@@ -12,10 +12,10 @@ export function SiteFooter() {
     {
       title: language === "tr" ? "Platform" : "Platform",
       links: [
-        { href: "/marketplace", label: language === "tr" ? "Jam Alanı" : "Jam Place" },
-        { href: "/marketplace?q=Beat", label: language === "tr" ? "Beatler" : "Beats" },
+        { href: "/discover", label: language === "tr" ? "Jam Alanı" : "Jam Place" },
+        { href: "/beats", label: language === "tr" ? "Beatler" : "Beats" },
         {
-          href: "/marketplace?q=Mixing",
+          href: "/services",
           label: language === "tr" ? "Hizmetler" : "Services"
         },
         { href: "/#creators", label: language === "tr" ? "Üreticiler" : "Producers" },
@@ -64,7 +64,7 @@ export function SiteFooter() {
                 : "The Jam Place for beat licenses, vocals, songwriting, mixing, mastering, and custom production."}
             </p>
             <Link
-              href="/marketplace"
+              href="/discover"
               className="focus-ring mt-6 inline-flex min-h-11 items-center gap-2 rounded-md border border-white/10 px-4 text-sm font-semibold text-white/72 transition hover:border-jam-blue/40 hover:bg-jam-blue/10 hover:text-white"
             >
               {language === "tr" ? "Jam Alanı'nı aç" : "Open Jam Place"}

@@ -1,18 +1,14 @@
 import type { SocialLink } from "@/lib/social-links";
+import type {
+  deliverySpeeds,
+  listingCategories,
+  listingMoods,
+  listingUseCases
+} from "@/lib/marketplace-config";
 
 export type Role = "creator" | "buyer";
 
-export type ListingCategory =
-  | "Beat"
-  | "Mixing"
-  | "Mastering"
-  | "Songwriting"
-  | "Vocal Feature"
-  | "Custom Production"
-  | "Guitar"
-  | "Lyrics"
-  | "Jingle"
-  | "Cover Art";
+export type ListingCategory = (typeof listingCategories)[number];
 
 export type LicenseType =
   | "Basic Lease"
@@ -28,23 +24,12 @@ export type BeatLicensePrices = Record<BeatLicenseTier, number>;
 
 export type BeatDeliveryFiles = Record<BeatLicenseTier, string | null>;
 
-export type ListingMood =
-  | "Dark"
-  | "Bright"
-  | "Smooth"
-  | "Club"
-  | "Cinematic"
-  | "Warm";
+export type ListingMood = (typeof listingMoods)[number];
 
 export type ListingUseCase =
-  | "Single"
-  | "YouTube"
-  | "TikTok"
-  | "Sync"
-  | "Podcast"
-  | "Ad";
+  (typeof listingUseCases)[number];
 
-export type DeliverySpeed = "instant" | "fast" | "standard";
+export type DeliverySpeed = (typeof deliverySpeeds)[number];
 
 export type AudioMarker = {
   label: string;

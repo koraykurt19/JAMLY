@@ -57,7 +57,7 @@ export function socialLinksFromRecord(value: unknown): SocialLink[] {
       return [];
     }
 
-    const url = rawUrl.trim();
+    const url = sanitizeExternalUrl(rawUrl);
     return url ? [{ platform: platform.id, label: platform.label, url }] : [];
   });
 
@@ -68,7 +68,7 @@ export function socialLinksFromRecord(value: unknown): SocialLink[] {
           return [];
         }
         const label = typeof item.label === "string" ? item.label.trim() : "";
-        const url = typeof item.url === "string" ? item.url.trim() : "";
+        const url = typeof item.url === "string" ? sanitizeExternalUrl(item.url) : "";
         return label && url ? [{ platform: "custom", label, url }] : [];
       })
     : [];
@@ -78,7 +78,7 @@ export function socialLinksFromRecord(value: unknown): SocialLink[] {
 
 export function socialLinksToRecord(links: SocialLink[]): Record<string, string> {
   return links.reduce<Record<string, string>>((record, link) => {
-    const url = link.url.trim();
+    const url = sanitizeExternalUrl(link.url);
     if (url && link.platform !== "custom") {
       record[link.platform] = url;
     }
@@ -91,7 +91,7 @@ export function socialLinkRecordFromForm(
   customLinks: CustomSocialLink[] = []
 ): Record<string, string | CustomSocialLink[]> {
   const record = socialPlatforms.reduce<Record<string, string | CustomSocialLink[]>>((record, platform) => {
-    const url = values[platform.id]?.trim();
+    const url = sanitizeExternalUrl(values[platform.id]);
     if (url) {
       record[platform.id] = url;
     }
@@ -99,7 +99,7 @@ export function socialLinkRecordFromForm(
   }, {});
 
   const cleanCustomLinks = customLinks
-    .map((link) => ({ label: link.label.trim(), url: link.url.trim() }))
+    .map((link) => ({ label: link.label.trim(), url: sanitizeExternalUrl(link.url) }))
     .filter((link) => link.label && link.url);
 
   if (cleanCustomLinks.length > 0) {
@@ -122,6 +122,18 @@ export function customSocialLinksFromLinks(links: SocialLink[]): CustomSocialLin
   return links
     .filter((link) => link.platform === "custom")
     .map((link) => ({ label: link.label, url: link.url }));
+}
+
+export function sanitizeExternalUrl(value: string | null | undefined) {
+  const candidate = value?.trim();
+  if (!candidate) return "";
+
+  try {
+    const url = new URL(candidate);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

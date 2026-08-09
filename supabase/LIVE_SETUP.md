@@ -72,9 +72,21 @@ If the project already has an older Jamly schema, run migrations in this order:
 supabase/migrations/20260629_add_conversations.sql
 supabase/migrations/20260707_add_beat_license_tiers.sql
 supabase/migrations/20260712_unify_account_capabilities.sql
+supabase/migrations/20260715_username_policy.sql
+supabase/migrations/20260731_protect_founder_headline.sql
+supabase/migrations/20260801_ensure_listing_storage.sql
+supabase/migrations/20260809_admin_and_platform_config.sql
 ```
 
-The last migration removes strict buyer/creator role gates. Jamly keeps the legacy `profile_role` enum only for compatibility, while the product now behaves as one account that can buy, sell, message, and publish.
+The account migration removes strict buyer/creator role gates. Jamly keeps the
+legacy `profile_role` enum only for compatibility, while the product now behaves
+as one account that can buy, sell, message, and publish. The admin/config
+migration adds `admin_accounts`, account-status controls, reports, platform
+skills, platform settings, admin RPCs, and protected moderation policies.
+
+If `koraykurt.vrdn@gmail.com` already exists in `profiles`, the admin/config
+migration bootstraps that profile as `owner`. If the profile is created later,
+insert the owner row manually into `admin_accounts`.
 
 ## 5. Auth URL Settings
 
@@ -146,6 +158,7 @@ After env and SQL are applied:
 ```bash
 npm run typecheck
 npm run lint
+npm run test
 npm run build
 ```
 
@@ -157,6 +170,8 @@ Then test:
 - open a listing conversation
 - create a service request or beat license order
 - confirm dashboard data appears in `/dashboard`
+- sign in as an admin account and open `/admin`
+- confirm `/api/admin/overview` returns `401` without a bearer token
 
 On Vercel, open:
 

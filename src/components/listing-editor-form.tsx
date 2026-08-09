@@ -5,25 +5,15 @@ import { useState } from "react";
 import { useI18n } from "@/components/language-provider";
 import { UiSelect } from "@/components/ui-select";
 import { getBeatLicenseCopy } from "@/lib/beat-licenses";
-import { listingCategories } from "@/lib/data";
 import { categoryLabel } from "@/lib/labels";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { updateListingDetails } from "@/lib/supabase-data";
 import type { Listing, ListingCategory } from "@/lib/types";
-
-const genreOptions = [
-  "Hip-Hop",
-  "Trap",
-  "Drill",
-  "R&B",
-  "Pop",
-  "Afrobeat",
-  "Rock",
-  "Electronic",
-  "Other"
-];
-
-const turnaroundOptions = ["24 saat", "3 gün", "1 hafta", "Esnek"];
+import {
+  listingCategories,
+  listingGenreOptions,
+  listingTurnaroundOptions
+} from "@/lib/marketplace-config";
 
 type FormState = {
   title: string;
@@ -172,13 +162,13 @@ export function ListingEditorForm({
           <UiSelect value={form.category} onChange={(value) => update("category", value as ListingCategory)} ariaLabel={language === "tr" ? "Kategori" : "Category"} options={listingCategories.map((category) => ({ value: category, label: categoryLabel(category, language) }))} />
         </EditorField>
         <EditorField label={language === "tr" ? "Tür" : "Genre"}>
-          <UiSelect value={form.genre} onChange={(value) => update("genre", value)} ariaLabel={language === "tr" ? "Tür" : "Genre"} options={genreOptions.map((genre) => ({ value: genre, label: genre }))} />
+          <UiSelect value={form.genre} onChange={(value) => update("genre", value)} ariaLabel={language === "tr" ? "Tür" : "Genre"} options={listingGenreOptions.map((genre) => ({ value: genre, label: genre }))} />
         </EditorField>
         <EditorField label="BPM">
           <input value={form.bpm} onChange={(event) => update("bpm", event.target.value)} type="number" min="40" max="240" placeholder={language === "tr" ? "Opsiyonel" : "Optional"} className="input-field" />
         </EditorField>
         <EditorField label={language === "tr" ? "Teslim süresi" : "Delivery time"}>
-          <UiSelect value={form.turnaround} onChange={(value) => update("turnaround", value)} ariaLabel={language === "tr" ? "Teslim süresi" : "Delivery time"} options={[{ value: "", label: language === "tr" ? "Seçin" : "Select" }, ...turnaroundOptions.map((option) => ({ value: option, label: option }))]} />
+          <UiSelect value={form.turnaround} onChange={(value) => update("turnaround", value)} ariaLabel={language === "tr" ? "Teslim süresi" : "Delivery time"} options={[{ value: "", label: language === "tr" ? "Seçin" : "Select" }, ...listingTurnaroundOptions.map((option) => ({ value: option, label: option }))]} />
         </EditorField>
         <label className="flex min-h-12 items-center gap-3 rounded-md border border-white/10 bg-black/20 px-4 text-sm text-white/74">
           <input type="checkbox" checked={form.isActive} disabled={listing.exclusiveSold} onChange={(event) => update("isActive", event.target.checked)} className="h-4 w-4 accent-jam-blue" />

@@ -28,6 +28,7 @@ and service-order file delivery are intentionally outside the current release.
 | Localization | Full Turkish and English interface support |
 | Currency | USD and TRY display with a server-side USD/TRY rate endpoint and safe fallback |
 | Resilience | Fully usable demo mode when Supabase environment variables are absent |
+| Admin | Server-verified admin dashboard for user status, listings, orders, reports, and skills |
 | Responsive UI | Premium dark interface with desktop navigation and an accessible mobile drawer |
 
 ## Core User Flows
@@ -173,6 +174,10 @@ date order instead of re-running the complete schema:
 1. [`supabase/migrations/20260629_add_conversations.sql`](supabase/migrations/20260629_add_conversations.sql)
 2. [`supabase/migrations/20260707_add_beat_license_tiers.sql`](supabase/migrations/20260707_add_beat_license_tiers.sql)
 3. [`supabase/migrations/20260712_unify_account_capabilities.sql`](supabase/migrations/20260712_unify_account_capabilities.sql)
+4. [`supabase/migrations/20260715_username_policy.sql`](supabase/migrations/20260715_username_policy.sql)
+5. [`supabase/migrations/20260731_protect_founder_headline.sql`](supabase/migrations/20260731_protect_founder_headline.sql)
+6. [`supabase/migrations/20260801_ensure_listing_storage.sql`](supabase/migrations/20260801_ensure_listing_storage.sql)
+7. [`supabase/migrations/20260809_admin_and_platform_config.sql`](supabase/migrations/20260809_admin_and_platform_config.sql)
 
 The licensing migration backfills prices for existing beat rows, adds the
 transactional purchase function, and creates the private delivery bucket. Existing
@@ -191,6 +196,19 @@ Jamly uses one account model. The legacy `profile_role` enum remains in the
 database for compatibility, but it is no longer used as a hard product gate.
 Successful sign-ins redirect to `/dashboard`.
 
+### Admin access
+
+The admin dashboard lives at `/admin`. It is visible in the account menu only
+after `is_admin` confirms membership in `admin_accounts`, and every `/api/admin/*`
+route repeats the same server-side check with the current bearer token.
+
+For a fresh database, `supabase/schema.sql` includes admin tables, reports,
+platform skills, account status controls, and initial skill seeds. For an
+existing database, apply `20260809_admin_and_platform_config.sql` after the
+earlier migrations. If the founder profile already exists with
+`koraykurt.vrdn@gmail.com`, the migration bootstraps it as `owner`; otherwise
+insert the intended owner into `admin_accounts` after the profile is created.
+
 ## Data Model
 
 | Table | Responsibility |
@@ -201,6 +219,10 @@ Successful sign-ins redirect to `/dashboard`.
 | `conversations` | Buyer/creator thread with optional listing or order context |
 | `messages` | Text messages, read state, sender, and timestamps |
 | `message_attachments` | Future-ready file metadata associated with messages |
+| `admin_accounts` | Server-side admin membership and role metadata |
+| `reports` | User, listing, order, and message reports for moderation workflows |
+| `platform_skills` | Admin-managed skill/category configuration seeds |
+| `platform_settings` | Future-ready key/value platform configuration |
 
 ## Security Model
 
@@ -213,6 +235,13 @@ Successful sign-ins redirect to `/dashboard`.
 - Exclusive purchase atomically marks the listing sold and removes it from public discovery.
 - Storage upload policies require an authenticated account.
 - Buyers can read only the private folder matching the tier recorded on their order.
+- Admin APIs require a valid Supabase session bearer token and an `admin_accounts`
+  membership check before returning moderation data.
+- Profile account status changes are protected by RLS, trigger checks, and the
+  `admin_set_profile_status` RPC.
+- External social links are normalized and restricted to `http` and `https`.
+- Security headers set a baseline CSP, frame protection, MIME sniffing
+  protection, referrer policy, and permissions policy for every route.
 - Public clients use only the Supabase publishable/anonymous key; no service-role or `sb_secret` key is
   required by the application.
 - Public listing media is readable, while uploads remain policy-controlled.
@@ -235,9 +264,11 @@ add automated authorization tests for every role and table.
 | `/dashboard/creator` | Creator listings and incoming order requests |
 | `/dashboard/buyer` | Buyer requests and saved work |
 | `/upload` | Authenticated creator listing upload |
+| `/admin` | Admin console for users, listings, orders, reports, and platform skills |
 | `/auth/sign-in` | Sign-in flow |
 | `/auth/sign-up` | Role-aware registration flow |
 | `/api/health` | Vercel and Supabase readiness check without exposing secrets |
+| `/api/admin/*` | Bearer-token protected admin data and moderation endpoints |
 | `/api/exchange-rate` | Server-side USD/TRY rate response with timeout and fallback |
 
 ## Project Structure
@@ -262,6 +293,7 @@ vercel.json                Vercel build command and Next.js project hints
 | `npm run dev` | Start the local Next.js development server |
 | `npm run typecheck` | Run strict TypeScript validation without emitting files |
 | `npm run lint` | Run ESLint across the project |
+| `npm run test` | Run focused Node-based regression tests for matching, config, and sanitization |
 | `npm run build` | Create and validate the optimized production build |
 | `npm run start` | Run the previously built production server |
 
@@ -270,12 +302,12 @@ Recommended quality gate before every merge:
 ```bash
 npm run typecheck
 npm run lint
+npm run test
 npm run build
 ```
 
-An automated unit/integration test suite is not included yet. Type checking,
-linting, production build validation, and focused browser verification are the
-current quality gates.
+The current automated tests cover the shared marketplace config, Jam Match
+regressions, founder headline policy, and social-link URL sanitization.
 
 ## Supabase Verification And Schema Apply
 
@@ -314,6 +346,16 @@ This creates the public cover, profile-media, and audio-preview buckets plus
 the private license-delivery bucket and their access policies. Re-run
 `npm run supabase:check` afterwards; it must return `storage: "ready"` before
 testing uploads.
+
+To enable the admin console on an existing project, apply the admin/config
+migration:
+
+```bash
+SUPABASE_DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require" npm run supabase:apply-migration -- 20260809_admin_and_platform_config.sql
+```
+
+After migration, ensure the intended owner profile has a matching row in
+`admin_accounts`.
 
 Use the database password or connection string from Supabase Dashboard. Do not
 commit this value, and do not put it in Vercel frontend environment variables.
@@ -385,9 +427,12 @@ and communication. The next production milestones are:
 1. Payment provider integration, escrow, refunds, and creator payouts.
 2. Custom offers and service-order conversion from conversations.
 3. Service-order file delivery and message attachment UI.
-4. Notifications, typing indicators, online presence, block, and report tools.
-5. Moderation, observability, audit logs, and automated end-to-end tests.
+4. Notifications, typing indicators, online presence, block, and richer report tools.
+5. Moderation mutations for listings and orders, observability, audit logs, and automated end-to-end tests.
 6. Search indexing and a learned or embedding-assisted Jam Match ranking layer.
+
+See [`docs/system-audit-20260809.md`](docs/system-audit-20260809.md) for the
+latest full-system audit and validation report.
 
 ---
 

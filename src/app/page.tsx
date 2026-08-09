@@ -33,8 +33,7 @@ import { useI18n } from "@/components/language-provider";
 import { creators as demoCreators, listings as demoListings } from "@/lib/data";
 import { localizeCreator, localizeListing } from "@/lib/i18n";
 import {
-  getSupabaseBrowserClient,
-  isSupabaseConfigured
+  getSupabaseBrowserClient
 } from "@/lib/supabase";
 import {
   fetchCreators,
@@ -50,25 +49,96 @@ type HomeDataState =
   | { status: "ready"; listings: Listing[]; creators: Creator[]; isDemo: boolean }
   | { status: "error"; message: string };
 
+const heroCopyVariants = [
+  {
+    tr: {
+      title: "Aradığın sesi bul. Projeni doğru kişiyle tamamla.",
+      copy:
+        "Beatleri dinleyip lisansları karşılaştırın; vokal, söz yazımı, miks, mastering ve özel prodüksiyon için bağımsız üreticilerle doğrudan çalışın."
+    },
+    en: {
+      title: "Find your sound. Finish with the right collaborator.",
+      copy:
+        "Preview beats and compare licenses, or work directly with independent creators for vocals, songwriting, mixing, mastering, and custom production."
+    }
+  },
+  {
+    tr: {
+      title: "Beatini seç. Ekibini kur. Şarkını bitir.",
+      copy:
+        "Hazır beat lisanslarından vokal, söz, miks ve mastering desteğine kadar projenin eksik parçasını Jamly'de bul."
+    },
+    en: {
+      title: "Pick the beat. Build the team. Finish the track.",
+      copy:
+        "Find the missing piece for your project, from ready-to-license beats to vocals, lyrics, mixing, and mastering."
+    }
+  },
+  {
+    tr: {
+      title: "Fikrini sese çeviren üreticiler burada.",
+      copy:
+        "Tür, bütçe ve teslim süresine göre ara; beatleri dinle, hizmet kapsamlarını karşılaştır ve doğru üreticiyle konuşmaya başla."
+    },
+    en: {
+      title: "The creators who turn your idea into sound are here.",
+      copy:
+        "Search by genre, budget, and turnaround; preview beats, compare service scopes, and start with the right creator."
+    }
+  },
+  {
+    tr: {
+      title: "Demo klasöründen yayına hazır işe daha hızlı geç.",
+      copy:
+        "Beat, topline, gitar, jingle, miks ve mastering seçeneklerini tek yerde inceleyip projen için en uygun yolu seç."
+    },
+    en: {
+      title: "Move from demo folder to release-ready faster.",
+      copy:
+        "Browse beats, toplines, guitar, jingles, mixing, and mastering in one place, then choose the right path for your project."
+    }
+  },
+  {
+    tr: {
+      title: "Sesini bulmak da tamamlamak da aynı yerde.",
+      copy:
+        "Jamly; beat lisansı, özel prodüksiyon ve profesyonel müzik hizmetlerini anlaşılır kapsamlarla karşılaştırman için tasarlandı."
+    },
+    en: {
+      title: "Find the sound and finish it in the same place.",
+      copy:
+        "Jamly helps you compare beat licenses, custom production, and professional music services with clear scopes."
+    }
+  }
+] as const;
+
 export default function LandingPage() {
   const { language } = useI18n();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [showcaseSeed, setShowcaseSeed] = useState(0.42);
-  const [dataState, setDataState] = useState<HomeDataState>(() =>
-    isSupabaseConfigured()
-      ? { status: "loading" }
-      : {
-          status: "ready",
-          listings: demoListings,
-          creators: demoCreators,
-          isDemo: true
-        }
-  );
+  const [heroCopyIndex, setHeroCopyIndex] = useState(0);
+  const [dataState, setDataState] = useState<HomeDataState>({
+    status: "ready",
+    listings: demoListings,
+    creators: demoCreators,
+    isDemo: true
+  });
 
   useEffect(() => {
     setShowcaseSeed(Math.random());
+    try {
+      const previous = Number(window.localStorage.getItem("jamly-hero-copy-index"));
+      let next = Math.floor(Math.random() * heroCopyVariants.length);
+      if (heroCopyVariants.length > 1 && Number.isFinite(previous) && next === previous) {
+        next = (next + 1) % heroCopyVariants.length;
+      }
+      window.localStorage.setItem("jamly-hero-copy-index", String(next));
+      setHeroCopyIndex(next);
+    } catch {
+      setHeroCopyIndex(Math.floor(Math.random() * heroCopyVariants.length));
+    }
   }, []);
 
   useEffect(() => {
@@ -84,7 +154,6 @@ export default function LandingPage() {
     }
 
     let active = true;
-    setDataState({ status: "loading" });
 
     Promise.all([fetchMarketplaceListings(client), fetchCreators(client)])
       .then(([liveListings, liveCreators]) => {
@@ -163,16 +232,17 @@ export default function LandingPage() {
     () => chooseShowcaseListing(featuredListings, showcaseSeed),
     [featuredListings, showcaseSeed]
   );
+  const heroCopy = heroCopyVariants[heroCopyIndex] ?? heroCopyVariants[0];
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const query = search.trim();
-    router.push(query ? `/marketplace?q=${encodeURIComponent(query)}` : "/marketplace");
+    router.push(query ? `/discover?q=${encodeURIComponent(query)}` : "/discover");
   }
 
   const categories = [
     {
-      href: "/marketplace?q=Beat",
+      href: "/beats",
       title: language === "tr" ? "Beatler" : "Beats",
       description:
         language === "tr"
@@ -181,7 +251,7 @@ export default function LandingPage() {
       icon: Waves
     },
     {
-      href: "/marketplace?q=Vocal",
+      href: "/services?q=Vocal",
       title: language === "tr" ? "Vokal" : "Vocals",
       description:
         language === "tr"
@@ -190,7 +260,7 @@ export default function LandingPage() {
       icon: Mic2
     },
     {
-      href: "/marketplace?q=Mixing",
+      href: "/services?q=Mixing",
       title: language === "tr" ? "Mix & Master" : "Mix & Master",
       description:
         language === "tr"
@@ -199,7 +269,7 @@ export default function LandingPage() {
       icon: SlidersHorizontal
     },
     {
-      href: "/marketplace?q=Songwriting",
+      href: "/services?q=Songwriting",
       title: language === "tr" ? "Söz Yazımı" : "Songwriting",
       description:
         language === "tr"
@@ -208,7 +278,7 @@ export default function LandingPage() {
       icon: PenLine
     },
     {
-      href: "/marketplace?q=Custom Production",
+      href: "/services?q=Custom%20Production",
       title: language === "tr" ? "Özel Prodüksiyon" : "Custom Production",
       description:
         language === "tr"
@@ -217,7 +287,7 @@ export default function LandingPage() {
       icon: WandSparkles
     },
     {
-      href: "/marketplace?q=Guitar",
+      href: "/services?q=Guitar",
       title: language === "tr" ? "Enstrüman" : "Session Instruments",
       description:
         language === "tr"
@@ -254,14 +324,10 @@ export default function LandingPage() {
                 : "Beat licenses and professional music services"}
             </p>
             <h1 className="mt-6 max-w-[19rem] text-[2.35rem] font-semibold leading-[1.04] text-white sm:max-w-none sm:text-[3.5rem] lg:text-[4.25rem] xl:text-[4.6rem]">
-              {language === "tr"
-                ? "Aradığın sesi bul. Projeni doğru kişiyle tamamla."
-                : "Find your sound. Finish with the right collaborator."}
+              {heroCopy[language].title}
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-7 text-white/66 sm:text-lg">
-              {language === "tr"
-                ? "Beatleri dinleyip lisansları karşılaştırın; vokal, söz yazımı, miks, mastering ve özel prodüksiyon için bağımsız üreticilerle doğrudan çalışın."
-                : "Preview beats and compare licenses, or work directly with independent creators for vocals, songwriting, mixing, mastering, and custom production."}
+              {heroCopy[language].copy}
             </p>
 
             <form
@@ -301,7 +367,7 @@ export default function LandingPage() {
                 (query) => (
                   <Link
                     key={query}
-                    href={`/marketplace?q=${encodeURIComponent(query)}`}
+                    href={`/discover?q=${encodeURIComponent(query)}`}
                     className="focus-ring inline-flex min-h-10 shrink-0 items-center rounded-md border border-white/10 bg-black/24 px-3 text-sm font-medium text-white/58 transition hover:border-jam-blue/40 hover:bg-jam-blue/10 hover:text-white"
                   >
                     {query}
@@ -312,7 +378,7 @@ export default function LandingPage() {
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/marketplace"
+                href="/discover"
                 className="focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-jam-mint px-5 text-sm font-bold text-[#071018] transition hover:bg-white"
               >
                 {language === "tr" ? "Jam Alanı'nı keşfet" : "Explore Jam Place"}
@@ -364,7 +430,7 @@ export default function LandingPage() {
                 ? "Beatlerden vokal ve post-prodüksiyon hizmetlerine uzanan güncel işler."
                 : "Current work across beats, vocals, and post-production services."
             }
-            href="/marketplace"
+            href="/discover"
             linkLabel={language === "tr" ? "Tümünü gör" : "View all"}
           />
           <MarketplaceDataRegion
@@ -415,7 +481,7 @@ export default function LandingPage() {
                 ? "Portföyü, uzmanlığı ve çalışma geçmişi görünür üreticileri keşfedin."
                 : "Discover creators through their portfolio, specialty, and visible work history."
             }
-            href="/marketplace"
+            href="/discover"
             linkLabel={language === "tr" ? "Üretici ara" : "Find a creator"}
           />
           {dataState.status === "loading" ? (
@@ -461,7 +527,7 @@ export default function LandingPage() {
                   ? "Teslim kapsamı ve süreleri açık miks, mastering, vokal ve yazım hizmetleri."
                   : "Mixing, mastering, vocal, and writing services with visible scope and delivery terms."
               }
-              href="/marketplace?q=Mixing"
+              href="/services?q=Mixing"
               linkLabel={language === "tr" ? "Hizmetleri aç" : "Browse services"}
             />
             {dataState.status === "loading" ? (
@@ -596,7 +662,7 @@ export default function LandingPage() {
                   ? "Beatleri ve profesyonel müzik hizmetlerini tek yerde karşılaştırın."
                   : "Compare beats and professional music services in one place."
               }
-              href="/marketplace"
+              href="/discover"
               label={
                 language === "tr" ? "Jam Alanı'nı keşfet" : "Explore Jam Place"
               }

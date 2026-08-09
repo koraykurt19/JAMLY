@@ -5,6 +5,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const CORE_ROUTES = [
   "/",
+  "/discover",
+  "/beats",
+  "/services",
   "/marketplace",
   "/jam-match",
   "/dashboard",
@@ -43,11 +46,11 @@ export function NavigationPerformance() {
     }
 
     if ("requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(prefetchCoreRoutes, { timeout: 1800 });
+      const idleId = window.requestIdleCallback(prefetchCoreRoutes, { timeout: 650 });
       return () => window.cancelIdleCallback(idleId);
     }
 
-    const timeoutId = globalThis.setTimeout(prefetchCoreRoutes, 900);
+    const timeoutId = globalThis.setTimeout(prefetchCoreRoutes, 260);
     return () => globalThis.clearTimeout(timeoutId);
   }, [prefetchRoute]);
 
@@ -76,17 +79,19 @@ export function NavigationPerformance() {
       if (revealTimer.current) window.clearTimeout(revealTimer.current);
       if (safetyTimer.current) window.clearTimeout(safetyTimer.current);
 
-      revealTimer.current = window.setTimeout(() => setPending(true), 90);
-      safetyTimer.current = window.setTimeout(() => setPending(false), 5000);
+      revealTimer.current = window.setTimeout(() => setPending(true), 45);
+      safetyTimer.current = window.setTimeout(() => setPending(false), 2600);
     }
 
     document.addEventListener("pointerover", handleIntent, { capture: true, passive: true });
+    document.addEventListener("pointerdown", handleIntent, { capture: true, passive: true });
     document.addEventListener("touchstart", handleIntent, { capture: true, passive: true });
     document.addEventListener("focusin", handleIntent, { capture: true });
     document.addEventListener("click", handleClick, { capture: true });
 
     return () => {
       document.removeEventListener("pointerover", handleIntent, { capture: true });
+      document.removeEventListener("pointerdown", handleIntent, { capture: true });
       document.removeEventListener("touchstart", handleIntent, { capture: true });
       document.removeEventListener("focusin", handleIntent, { capture: true });
       document.removeEventListener("click", handleClick, { capture: true });
@@ -102,8 +107,8 @@ export function NavigationPerformance() {
   return (
     <div
       aria-hidden="true"
-      className={`fixed left-0 top-0 z-[100] h-0.5 origin-left bg-gradient-to-r from-jam-mint via-jam-blue to-white shadow-[0_0_24px_rgba(88,197,255,0.55)] transition-all duration-500 ${
-        pending ? "w-4/5 opacity-100" : "w-0 opacity-0"
+      className={`fixed left-0 top-0 z-[100] h-0.5 origin-left bg-gradient-to-r from-jam-mint via-jam-blue to-white shadow-[0_0_24px_rgba(88,197,255,0.55)] transition-all duration-200 ${
+        pending ? "w-[86%] opacity-100" : "w-0 opacity-0"
       }`}
     />
   );

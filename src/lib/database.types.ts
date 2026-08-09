@@ -10,6 +10,7 @@ export type Database = {
   public: {
     Enums: {
       profile_role: "creator" | "buyer";
+      account_status: "active" | "suspended" | "banned";
       listing_category:
         | "Beat"
         | "Mixing"
@@ -44,6 +45,7 @@ export type Database = {
           bio: string | null;
           specialties: string[] | null;
           social_links: Json;
+          account_status: Database["public"]["Enums"]["account_status"];
           created_at: string;
         };
         Insert: {
@@ -59,9 +61,26 @@ export type Database = {
           bio?: string | null;
           specialties?: string[] | null;
           social_links?: Json;
+          account_status?: Database["public"]["Enums"]["account_status"];
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
+        Relationships: [];
+      };
+      admin_accounts: {
+        Row: {
+          user_id: string;
+          created_by: string | null;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          created_by?: string | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["admin_accounts"]["Insert"]>;
         Relationships: [];
       };
       listings: {
@@ -210,9 +229,102 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["message_attachments"]["Insert"]>;
         Relationships: [];
       };
+      reports: {
+        Row: {
+          id: string;
+          reported_by: string | null;
+          target_type: "user" | "listing" | "review" | "message";
+          target_id: string;
+          reason: string;
+          status: "pending" | "reviewing" | "resolved" | "dismissed";
+          created_at: string;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          reported_by?: string | null;
+          target_type: "user" | "listing" | "review" | "message";
+          target_id: string;
+          reason: string;
+          status?: "pending" | "reviewing" | "resolved" | "dismissed";
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["reports"]["Insert"]>;
+        Relationships: [];
+      };
+      platform_skills: {
+        Row: {
+          id: string;
+          slug: string;
+          category_key: string;
+          label: Json;
+          synonyms: string[];
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          category_key: string;
+          label: Json;
+          synonyms?: string[];
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["platform_skills"]["Insert"]>;
+        Relationships: [];
+      };
+      platform_settings: {
+        Row: {
+          key: string;
+          value: Json;
+          updated_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          key: string;
+          value?: Json;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["platform_settings"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
+      admin_set_profile_status: {
+        Args: {
+          p_profile_id: string;
+          p_status: Database["public"]["Enums"]["account_status"];
+        };
+        Returns: undefined;
+      };
+      get_admin_overview: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          total_users: number;
+          active_users: number;
+          suspended_users: number;
+          banned_users: number;
+          admin_users: number;
+          artist_count: number;
+          buyer_count: number;
+          listing_count: number;
+          active_listing_count: number;
+          inactive_listing_count: number;
+          order_count: number;
+          open_order_count: number;
+          reported_content_count: number;
+        }[];
+      };
+      is_admin: {
+        Args: { p_user_id?: string };
+        Returns: boolean;
+      };
       purchase_listing_license: {
         Args: {
           p_listing_id: string;

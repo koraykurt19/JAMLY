@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "node -e \"require('node:fs').rmSync('.test-build',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && mkdir -p .test-build/node_modules/@ && ln -s ../../src/lib .test-build/node_modules/@/lib && node .test-build/tests/run-tests.js",
     "supabase:check": "node scripts/check-supabase.mjs",
     "supabase:apply-schema": "node scripts/apply-supabase-schema.mjs",
     "supabase:apply-migration": "node scripts/apply-supabase-migration.mjs",

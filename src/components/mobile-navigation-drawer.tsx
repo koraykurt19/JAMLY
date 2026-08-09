@@ -26,6 +26,8 @@ type NavigationItem = {
   label: string;
 };
 
+const DRAWER_CLOSE_MS = 240;
+
 export function MobileNavigationDrawer({
   open,
   onClose,
@@ -38,7 +40,7 @@ export function MobileNavigationDrawer({
   onClose: () => void;
   navigationItems: NavigationItem[];
   triggerRef: RefObject<HTMLButtonElement>;
-  account: { handle: string; fullName: string } | null;
+  account: { handle: string; fullName: string; isAdmin?: boolean } | null;
   onSignOut: () => Promise<void>;
 }) {
   const { t } = useI18n();
@@ -68,7 +70,7 @@ export function MobileNavigationDrawer({
     }
 
     setVisible(false);
-    timer = window.setTimeout(() => setPresent(false), 540);
+    timer = window.setTimeout(() => setPresent(false), DRAWER_CLOSE_MS);
     return () => window.clearTimeout(timer);
   }, [open]);
 
@@ -146,7 +148,7 @@ export function MobileNavigationDrawer({
         data-testid="mobile-navigation-overlay"
         onClick={onClose}
         className={cn(
-          "absolute inset-0 cursor-default bg-black/72 backdrop-blur-[2px] transition-opacity duration-[400ms] ease-in-out motion-reduce:duration-0",
+          "absolute inset-0 cursor-default bg-black/72 backdrop-blur-[2px] transition-opacity duration-200 ease-out motion-reduce:duration-0",
           visible ? "opacity-100" : "opacity-0"
         )}
         aria-hidden="true"
@@ -160,12 +162,14 @@ export function MobileNavigationDrawer({
         aria-label={t("mobileNavigation")}
         onKeyDown={keepFocusInside}
         className={cn(
-          "absolute right-0 top-0 flex h-[100dvh] max-h-[100dvh] w-[min(22rem,90vw)] transform-gpu flex-col border-l border-white/10 bg-jam-panel shadow-soft transition-transform duration-[520ms] ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform motion-reduce:duration-0",
+          "absolute right-0 top-0 flex h-[100dvh] max-h-[100dvh] w-[min(22rem,90vw)] transform-gpu flex-col border-l border-white/10 bg-jam-panel shadow-soft transition-transform duration-200 ease-out will-change-transform motion-reduce:duration-0",
           visible ? "translate-x-0" : "translate-x-full"
         )}
       >
         <div className="flex h-20 shrink-0 items-center justify-between border-b border-white/10 px-5">
-          <JamlyWordmark />
+          <Link href="/" onClick={onClose} className="focus-ring rounded-md">
+            <JamlyWordmark />
+          </Link>
           <button
             ref={closeButtonRef}
             type="button"
@@ -203,6 +207,9 @@ export function MobileNavigationDrawer({
                 <DrawerAction href="/dashboard/creator" label={t("openSellerWorkspace")} icon={Store} onClick={onClose} />
                 <DrawerAction href={`/creators/${account.handle}`} label={t("navProfile")} icon={UserRound} onClick={onClose} />
                 <DrawerAction href="/account/settings" label={t("accountSecurity")} icon={ShieldCheck} onClick={onClose} />
+                {account.isAdmin ? (
+                  <DrawerAction href="/admin" label="Admin" icon={ShieldCheck} onClick={onClose} />
+                ) : null}
                 <button
                   type="button"
                   onClick={() => {

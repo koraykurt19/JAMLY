@@ -19,6 +19,7 @@ backups/
 outputs/
 work/
 coverage
+.test-build
 *.tsbuildinfo
 .DS_Store
 

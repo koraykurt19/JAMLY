@@ -9,6 +9,13 @@ import type {
   OrderRequest,
   Role
 } from "@/lib/types";
+import {
+  categoryLabels,
+  deliverySpeedLabels,
+  localizedMarketplaceGenres,
+  moodLabels,
+  usageLabels
+} from "@/lib/marketplace-config";
 
 export type Language = "tr" | "en";
 
@@ -1621,34 +1628,7 @@ export function localizeOrder(order: OrderRequest, language: Language): OrderReq
 }
 
 export function categoryLabel(category: ListingCategory, language: Language) {
-  const labels: Record<Language, Record<ListingCategory, string>> = {
-    tr: {
-      Beat: "Beat",
-      Mixing: "Miks",
-      Mastering: "Mastering",
-      Songwriting: "Şarkı Yazımı",
-      "Vocal Feature": "Vokal Katkı",
-      "Custom Production": "Özel Prodüksiyon",
-      Guitar: "Gitar",
-      Lyrics: "Söz",
-      Jingle: "Jingle",
-      "Cover Art": "Kapak Görseli"
-    },
-    en: {
-      Beat: "Beat",
-      Mixing: "Mixing",
-      Mastering: "Mastering",
-      Songwriting: "Songwriting",
-      "Vocal Feature": "Vocal Feature",
-      "Custom Production": "Custom Production",
-      Guitar: "Guitar",
-      Lyrics: "Lyrics",
-      Jingle: "Jingle",
-      "Cover Art": "Cover Art"
-    }
-  };
-
-  return labels[language][category];
+  return categoryLabels[language][category];
 }
 
 export function licenseLabel(license: LicenseType, language: Language) {
@@ -1707,90 +1687,17 @@ export function roleLabel(role: Role, language: Language) {
 }
 
 export function moodLabel(mood: ListingMood, language: Language) {
-  const labels: Record<Language, Record<ListingMood, string>> = {
-    tr: {
-      Dark: "Karanlık",
-      Bright: "Parlak",
-      Smooth: "Yumuşak",
-      Club: "Kulüp",
-      Cinematic: "Sinematik",
-      Warm: "Sıcak"
-    },
-    en: {
-      Dark: "Dark",
-      Bright: "Bright",
-      Smooth: "Smooth",
-      Club: "Club",
-      Cinematic: "Cinematic",
-      Warm: "Warm"
-    }
-  };
-
-  return labels[language][mood];
+  return moodLabels[language][mood];
 }
 
 export function usageLabel(useCase: ListingUseCase, language: Language) {
-  const labels: Record<Language, Record<ListingUseCase, string>> = {
-    tr: {
-      Single: "Single",
-      YouTube: "YouTube",
-      TikTok: "TikTok",
-      Sync: "Sync / reklam",
-      Podcast: "Podcast",
-      Ad: "Reklam"
-    },
-    en: {
-      Single: "Single",
-      YouTube: "YouTube",
-      TikTok: "TikTok",
-      Sync: "Sync / licensing",
-      Podcast: "Podcast",
-      Ad: "Ad"
-    }
-  };
-
-  return labels[language][useCase];
+  return usageLabels[language][useCase];
 }
 
 export function deliverySpeedLabel(deliverySpeed: DeliverySpeed, language: Language) {
-  const labels: Record<Language, Record<DeliverySpeed, string>> = {
-    tr: {
-      instant: "Anında",
-      fast: "Hızlı",
-      standard: "Standart"
-    },
-    en: {
-      instant: "Instant",
-      fast: "Fast",
-      standard: "Standard"
-    }
-  };
-
-  return labels[language][deliverySpeed];
+  return deliverySpeedLabels[language][deliverySpeed];
 }
 
 export function localizedGenres(language: Language) {
-  return language === "tr"
-    ? [
-        "Trap Soul",
-        "Pop",
-        "Hip-Hop",
-        "Afrobeats",
-        "Indie Pop",
-        "Pop/R&B",
-        "Brand Jingle",
-        "Cover Art",
-        "Tüm türler"
-      ]
-    : [
-        "Trap Soul",
-        "Pop",
-        "Hip-Hop",
-        "Afrobeats",
-        "Indie Pop",
-        "Pop/R&B",
-        "Brand Jingle",
-        "Cover Art",
-        "Any Genre"
-      ];
+  return [...localizedMarketplaceGenres[language]];
 }

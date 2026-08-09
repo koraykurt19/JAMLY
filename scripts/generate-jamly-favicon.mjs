@@ -7,37 +7,61 @@ const publicDir = resolve(root, "public");
 const sourcePath = resolve(publicDir, "brand/jamly-logo-20260730.png");
 const source = await readFile(sourcePath);
 
-// Crop the existing logo's internal padding, then restore an opaque black canvas.
-// Safari renders transparent favicon corners on a light plate in some tab contexts.
-const croppedMark = await sharp(source)
+const iconBackground = "#050608";
+
+// Crop the existing logo's internal padding, strip the source plate, then place
+// a slightly smaller mark on an opaque canvas so browser tab rounding never
+// exposes a white plate.
+const markRaw = await sharp(source)
   .extract({ left: 145, top: 72, width: 735, height: 864 })
-  .resize(512, 512, { fit: "contain", background: "#050608" })
-  .png()
-  .toBuffer();
+  .resize(404, 404, {
+    fit: "contain",
+    background: { r: 0, g: 0, b: 0, alpha: 0 }
+  })
+  .ensureAlpha()
+  .raw()
+  .toBuffer({ resolveWithObject: true });
+
+for (let index = 0; index < markRaw.data.length; index += 4) {
+  const red = markRaw.data[index] ?? 0;
+  const green = markRaw.data[index + 1] ?? 0;
+  const blue = markRaw.data[index + 2] ?? 0;
+  if (red + green + blue < 34) {
+    markRaw.data[index + 3] = 0;
+  }
+}
+
+const croppedMark = await sharp(markRaw.data, { raw: markRaw.info }).png().toBuffer();
 
 const master = await sharp({
   create: {
     width: 512,
     height: 512,
     channels: 4,
-    background: "#050608"
+    background: iconBackground
   }
 })
-  .composite([{ input: croppedMark }])
+  .composite([{ input: croppedMark, left: 54, top: 54 }])
+  .flatten({ background: iconBackground })
   .png()
   .toBuffer();
 
-const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" fill="#050608"/><image href="data:image/png;base64,${master.toString("base64")}" width="512" height="512"/></svg>`;
+const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" fill="${iconBackground}"/><image href="data:image/png;base64,${master.toString("base64")}" width="512" height="512"/></svg>`;
 
 await Promise.all([
+  writeFile(resolve(publicDir, "favicon-v11.svg"), faviconSvg),
   writeFile(resolve(publicDir, "favicon-v10.svg"), faviconSvg),
   writeFile(resolve(publicDir, "favicon.svg"), faviconSvg),
+  writeFile(resolve(publicDir, "favicon-v11.png"), master),
   writeFile(resolve(publicDir, "favicon-v10.png"), master),
+  writeFile(resolve(publicDir, "icon-512-v11.png"), master),
   writeFile(resolve(publicDir, "icon-512-v10.png"), master),
   writeFile(resolve(publicDir, "icon-512.png"), master),
   writeFile(resolve(publicDir, "icon.png"), master),
+  sharp(master).resize(192, 192).png().toFile(resolve(publicDir, "icon-192-v11.png")),
   sharp(master).resize(192, 192).png().toFile(resolve(publicDir, "icon-192-v10.png")),
   sharp(master).resize(192, 192).png().toFile(resolve(publicDir, "icon-192.png")),
+  sharp(master).resize(180, 180).png().toFile(resolve(publicDir, "apple-touch-icon-v11.png")),
   sharp(master).resize(180, 180).png().toFile(resolve(publicDir, "apple-touch-icon-v10.png")),
   sharp(master).resize(180, 180).png().toFile(resolve(publicDir, "apple-touch-icon.png")),
   sharp(master).resize(48, 48).png().toFile(resolve(publicDir, "brand/favicon-48x48.png")),
@@ -50,11 +74,12 @@ const icoImages = await Promise.all(
 );
 const ico = createIco(icoImages, [16, 24, 32, 48]);
 await Promise.all([
+  writeFile(resolve(publicDir, "favicon-v11.ico"), ico),
   writeFile(resolve(publicDir, "favicon-v10.ico"), ico),
   writeFile(resolve(publicDir, "favicon.ico"), ico)
 ]);
 
-console.log("Generated Jamly v10 favicon assets.");
+console.log("Generated Jamly v11 favicon assets.");
 
 function createIco(images, sizes) {
   const header = Buffer.alloc(6);

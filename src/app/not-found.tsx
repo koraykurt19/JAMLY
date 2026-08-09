@@ -19,7 +19,7 @@ export default function NotFound() {
         {t("notFoundCopy")}
       </p>
       <Link
-        href="/marketplace"
+        href="/discover"
         className="focus-ring mt-8 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-jam-mint"
       >
         <ArrowLeft size={17} />

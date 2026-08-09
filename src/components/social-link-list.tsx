@@ -42,7 +42,7 @@ export function SocialLinkList({ links, compact = false }: SocialLinkListProps) 
             key={`${link.platform}-${link.url}`}
             href={link.url}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className={cn(
               "focus-ring inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-black/28 font-semibold text-white/68 transition hover:border-jam-blue/35 hover:bg-jam-blue/10 hover:text-white",
               compact ? "px-3 py-2 text-xs" : "px-4 py-2 text-sm"

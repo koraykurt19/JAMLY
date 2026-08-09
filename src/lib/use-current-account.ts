@@ -8,6 +8,7 @@ type AccountProfile = {
   id: string;
   handle: string;
   fullName: string;
+  isAdmin: boolean;
 };
 
 type AccountState =
@@ -36,12 +37,17 @@ export function useCurrentAccount() {
         return;
       }
 
+      const { data: isAdmin } = await client.rpc("is_admin", {
+        p_user_id: user.id
+      });
+
       setState({
         status: "signed-in",
         profile: {
           id: user.id,
           handle: profile?.handle ?? user.email?.split("@")[0] ?? user.id.slice(0, 8),
-          fullName: profile?.full_name ?? user.email ?? "Jamly"
+          fullName: profile?.full_name ?? user.email ?? "Jamly",
+          isAdmin: Boolean(isAdmin)
         }
       });
     } catch (error) {

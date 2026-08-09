@@ -1,5 +1,6 @@
-import type { Creator, Listing, ListingCategory, OrderRequest } from "@/lib/types";
+import type { Creator, Listing, OrderRequest } from "@/lib/types";
 import { socialLinksFromRecord } from "@/lib/social-links";
+import { listingCategories, marketplaceGenres } from "@/lib/marketplace-config";
 
 export const creators: Creator[] = [
   {
@@ -705,30 +706,9 @@ export const orderRequests: OrderRequest[] = [
   }
 ];
 
-export const listingCategories: ListingCategory[] = [
-  "Beat",
-  "Mixing",
-  "Mastering",
-  "Songwriting",
-  "Vocal Feature",
-  "Custom Production",
-  "Guitar",
-  "Lyrics",
-  "Jingle",
-  "Cover Art"
-];
+export { listingCategories };
 
-export const genres = [
-  "Trap Soul",
-  "Pop",
-  "Hip-Hop",
-  "Afrobeats",
-  "Indie Pop",
-  "Pop/R&B",
-  "Brand Jingle",
-  "Cover Art",
-  "Her Tür"
-];
+export const genres = [...marketplaceGenres];
 
 export function getCreatorByHandle(handle: string) {
   return creators.find((creator) => creator.handle === handle);
