@@ -28,7 +28,8 @@ const collaborationChecks = await Promise.all(
     "collab_participants",
     "collab_versions",
     "collab_comments",
-    "notifications"
+    "notifications",
+    "revenue_splits"
   ].map((table) =>
     request(`${supabaseUrl}/rest/v1/${table}?select=id&limit=1`, { headers })
   )

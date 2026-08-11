@@ -10,7 +10,7 @@ and continue the conversation inside the platform.
 
 Jamly is currently a production-oriented MVP. The marketplace, unified account auth,
 Supabase data layer, tiered beat licensing, private delivery packages, order
-requests, and Realtime messaging are implemented. Payments, escrow, payouts,
+requests, Realtime messaging, and participant-only collaboration workspaces are implemented. Payments, escrow, payouts,
 and service-order file delivery are intentionally outside the current release.
 
 ## Product Highlights
@@ -24,6 +24,7 @@ and service-order file delivery are intentionally outside the current release.
 | Beat licensing | Fixed MP3, Unlimited, and Exclusive terms with creator-controlled pricing |
 | Exclusive sale | Transactional marketplace removal that blocks every later license purchase |
 | Messaging | Listing- and order-aware conversations with Supabase Realtime updates |
+| Collab workspace | Private projects, invitations, revenue shares, file versions, waveform comments, and live notifications |
 | Media | Public previews and tier-specific private delivery packages through Supabase Storage |
 | Localization | Full Turkish and English interface support |
 | Currency | USD and TRY display with a server-side USD/TRY rate endpoint and safe fallback |
@@ -58,6 +59,7 @@ flowchart LR
     Supabase --> Postgres["Postgres + RLS"]
     Supabase --> Realtime["Realtime"]
     Supabase --> Storage["Storage"]
+    Supabase --> Collab["Private Collab workspaces"]
     Next -->|"Environment variables absent"| Demo["Typed demo data"]
 ```
 
@@ -128,6 +130,7 @@ Never commit `.env`, `.env.local`, service-role keys, or private credentials.
 | Delivery | Terms and file manifest preview | Private package access through 60-second signed URLs |
 | Order requests | Explicit demo-mode response | Persisted service request for authenticated buyers and UUID listings |
 | Messaging | Mock conversations | Persisted messages with Realtime subscriptions |
+| Collaboration | Requires Supabase | Private projects, versioned files, timestamp comments, notifications, and revenue split records |
 
 The application enters demo mode automatically when public Supabase environment
 variables are missing, placeholder values, invalid, or unreachable.
@@ -163,7 +166,10 @@ The schema creates:
 - `conversations`
 - `messages`
 - `message_attachments`
+- `collab_projects`, `collab_participants`, `collab_versions`, and `collab_comments`
+- `notifications` and `revenue_splits`
 - `listing-covers`, `audio-previews`, and private `license-deliverables` Storage buckets
+- private `collab-files` Storage bucket
 - RLS policies, indexes, triggers, and Realtime publications
 
 ### Existing project
@@ -178,6 +184,9 @@ date order instead of re-running the complete schema:
 5. [`supabase/migrations/20260731_protect_founder_headline.sql`](supabase/migrations/20260731_protect_founder_headline.sql)
 6. [`supabase/migrations/20260801_ensure_listing_storage.sql`](supabase/migrations/20260801_ensure_listing_storage.sql)
 7. [`supabase/migrations/20260809_admin_and_platform_config.sql`](supabase/migrations/20260809_admin_and_platform_config.sql)
+8. [`supabase/migrations/20260811_add_collaboration_workspace.sql`](supabase/migrations/20260811_add_collaboration_workspace.sql)
+9. [`supabase/migrations/20260811_tighten_collaboration_rls.sql`](supabase/migrations/20260811_tighten_collaboration_rls.sql)
+10. [`supabase/migrations/20260811_add_collaboration_revenue.sql`](supabase/migrations/20260811_add_collaboration_revenue.sql)
 
 The licensing migration backfills prices for existing beat rows, adds the
 transactional purchase function, and creates the private delivery bucket. Existing
@@ -219,6 +228,12 @@ insert the intended owner into `admin_accounts` after the profile is created.
 | `conversations` | Buyer/creator thread with optional listing or order context |
 | `messages` | Text messages, read state, sender, and timestamps |
 | `message_attachments` | Future-ready file metadata associated with messages |
+| `collab_projects` | Participant-only project workspace with optional listing linkage |
+| `collab_participants` | Invitations, project roles, and validated revenue shares |
+| `collab_versions` | Private Storage paths and version notes |
+| `collab_comments` | Thread-ready timestamp comments attached to a version |
+| `notifications` | Realtime invitation, version, and comment notifications |
+| `revenue_splits` | Immutable allocation records created when a linked order is delivered |
 | `admin_accounts` | Server-side admin membership and role metadata |
 | `reports` | User, listing, order, and message reports for moderation workflows |
 | `platform_skills` | Admin-managed skill/category configuration seeds |
@@ -245,6 +260,8 @@ insert the intended owner into `admin_accounts` after the profile is created.
 - Public clients use only the Supabase publishable/anonymous key; no service-role or `sb_secret` key is
   required by the application.
 - Public listing media is readable, while uploads remain policy-controlled.
+- Collab files are private and can only be read or uploaded by the owner and accepted participants.
+- Revenue shares are constrained to 100% in both the UI and PostgreSQL triggers.
 
 Before production launch, review RLS policies in a staging Supabase project and
 add automated authorization tests for every role and table.
@@ -261,6 +278,9 @@ add automated authorization tests for every role and table.
 | `/checkout/[id]` | Three-tier beat license comparison and order confirmation |
 | `/messages` | Conversation list and active chat workspace |
 | `/orders/[id]` | Participant-only order brief, status, and messages |
+| `/collab` | Active projects, pending invitations, and completed collaboration workspaces |
+| `/collab/new` | Authenticated project creation with optional listing linkage |
+| `/collab/[projectId]` | Participants, revenue shares, versions, waveform comments, and uploads |
 | `/dashboard/creator` | Creator listings and incoming order requests |
 | `/dashboard/buyer` | Buyer requests and saved work |
 | `/upload` | Authenticated creator listing upload |

@@ -1,9 +1,11 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 let browserClient: SupabaseClient<Database> | null = null;
+let legacySessionMigrationStarted = false;
 
 export function isSupabaseConfigured() {
   return Boolean(getSupabaseConfig());
@@ -16,10 +18,32 @@ export function getSupabaseBrowserClient(): SupabaseClient<Database> | null {
   }
 
   if (!browserClient) {
-    browserClient = createClient<Database>(config.url, config.anonKey);
+    browserClient = createBrowserClient<Database>(config.url, config.anonKey);
+    migrateLegacyBrowserSession(browserClient, config.url);
   }
 
   return browserClient;
+}
+
+function migrateLegacyBrowserSession(client: SupabaseClient<Database>, url: string) {
+  if (legacySessionMigrationStarted || typeof window === "undefined") return;
+  legacySessionMigrationStarted = true;
+
+  try {
+    const projectRef = new URL(url).hostname.split(".")[0];
+    if (!projectRef) return;
+    const rawSession = window.localStorage.getItem(`sb-${projectRef}-auth-token`);
+    if (!rawSession) return;
+    const parsed = JSON.parse(rawSession) as { access_token?: unknown; refresh_token?: unknown };
+    if (typeof parsed.access_token !== "string" || typeof parsed.refresh_token !== "string") return;
+
+    void client.auth.setSession({
+      access_token: parsed.access_token,
+      refresh_token: parsed.refresh_token
+    });
+  } catch {
+    // Invalid legacy sessions are ignored; the standard signed-out flow remains available.
+  }
 }
 
 export type JamlySupabaseClient = NonNullable<ReturnType<typeof getSupabaseBrowserClient>>;
@@ -42,7 +66,7 @@ export function isSupabaseRecoverableError(error: unknown) {
   );
 }
 
-function getSupabaseConfig(): { url: string; anonKey: string } | null {
+export function getSupabaseConfig(): { url: string; anonKey: string } | null {
   if (!supabaseUrl || !supabaseAnonKey) return null;
   if (isPlaceholderValue(supabaseUrl) || isPlaceholderValue(supabaseAnonKey)) return null;
 

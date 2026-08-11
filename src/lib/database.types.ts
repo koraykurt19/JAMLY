@@ -87,6 +87,7 @@ export type Database = {
           title: string;
           description: string | null;
           owner_id: string;
+          listing_id: string | null;
           status: "draft" | "active" | "completed";
           created_at: string;
           updated_at: string;
@@ -96,6 +97,7 @@ export type Database = {
           title: string;
           description?: string | null;
           owner_id: string;
+          listing_id?: string | null;
           status?: "draft" | "active" | "completed";
           created_at?: string;
           updated_at?: string;
@@ -187,6 +189,32 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["notifications"]["Insert"]>;
+        Relationships: [];
+      };
+      revenue_splits: {
+        Row: {
+          id: string;
+          order_request_id: string;
+          project_id: string;
+          recipient_id: string;
+          percentage: number;
+          gross_amount: number;
+          split_amount: number;
+          currency: "USD" | "TRY";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_request_id: string;
+          project_id: string;
+          recipient_id: string;
+          percentage: number;
+          gross_amount: number;
+          split_amount: number;
+          currency?: "USD" | "TRY";
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["revenue_splits"]["Insert"]>;
         Relationships: [];
       };
       admin_accounts: {
@@ -441,6 +469,20 @@ export type Database = {
           order_count: number;
           open_order_count: number;
           reported_content_count: number;
+        }[];
+      };
+      get_my_collab_invitations: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          participant_id: string;
+          project_id: string;
+          project_title: string;
+          project_description: string | null;
+          owner_id: string;
+          owner_handle: string | null;
+          participant_role: string;
+          revenue_share: number;
+          created_at: string;
         }[];
       };
       is_admin: {

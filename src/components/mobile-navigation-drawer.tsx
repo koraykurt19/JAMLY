@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  FolderKanban,
   LayoutDashboard,
   LogIn,
   LogOut,
@@ -206,6 +207,7 @@ export function MobileNavigationDrawer({
               <>
                 <DrawerAction href="/dashboard" label={t("navDashboard")} icon={LayoutDashboard} onClick={onClose} />
                 <DrawerAction href="/dashboard/creator" label={t("openSellerWorkspace")} icon={Store} onClick={onClose} />
+                <DrawerAction href="/collab" label="Collab projeleri" icon={FolderKanban} onClick={onClose} />
                 <DrawerAction href={`/creators/${account.handle}`} label={t("navProfile")} icon={UserRound} onClick={onClose} />
                 <DrawerAction href="/account/profile" label={t("profileSettings")} icon={Settings} onClick={onClose} />
                 <DrawerAction href="/account/settings" label={t("accountSecurity")} icon={ShieldCheck} onClick={onClose} />

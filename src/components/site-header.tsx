@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ChevronDown,
+  FolderKanban,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -19,6 +20,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { JamlyWordmark } from "@/components/jamly-logo";
 import { LanguageToggle } from "@/components/language-toggle";
+import { NotificationBell } from "@/components/notification-bell";
 import { useI18n } from "@/components/language-provider";
 import { useCurrentAccount } from "@/lib/use-current-account";
 
@@ -50,7 +52,8 @@ export function SiteHeader() {
       href: "/#creators",
       label: language === "tr" ? "Üreticiler" : "Producers"
     },
-    { href: "/jam-match", label: "Jam Match" }
+    { href: "/jam-match", label: "Jam Match" },
+    { href: "/collab", label: "Collab" }
   ];
   const accountProfile =
     account.state.status === "signed-in" ? account.state.profile : null;
@@ -131,6 +134,7 @@ export function SiteHeader() {
           >
             <MessageCircle size={18} />
           </Link>
+          {accountProfile ? <NotificationBell userId={accountProfile.id} /> : null}
           <LanguageToggle />
           <Link
             href="/upload"
@@ -169,6 +173,12 @@ export function SiteHeader() {
                     href="/dashboard/creator"
                     label={t("openSellerWorkspace")}
                     icon={Store}
+                    onClick={() => setAccountMenuOpen(false)}
+                  />
+                  <AccountLink
+                    href="/collab"
+                    label="Collab projeleri"
+                    icon={FolderKanban}
                     onClick={() => setAccountMenuOpen(false)}
                   />
                   <AccountLink
@@ -222,20 +232,23 @@ export function SiteHeader() {
           )}
         </div>
 
-        <button
-          ref={mobileMenuButtonRef}
-          type="button"
-          onClick={() => {
-            setMobileDrawerMounted(true);
-            setMobileMenuOpen(true);
-          }}
-          className="focus-ring flex h-11 w-11 items-center justify-center rounded-md border border-white/[0.09] bg-white/[0.035] text-white/76 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white xl:hidden"
-          aria-label={t("openMenu")}
-          aria-expanded={mobileMenuOpen}
-          aria-controls="jamly-mobile-navigation"
-        >
-          <Menu size={21} />
-        </button>
+        <div className="flex items-center gap-2 xl:hidden">
+          {accountProfile ? <NotificationBell userId={accountProfile.id} /> : null}
+          <button
+            ref={mobileMenuButtonRef}
+            type="button"
+            onClick={() => {
+              setMobileDrawerMounted(true);
+              setMobileMenuOpen(true);
+            }}
+            className="focus-ring flex h-11 w-11 items-center justify-center rounded-md border border-white/[0.09] bg-white/[0.035] text-white/76 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+            aria-label={t("openMenu")}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="jamly-mobile-navigation"
+          >
+            <Menu size={21} />
+          </button>
+        </div>
       </div>
 
       {mobileDrawerMounted ? (
