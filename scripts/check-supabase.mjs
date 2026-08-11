@@ -18,6 +18,10 @@ const headers = {
 
 const auth = await request(`${supabaseUrl}/auth/v1/settings`, { headers: { apikey: supabaseKey } });
 const profiles = await request(`${supabaseUrl}/rest/v1/profiles?select=id&limit=1`, { headers });
+const profileFollows = await request(
+  `${supabaseUrl}/rest/v1/profile_follows?select=following_id&limit=1`,
+  { headers }
+);
 const storageChecks = await Promise.all(
   ["listing-covers", "profile-media", "audio-previews"].map((bucket) =>
     request(`${supabaseUrl}/storage/v1/object/public/${bucket}/__jamly_healthcheck__`, {
@@ -28,8 +32,12 @@ const storageChecks = await Promise.all(
 
 const schemaMissing =
   profiles.status === 404 ||
+  profileFollows.status === 404 ||
   profiles.body.includes("PGRST205") ||
-  profiles.body.includes("schema cache");
+  profileFollows.body.includes("PGRST205") ||
+  profiles.body.includes("schema cache") ||
+  profileFollows.body.includes("schema cache");
+const databaseReady = profiles.ok && profileFollows.ok;
 
 const publicStorageReady = storageChecks.every(
   (result) =>
@@ -38,9 +46,13 @@ const publicStorageReady = storageChecks.every(
 );
 
 const result = {
-  ok: auth.ok && profiles.ok && publicStorageReady,
+  ok: auth.ok && databaseReady && publicStorageReady,
   auth: auth.ok ? "ready" : `http_${auth.status}`,
-  database: profiles.ok ? "ready" : schemaMissing ? "schema_missing" : `http_${profiles.status}`,
+  database: databaseReady
+    ? "ready"
+    : schemaMissing
+      ? "schema_missing"
+      : `http_${profiles.ok ? profileFollows.status : profiles.status}`,
   storage: publicStorageReady ? "ready" : "public_buckets_missing_or_unreachable"
 };
 

@@ -51,6 +51,14 @@ create table public.profiles (
   created_at timestamptz not null default now()
 );
 
+create table public.profile_follows (
+  follower_id uuid not null references public.profiles(id) on delete cascade,
+  following_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (follower_id, following_id),
+  check (follower_id <> following_id)
+);
+
 create table public.admin_accounts (
   user_id uuid primary key references public.profiles(id) on delete cascade,
   created_by uuid references public.profiles(id) on delete set null,
@@ -166,6 +174,10 @@ create table public.platform_settings (
 );
 
 create index listings_creator_id_idx on public.listings(creator_id);
+create index profile_follows_following_activity_idx
+  on public.profile_follows(following_id, created_at desc);
+create index profile_follows_follower_activity_idx
+  on public.profile_follows(follower_id, created_at desc);
 create index listings_category_idx on public.listings(category);
 create index listings_genre_idx on public.listings(genre);
 create index listings_price_idx on public.listings(price);
@@ -199,6 +211,7 @@ create index platform_skills_active_sort_idx
   on public.platform_skills(is_active, sort_order, slug);
 
 alter table public.profiles enable row level security;
+alter table public.profile_follows enable row level security;
 alter table public.admin_accounts enable row level security;
 alter table public.listings enable row level security;
 alter table public.order_requests enable row level security;
@@ -240,6 +253,27 @@ create policy "Users can update their profile"
 create policy "Users can insert their profile"
   on public.profiles for insert
   with check (auth.uid() = id);
+
+create policy "Profile follows are publicly readable"
+  on public.profile_follows for select
+  using (true);
+
+create policy "Users can follow creators"
+  on public.profile_follows for insert
+  to authenticated
+  with check (
+    auth.uid() = follower_id
+    and follower_id <> following_id
+    and exists (
+      select 1 from public.profiles
+      where profiles.id = profile_follows.following_id
+    )
+  );
+
+create policy "Users can unfollow creators"
+  on public.profile_follows for delete
+  to authenticated
+  using (auth.uid() = follower_id);
 
 create policy "Admins can read admin accounts"
   on public.admin_accounts for select

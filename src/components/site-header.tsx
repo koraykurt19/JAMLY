@@ -10,6 +10,7 @@ import {
   Menu,
   MessageCircle,
   Search,
+  Settings,
   ShieldCheck,
   Store,
   Upload,
@@ -174,6 +175,12 @@ export function SiteHeader() {
                     href={`/creators/${accountProfile.handle}`}
                     label={t("navProfile")}
                     icon={UserRound}
+                    onClick={() => setAccountMenuOpen(false)}
+                  />
+                  <AccountLink
+                    href="/account/profile"
+                    label={t("profileSettings")}
+                    icon={Settings}
                     onClick={() => setAccountMenuOpen(false)}
                   />
                   <AccountLink

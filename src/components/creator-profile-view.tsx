@@ -18,6 +18,7 @@ import { ListingCard } from "@/components/listing-card";
 import { SocialLinkList } from "@/components/social-link-list";
 import { StatCard } from "@/components/stat-card";
 import { StartConversationButton } from "@/components/start-conversation-button";
+import { CreatorFollowButton } from "@/components/creator-follow-button";
 import { useI18n } from "@/components/language-provider";
 import { useCurrentAccount } from "@/lib/use-current-account";
 import { localizeCreator, localizeListing } from "@/lib/i18n";
@@ -88,9 +89,14 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-2 text-sm font-semibold text-jam-blue">
-                  @{localizedCreator.handle}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold text-jam-blue">
+                    @{localizedCreator.handle}
+                  </p>
+                  <span className="rounded-md border border-white/10 bg-black/28 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/46">
+                    Pro Page
+                  </span>
+                </div>
                 <p className="mt-3 max-w-2xl text-base leading-7 text-white/66">
                   {localizedCreator.headline}
                 </p>
@@ -114,13 +120,17 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
               </div>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
+              <CreatorFollowButton
+                creatorId={localizedCreator.id}
+                creatorHandle={localizedCreator.handle}
+              />
               {isOwnProfile ? (
                 <Link
-                  href="/dashboard/creator"
+                  href="/account/profile"
                   className="focus-ring inline-flex items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-3 text-sm font-bold text-white/78 transition hover:border-jam-blue/35 hover:bg-jam-blue/10 hover:text-white"
                 >
                   <Settings size={17} />
-                  {language === "tr" ? "Profili düzenle" : "Edit profile"}
+                  {language === "tr" ? "Pro Page'i düzenle" : "Edit Pro Page"}
                 </Link>
               ) : isAccountLoading ? null : (
                 <StartConversationButton

@@ -105,7 +105,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         throw new Error(t("profileMissing"));
       }
 
-      router.replace("/dashboard");
+      router.replace(getSafePostAuthPath());
       router.refresh();
     } catch (error) {
       setLoading(false);
@@ -214,4 +214,13 @@ function normalizeHandle(value: string) {
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 32);
+}
+
+function getSafePostAuthPath() {
+  if (typeof window === "undefined") return "/dashboard";
+  const requestedPath = new URLSearchParams(window.location.search).get("next");
+  if (!requestedPath || !requestedPath.startsWith("/") || requestedPath.startsWith("//")) {
+    return "/dashboard";
+  }
+  return requestedPath;
 }

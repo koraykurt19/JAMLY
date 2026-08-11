@@ -7,8 +7,6 @@ import {
   Clock3,
   Gauge,
   Layers3,
-  Pause,
-  Play,
   SlidersHorizontal
 } from "lucide-react";
 import type { Listing } from "@/lib/types";
@@ -19,6 +17,7 @@ import { useAudioPlayer } from "@/components/audio-player-provider";
 import { ShortlistButton } from "@/components/shortlist-button";
 import { isBeatLicenseListing } from "@/lib/beat-licenses";
 import { SafeImage } from "@/components/safe-image";
+import { EmbeddedAudioWaveform } from "@/components/embedded-audio-waveform";
 
 type ListingCardProps = {
   listing: Listing;
@@ -99,42 +98,25 @@ export function ListingCard({
           <ShortlistButton listingId={listing.id} compact />
         </div>
 
-        <button
-          type="button"
-          onClick={togglePreview}
-          disabled={!hasAudio}
-          className="focus-ring absolute bottom-3 left-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-black shadow-[0_12px_32px_rgba(0,0,0,0.35)] transition duration-200 hover:scale-105 hover:bg-jam-mint disabled:cursor-not-allowed disabled:bg-white/14 disabled:text-white/30"
-          aria-label={
-            hasAudio
-              ? isPlaying
-                ? `${listing.title} ${language === "tr" ? "duraklat" : "pause"}`
-                : `${listing.title} ${language === "tr" ? "oynat" : "play"}`
-              : language === "tr"
-                ? "Ses önizlemesi bulunmuyor"
-                : "No audio preview"
-          }
-        >
-          {isPlaying ? <Pause size={19} /> : <Play size={19} fill="currentColor" />}
-        </button>
-
         <span className="absolute bottom-3 right-3 rounded-md border border-white/10 bg-[#080a0f]/88 px-3 py-2 text-sm font-bold text-white backdrop-blur-md">
           <span className="mr-1 text-[10px] font-medium uppercase text-white/48">
             {language === "tr" ? "Başlangıç" : "From"}
           </span>
           {currency(startingPrice, language, currencyCode, usdTryRate)}
         </span>
-
-        {isActive && player.duration > 0 ? (
-          <div className="absolute inset-x-0 bottom-0 h-0.5 bg-white/14">
-            <span
-              className="block h-full bg-jam-mint transition-[width] duration-150"
-              style={{
-                width: `${Math.min((player.currentTime / player.duration) * 100, 100)}%`
-              }}
-            />
-          </div>
-        ) : null}
       </div>
+
+      <EmbeddedAudioWaveform
+        title={listing.title}
+        seed={listing.id}
+        currentTime={isActive ? player.currentTime : 0}
+        duration={isActive ? player.duration : 0}
+        isActive={isActive}
+        isPlaying={isPlaying}
+        disabled={!hasAudio}
+        onToggle={togglePreview}
+        onSeek={player.seek}
+      />
 
       <div className={density === "compact" ? "p-4" : "p-5"}>
         <Link
