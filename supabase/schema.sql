@@ -1144,13 +1144,13 @@ begin
         or exists (select 1 from public.collab_projects where id = project_id and owner_id = auth.uid())
       );
   end if;
-  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'collab_participants' and policyname = 'Owners and invitees can remove participants') then
-    create policy "Owners and invitees can remove participants"
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'collab_participants' and policyname = 'Project owners can remove participants') then
+    create policy "Project owners can remove participants"
       on public.collab_participants for delete to authenticated
-      using (
-        user_id = auth.uid()
-        or exists (select 1 from public.collab_projects where id = project_id and owner_id = auth.uid())
-      );
+      using (exists (
+        select 1 from public.collab_projects
+        where id = project_id and owner_id = auth.uid()
+      ));
   end if;
 
   if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'collab_versions' and policyname = 'Project members can read versions') then
