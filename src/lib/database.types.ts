@@ -81,6 +81,114 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["profile_follows"]["Insert"]>;
         Relationships: [];
       };
+      collab_projects: {
+        Row: {
+          id: string;
+          title: string;
+          description: string | null;
+          owner_id: string;
+          status: "draft" | "active" | "completed";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string | null;
+          owner_id: string;
+          status?: "draft" | "active" | "completed";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["collab_projects"]["Insert"]>;
+        Relationships: [];
+      };
+      collab_participants: {
+        Row: {
+          id: string;
+          project_id: string;
+          user_id: string;
+          role: "producer" | "composer" | "mixing" | "mastering" | "other";
+          revenue_share: number;
+          invite_status: "pending" | "accepted" | "declined";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          user_id: string;
+          role?: "producer" | "composer" | "mixing" | "mastering" | "other";
+          revenue_share?: number;
+          invite_status?: "pending" | "accepted" | "declined";
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["collab_participants"]["Insert"]>;
+        Relationships: [];
+      };
+      collab_versions: {
+        Row: {
+          id: string;
+          project_id: string;
+          uploaded_by: string;
+          file_path: string;
+          version_note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          uploaded_by: string;
+          file_path: string;
+          version_note?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["collab_versions"]["Insert"]>;
+        Relationships: [];
+      };
+      collab_comments: {
+        Row: {
+          id: string;
+          project_id: string;
+          version_id: string;
+          user_id: string;
+          content: string;
+          timestamp_seconds: number | null;
+          parent_comment_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          version_id: string;
+          user_id: string;
+          content: string;
+          timestamp_seconds?: number | null;
+          parent_comment_id?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["collab_comments"]["Insert"]>;
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: "collab_invite" | "new_version" | "new_comment";
+          payload: Json;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: "collab_invite" | "new_version" | "new_comment";
+          payload?: Json;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["notifications"]["Insert"]>;
+        Relationships: [];
+      };
       admin_accounts: {
         Row: {
           user_id: string;
@@ -337,6 +445,10 @@ export type Database = {
       };
       is_admin: {
         Args: { p_user_id?: string };
+        Returns: boolean;
+      };
+      is_collab_project_member: {
+        Args: { p_project_id: string; p_user_id?: string };
         Returns: boolean;
       };
       purchase_listing_license: {
