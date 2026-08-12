@@ -37,10 +37,17 @@ function migrateLegacyBrowserSession(client: SupabaseClient<Database>, url: stri
     const parsed = JSON.parse(rawSession) as { access_token?: unknown; refresh_token?: unknown };
     if (typeof parsed.access_token !== "string" || typeof parsed.refresh_token !== "string") return;
 
-    void client.auth.setSession({
-      access_token: parsed.access_token,
-      refresh_token: parsed.refresh_token
-    });
+    void client.auth
+      .setSession({
+        access_token: parsed.access_token,
+        refresh_token: parsed.refresh_token
+      })
+      .then(({ error }) => {
+        if (error) window.localStorage.removeItem(`sb-${projectRef}-auth-token`);
+      })
+      .catch(() => {
+        window.localStorage.removeItem(`sb-${projectRef}-auth-token`);
+      });
   } catch {
     // Invalid legacy sessions are ignored; the standard signed-out flow remains available.
   }

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { JamlyWordmark } from "@/components/jamly-logo";
+import { ClientErrorBoundary } from "@/components/client-error-boundary";
 import { LanguageToggle } from "@/components/language-toggle";
 import { NotificationBell } from "@/components/notification-bell";
 import { useI18n } from "@/components/language-provider";
@@ -134,7 +135,11 @@ export function SiteHeader() {
           >
             <MessageCircle size={18} />
           </Link>
-          {accountProfile ? <NotificationBell userId={accountProfile.id} /> : null}
+          {accountProfile ? (
+            <ClientErrorBoundary label="notification bell">
+              <NotificationBell userId={accountProfile.id} />
+            </ClientErrorBoundary>
+          ) : null}
           <LanguageToggle />
           <Link
             href="/upload"
@@ -233,7 +238,11 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-2 xl:hidden">
-          {accountProfile ? <NotificationBell userId={accountProfile.id} /> : null}
+          {accountProfile ? (
+            <ClientErrorBoundary label="mobile notification bell">
+              <NotificationBell userId={accountProfile.id} />
+            </ClientErrorBoundary>
+          ) : null}
           <button
             ref={mobileMenuButtonRef}
             type="button"

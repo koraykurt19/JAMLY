@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  getSupabaseBrowserClient,
+  isSupabaseConfigured,
+  isSupabaseRecoverableError
+} from "@/lib/supabase";
 import { ensureCurrentProfile } from "@/lib/supabase-data";
 
 type AccountProfile = {
@@ -51,10 +55,20 @@ export function useCurrentAccount() {
         }
       });
     } catch (error) {
+      if (isInvalidSession(error)) {
+        await client.auth.signOut({ scope: "local" }).catch(() => undefined);
+        setState({ status: "signed-out", profile: null });
+        return;
+      }
+
       setState({
         status: "error",
         profile: null,
-        message: error instanceof Error ? error.message : "Account could not be loaded."
+        message: isSupabaseRecoverableError(error)
+          ? "Account connection is temporarily unavailable."
+          : error instanceof Error
+            ? error.message
+            : "Account could not be loaded."
       });
     }
   }, []);
@@ -84,4 +98,15 @@ export function useCurrentAccount() {
   }, []);
 
   return { state, refresh, signOut };
+}
+
+function isInvalidSession(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("auth session missing") ||
+    normalized.includes("jwt") ||
+    normalized.includes("refresh token") ||
+    normalized.includes("invalid claim")
+  );
 }

@@ -17,18 +17,28 @@ export function NotificationBell({ userId }: { userId: string }) {
   useEffect(() => {
     const client = getSupabaseBrowserClient();
     if (!client) return;
+    const supabase = client;
     let active = true;
-    void client
-      .from("notifications")
-      .select("id,user_id,type,payload,is_read,created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(20)
-      .then(({ data }) => {
+    async function loadNotifications() {
+      try {
+        const { data, error } = await supabase
+          .from("notifications")
+          .select("id,user_id,type,payload,is_read,created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        if (error) {
+          console.warn("Jamly notifications could not be loaded", error.message);
+          return;
+        }
         if (active) setItems(data ?? []);
-      });
+      } catch (error) {
+        console.warn("Jamly notifications request failed", error);
+      }
+    }
+    void loadNotifications();
 
-    const channel = client
+    const channel = supabase
       .channel(`notifications:user_id=eq.${userId}`)
       .on(
         "postgres_changes",
@@ -46,10 +56,12 @@ export function NotificationBell({ userId }: { userId: string }) {
           setItems((current) => current.map((item) => item.id === row.id ? row : item));
         }
       )
-      .subscribe();
+      .subscribe((status, error) => {
+        if (error) console.warn("Jamly notifications realtime unavailable", status, error.message);
+      });
     return () => {
       active = false;
-      void client.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, [userId]);
 

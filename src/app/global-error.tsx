@@ -25,6 +25,8 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const errorReference = error.digest ?? createErrorReference(error);
+
   useEffect(() => {
     console.error("Jamly runtime error", error);
 
@@ -49,6 +51,9 @@ export default function GlobalError({
             <p className="mt-4 leading-7 text-white/55">
               Tarayıcı yeni sürümün dosyalarını tamamlayamadı. Önce tekrar deneyin; sorun devam
               ederse temiz yenileme ile güncel sürümü açın.
+            </p>
+            <p className="mt-3 text-xs font-semibold text-white/35">
+              Hata kodu: {errorReference}
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <button
@@ -82,4 +87,13 @@ function isAssetLoadError(error: Error) {
     message.includes("dynamically imported module") ||
     message.includes("module script")
   );
+}
+
+function createErrorReference(error: Error) {
+  const input = `${error.name}:${error.message}`;
+  let hash = 0;
+  for (let index = 0; index < input.length; index += 1) {
+    hash = (hash * 31 + input.charCodeAt(index)) >>> 0;
+  }
+  return `CLIENT-${hash.toString(16).toUpperCase().padStart(8, "0")}`;
 }
