@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getSupabaseBrowserClient,
   isSupabaseConfigured,
@@ -23,17 +23,20 @@ type AccountState =
   | { status: "error"; profile: null; message: string };
 
 export function useCurrentAccount() {
+  const refreshInFlightRef = useRef(false);
   const [state, setState] = useState<AccountState>(() =>
     isSupabaseConfigured() ? { status: "loading", profile: null } : { status: "demo", profile: null }
   );
 
   const refresh = useCallback(async () => {
+    if (refreshInFlightRef.current) return;
     const client = getSupabaseBrowserClient();
     if (!client) {
       setState({ status: "demo", profile: null });
       return;
     }
 
+    refreshInFlightRef.current = true;
     try {
       const { user, profile } = await ensureCurrentProfile(client);
       if (!user) {
@@ -70,6 +73,8 @@ export function useCurrentAccount() {
             ? error.message
             : "Account could not be loaded."
       });
+    } finally {
+      refreshInFlightRef.current = false;
     }
   }, []);
 
@@ -81,7 +86,9 @@ export function useCurrentAccount() {
     void refresh();
 
     const { data } = client.auth.onAuthStateChange(() => {
-      if (active) void refresh();
+      window.setTimeout(() => {
+        if (active) void refresh();
+      }, 0);
     });
 
     return () => {
