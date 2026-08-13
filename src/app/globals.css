@@ -66,21 +66,71 @@
   font-display: swap;
 }
 
+/*
+ * Jamly design tokens — single canonical source.
+ *
+ * Layer 1 (--c-*) holds raw "R G B" channels so Tailwind can apply alpha
+ * modifiers (bg-surface/60). Layer 2 holds composed semantic colors for plain
+ * CSS. tailwind.config.ts reads layer 1 and must not redeclare literal hex.
+ */
 :root {
   color-scheme: dark;
-  --background-primary: #080a0f;
-  --background-secondary: #0d1118;
-  --surface-primary: #121722;
-  --surface-secondary: #171d29;
-  --surface-hover: #1c2432;
-  --border-primary: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --text-primary: #f7f9fc;
-  --text-secondary: #a8b0c0;
-  --text-muted: #747e91;
-  --brand-primary: #4d7cff;
-  --brand-secondary: #76b4ff;
-  --brand-soft: rgba(77, 124, 255, 0.14);
+
+  /* Layer 1 — primitives (R G B channels) */
+  --c-ink: 8 10 15;
+  --c-panel: 13 17 24;
+  --c-surface: 18 23 34;
+  --c-raised: 23 29 41;
+  --c-hover: 28 36 50;
+  --c-line: 37 44 57;
+  --c-white: 255 255 255;
+  --c-blue: 77 124 255;
+  --c-mint: 118 180 255;
+  --c-coral: 255 107 122;
+  --c-gold: 244 184 96;
+  --c-success: 66 214 164;
+  --c-danger: 255 107 122;
+  --c-warning: 244 184 96;
+  --c-text: 247 249 252;
+  --c-text-secondary: 168 176 192;
+  --c-text-muted: 116 126 145;
+
+  /* Layer 2 — semantic aliases (composed) */
+  --background-primary: rgb(var(--c-ink));
+  --background-secondary: rgb(var(--c-panel));
+  --surface-primary: rgb(var(--c-surface));
+  --surface-secondary: rgb(var(--c-raised));
+  --surface-hover: rgb(var(--c-hover));
+  --border-primary: rgb(var(--c-white) / 0.08);
+  --border-strong: rgb(var(--c-white) / 0.14);
+  --text-primary: rgb(var(--c-text));
+  --text-secondary: rgb(var(--c-text-secondary));
+  --text-muted: rgb(var(--c-text-muted));
+  --brand-primary: rgb(var(--c-blue));
+  --brand-secondary: rgb(var(--c-mint));
+  --brand-soft: rgb(var(--c-blue) / 0.14);
+
+  /* Radius scale */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow-soft: 0 20px 60px rgb(0 0 0 / 0.32);
+  --shadow-glow: 0 0 40px rgb(var(--c-blue) / 0.16);
+  --shadow-panel: 0 20px 70px rgb(0 0 0 / 0.35);
+
+  /* Focus */
+  --focus-ring-color: rgb(var(--c-blue) / 0.38);
+  --focus-ring-width: 3px;
+
+  /* Control sizing — keeps tap targets >= 44px on touch */
+  --control-height-sm: 2.25rem;
+  --control-height-md: 2.75rem;
+  --control-height-lg: 3rem;
+
   background: var(--background-primary);
 }
 
@@ -98,7 +148,7 @@ body {
   margin: 0;
   overflow-x: clip;
   background:
-    linear-gradient(180deg, rgba(77, 124, 255, 0.035), transparent 28rem),
+    linear-gradient(180deg, rgb(var(--c-blue) / 0.035), transparent 28rem),
     var(--background-primary);
   color: var(--text-primary);
   font-family:
@@ -118,8 +168,8 @@ select {
 }
 
 ::selection {
-  background: rgba(88, 197, 255, 0.26);
-  color: #ffffff;
+  background: rgb(var(--c-mint) / 0.26);
+  color: rgb(var(--c-white));
 }
 
 ::-webkit-scrollbar {
@@ -128,27 +178,27 @@ select {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2d3544;
-  border-radius: 999px;
+  background: rgb(var(--c-line));
+  border-radius: var(--radius-pill);
 }
 
 .glass-panel {
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  background: rgba(13, 17, 24, 0.82);
-  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgb(var(--c-white) / 0.09);
+  background: rgb(var(--c-panel) / 0.82);
+  box-shadow: var(--shadow-panel);
   backdrop-filter: blur(22px);
 }
 
 .premium-border {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(var(--c-white) / 0.1);
 }
 
 .waveform {
   background:
-    linear-gradient(90deg, rgba(118, 180, 255, 0.95), rgba(77, 124, 255, 0.95)),
+    linear-gradient(90deg, rgb(var(--c-mint) / 0.95), rgb(var(--c-blue) / 0.95)),
     repeating-linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.75) 0 2px,
+      rgb(var(--c-white) / 0.75) 0 2px,
       transparent 2px 9px
     );
   mask-image: repeating-linear-gradient(
@@ -163,26 +213,34 @@ select {
 }
 
 .focus-ring:focus-visible {
-  box-shadow: 0 0 0 3px rgba(77, 124, 255, 0.38);
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
 }
 
 .input-field {
-  min-height: 3rem;
+  min-height: var(--control-height-lg);
   width: 100%;
-  border-radius: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.35);
+  border-radius: var(--radius-md);
+  border: 1px solid rgb(var(--c-white) / 0.1);
+  background: rgb(0 0 0 / 0.35);
   padding: 0 1rem;
-  color: #ffffff;
+  color: rgb(var(--c-white));
   outline: none;
 }
 
 .input-field::placeholder {
-  color: rgba(255, 255, 255, 0.34);
+  color: rgb(var(--c-white) / 0.34);
 }
 
 .input-field:focus-visible {
-  box-shadow: 0 0 0 3px rgba(77, 124, 255, 0.38);
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+
+.input-field[aria-invalid="true"] {
+  border-color: rgb(var(--c-danger) / 0.55);
+}
+
+.input-field[aria-invalid="true"]:focus-visible {
+  box-shadow: 0 0 0 var(--focus-ring-width) rgb(var(--c-danger) / 0.32);
 }
 
 .audio-progress {
@@ -193,7 +251,7 @@ select {
 .audio-progress::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.13);
+  background: rgb(var(--c-white) / 0.13);
 }
 
 .audio-progress::-webkit-slider-thumb {
@@ -201,23 +259,23 @@ select {
   height: 14px;
   margin-top: -5px;
   appearance: none;
-  border: 2px solid #080a0f;
-  border-radius: 999px;
-  background: #76b4ff;
+  border: 2px solid rgb(var(--c-ink));
+  border-radius: var(--radius-pill);
+  background: rgb(var(--c-mint));
 }
 
 .audio-progress::-moz-range-track {
   height: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.13);
+  background: rgb(var(--c-white) / 0.13);
 }
 
 .audio-progress::-moz-range-thumb {
   width: 12px;
   height: 12px;
-  border: 2px solid #080a0f;
-  border-radius: 999px;
-  background: #76b4ff;
+  border: 2px solid rgb(var(--c-ink));
+  border-radius: var(--radius-pill);
+  background: rgb(var(--c-mint));
 }
 
 @keyframes jamly-float {
