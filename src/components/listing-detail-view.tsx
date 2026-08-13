@@ -17,6 +17,7 @@ import { AudioPreview } from "@/components/audio-preview";
 import { CreativeBriefBuilder } from "@/components/creative-brief-builder";
 import { ListingCard } from "@/components/listing-card";
 import { OrderRequestButton } from "@/components/order-request-button";
+import { ReportButton } from "@/components/report-button";
 import { ShortlistButton } from "@/components/shortlist-button";
 import { StartConversationButton } from "@/components/start-conversation-button";
 import { useI18n } from "@/components/language-provider";
@@ -106,8 +107,9 @@ export function ListingDetailView({
                   : licenseLabel(localizedListing.licenseType, language)}
               </span>
             </div>
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <ShortlistButton listingId={localizedListing.id} />
+              <ReportButton targetType="listing" targetId={localizedListing.id} />
             </div>
             <p className="mt-5 text-sm leading-7 text-white/62">
               {localizedListing.description}
