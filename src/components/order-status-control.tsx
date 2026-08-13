@@ -1,49 +1,59 @@
 "use client";
 
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { useI18n } from "@/components/language-provider";
+import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { updateOrderStatus } from "@/lib/supabase-data";
 import type { OrderSummary } from "@/lib/supabase-data";
+import { allowedOrderTransitions, orderStatusLabels, type OrderStatusCode } from "@/lib/order-status";
 
-const statusOptions = ["requested", "in_review", "delivered", "cancelled"] as const;
-
+/**
+ * Only offers transitions the server will actually accept. The database is the
+ * authority (`set_order_status`); this list keeps the UI honest rather than
+ * presenting every status and failing on submit.
+ */
 export function OrderStatusControl({
   order,
   isCreator,
+  isBuyer = false,
+  paymentSettled = true,
   onChanged
 }: {
   order: OrderSummary;
   isCreator: boolean;
-  onChanged: (status: OrderSummary["statusCode"]) => void;
+  isBuyer?: boolean;
+  paymentSettled?: boolean;
+  onChanged: (status: OrderStatusCode) => void;
 }) {
   const { language } = useI18n();
-  const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState<OrderStatusCode | null>(null);
   const [message, setMessage] = useState("");
 
-  if (!isCreator) return null;
+  const role = isCreator ? "creator" : isBuyer ? "buyer" : null;
+  if (!role) return null;
 
-  async function changeStatus(nextStatus: OrderSummary["statusCode"]) {
-    if (loading || nextStatus === order.statusCode) return;
+  const transitions = allowedOrderTransitions(order.statusCode as OrderStatusCode, role).filter(
+    (next) => next !== "delivered" || paymentSettled
+  );
+
+  if (transitions.length === 0) return null;
+
+  async function changeStatus(nextStatus: OrderStatusCode) {
+    if (pending) return;
     const client = getSupabaseBrowserClient();
     if (!client) return;
 
-    setLoading(true);
+    setPending(nextStatus);
     setMessage("");
     try {
-      await updateOrderStatus(client, order.id, nextStatus);
+      await updateOrderStatus(client, order.id, nextStatus, order.statusCode as OrderStatusCode);
       onChanged(nextStatus);
     } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : language === "tr"
-            ? "Sipariş durumu güncellenemedi."
-            : "Order status could not be updated."
-      );
+      setMessage(orderStatusError(error, language));
     } finally {
-      setLoading(false);
+      setPending(null);
     }
   }
 
@@ -53,30 +63,65 @@ export function OrderStatusControl({
         <CheckCircle2 size={17} className="text-jam-mint" />
         {language === "tr" ? "Sipariş akışı" : "Order workflow"}
       </div>
-      <label className="mt-3 block text-xs font-semibold uppercase tracking-[0.16em] text-white/42">
-        {language === "tr" ? "Durumu güncelle" : "Update status"}
-        <select
-          value={order.statusCode}
-          onChange={(event) => void changeStatus(event.target.value as OrderSummary["statusCode"])}
-          disabled={loading}
-          className="input-field mt-2 h-11 bg-black/25 text-sm font-semibold disabled:opacity-50"
-        >
-          {statusOptions.map((status) => (
-            <option key={status} value={status}>
-              {statusLabel(status, language)}
-            </option>
-          ))}
-        </select>
-      </label>
-      {loading ? <p className="mt-3 inline-flex items-center gap-2 text-xs text-white/50"><Loader2 size={14} className="animate-spin" /> {language === "tr" ? "Kaydediliyor" : "Saving"}</p> : null}
-      {message ? <p className="mt-3 text-xs leading-5 text-red-300">{message}</p> : null}
+
+      {!paymentSettled && isCreator ? (
+        <p className="mt-2 text-[13px] leading-6 text-jam-warning">
+          {language === "tr"
+            ? "Ödeme tamamlanana kadar teslim edilemez."
+            : "Cannot be delivered until payment settles."}
+        </p>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {transitions.map((next) => (
+          <Button
+            key={next}
+            size="sm"
+            variant={next === "cancelled" ? "danger" : "secondary"}
+            loading={pending === next}
+            disabled={pending !== null && pending !== next}
+            onClick={() => void changeStatus(next)}
+          >
+            {orderStatusLabels[language][next]}
+          </Button>
+        ))}
+      </div>
+
+      {message ? (
+        <p role="alert" className="mt-3 text-[13px] leading-5 text-jam-danger">
+          {message}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-function statusLabel(status: (typeof statusOptions)[number], language: "tr" | "en") {
-  const labels = language === "tr"
-    ? { requested: "Talep alındı", in_review: "İnceleniyor", delivered: "Teslim edildi", cancelled: "İptal edildi" }
-    : { requested: "Requested", in_review: "In review", delivered: "Delivered", cancelled: "Cancelled" };
-  return labels[status];
+/**
+ * Maps known database error states onto localized copy. Raw PostgREST messages
+ * leak policy and constraint names, so they never reach the user.
+ */
+function orderStatusError(error: unknown, language: "tr" | "en") {
+  const raw = error instanceof Error ? error.message.toLowerCase() : "";
+
+  if (raw.includes("changed while you were working")) {
+    return language === "tr"
+      ? "Bu sipariş sen bakarken güncellendi. Sayfayı yenile."
+      : "This order changed while you were working. Refresh the page.";
+  }
+  if (raw.includes("before payment settles")) {
+    return language === "tr"
+      ? "Ödeme tamamlanmadan sipariş teslim edilemez."
+      : "An order cannot be delivered before payment settles.";
+  }
+  if (raw.includes("already closed")) {
+    return language === "tr" ? "Bu sipariş kapanmış." : "This order is already closed.";
+  }
+  if (raw.includes("not allowed") || raw.includes("cannot update")) {
+    return language === "tr"
+      ? "Bu geçişi yapma yetkin yok."
+      : "You are not allowed to make this transition.";
+  }
+  return language === "tr"
+    ? "Sipariş durumu güncellenemedi."
+    : "Order status could not be updated.";
 }

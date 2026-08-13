@@ -1,3 +1,5 @@
+const isProduction = process.env.NODE_ENV === "production";
+
 const supabaseHostname = (() => {
   try {
     return process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -8,10 +10,11 @@ const supabaseHostname = (() => {
   }
 })();
 
-const supabaseOrigins = [
-  "https://xgabgycguwwaddaqevou.supabase.co",
-  ...(supabaseHostname ? [`https://${supabaseHostname}`] : [])
-];
+// Derived purely from the environment. A hardcoded project ref used to be
+// trusted here unconditionally, which meant every deployment permanently
+// allowed a foreign Supabase origin for connect/img/media and image
+// optimization.
+const supabaseOrigins = supabaseHostname ? [`https://${supabaseHostname}`] : [];
 
 const csp = [
   "default-src 'self'",
@@ -19,14 +22,29 @@ const csp = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  `connect-src 'self' ${supabaseOrigins.join(" ")} ${supabaseOrigins
-    .map((origin) => origin.replace("https://", "wss://"))
-    .join(" ")} https://api.exchangerate.host`,
-  `img-src 'self' data: blob: https://images.unsplash.com ${supabaseOrigins.join(" ")}`,
-  `media-src 'self' blob: https://www.soundhelix.com ${supabaseOrigins.join(" ")}`,
+  "upgrade-insecure-requests",
+  [
+    "connect-src 'self'",
+    ...supabaseOrigins,
+    ...supabaseOrigins.map((origin) => origin.replace("https://", "wss://")),
+    // Turbopack's HMR socket. Dev only — never emitted in production.
+    ...(isProduction ? [] : ["ws://localhost:*", "http://localhost:*"])
+  ].join(" "),
+  ["img-src 'self' data: blob: https://images.unsplash.com", ...supabaseOrigins].join(" "),
+  ["media-src 'self' blob: https://www.soundhelix.com", ...supabaseOrigins].join(" "),
   "font-src 'self' data:",
+  // Tailwind and Next inject style tags at runtime; there is no nonce path for
+  // them that does not also force every route to render dynamically.
   "style-src 'self' 'unsafe-inline'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+  // 'unsafe-eval' is gone in production: nothing in this codebase calls eval or
+  // new Function. React's *development* build does need it (for callstack
+  // reconstruction), so it is allowed only when NODE_ENV is not production.
+  //
+  // 'unsafe-inline' remains because Next's App Router emits inline bootstrap
+  // and RSC flight scripts. Nonce-based CSP requires reading headers() in the
+  // root layout, which opts every page out of static generation. Documented as
+  // accepted residual risk in SECURITY.md.
+  `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`
 ].join("; ");
 
 const noStoreAssetHeaders = [
@@ -78,10 +96,8 @@ const nextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com"
       },
-      {
-        protocol: "https",
-        hostname: "xgabgycguwwaddaqevou.supabase.co"
-      },
+      // Only the configured project. A hardcoded ref here was an SSRF surface
+      // into the image optimizer for a project this deployment may not own.
       ...(supabaseHostname
         ? [
             {

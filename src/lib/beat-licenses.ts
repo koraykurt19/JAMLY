@@ -176,3 +176,35 @@ export function fromDatabaseLicenseTier(
 export function getDeliveryFolder(tier: BeatLicenseTier) {
   return beatLicenses[tier].deliveryFolder;
 }
+
+/**
+ * Captures the full agreement at the moment of purchase — both languages, the
+ * price, the tier and the terms version.
+ *
+ * License terms live in code, so without a snapshot every past order would
+ * silently display whatever the current code says. The snapshot is written to
+ * `order_requests.license_snapshot` and is what the order page renders.
+ */
+export function buildLicenseSnapshot(listing: Listing, tier: BeatLicenseTier) {
+  const definition = beatLicenses[tier];
+  return {
+    version: STANDARD_LICENSE_VERSION,
+    tier,
+    databaseTier: definition.databaseValue,
+    price: getBeatLicensePrice(listing, tier),
+    currency: "USD",
+    listingId: listing.id,
+    listingTitle: listing.title,
+    creatorId: listing.creatorId,
+    removesFromMarket: definition.removesFromMarket,
+    capturedAt: new Date().toISOString(),
+    copy: {
+      tr: definition.copy.tr,
+      en: definition.copy.en
+    },
+    legalNotice: {
+      tr: licenseLegalNotice.tr,
+      en: licenseLegalNotice.en
+    }
+  } satisfies Record<string, unknown>;
+}

@@ -355,33 +355,50 @@ export async function updateListingDetails(
   }
 }
 
+/**
+ * Order transitions go through `set_order_status`, which enforces a role-aware
+ * state machine server-side. Direct UPDATE was revoked because the old policy
+ * let a buyer mark their own order delivered and mint revenue splits.
+ *
+ * `expectedStatus` pins the status the caller believed it saw, so a stale tab
+ * cannot overwrite a newer transition.
+ */
 export async function updateOrderStatus(
   client: SupabaseClient,
   orderId: string,
-  status: Database["public"]["Enums"]["order_status"]
+  status: Database["public"]["Enums"]["order_status"],
+  expectedStatus?: Database["public"]["Enums"]["order_status"]
 ) {
   assertClient(client);
-  const { error } = await client
-    .from("order_requests")
-    .update({ status })
-    .eq("id", orderId);
+  const { data, error } = await client.rpc("set_order_status", {
+    p_order_id: orderId,
+    p_next_status: status,
+    p_expected_status: expectedStatus ?? null
+  });
 
   if (error) {
     throw new Error(error.message);
   }
+
+  return data ?? status;
 }
 
+/**
+ * Creates an unpaid order and snapshots the license the buyer is agreeing to.
+ * The snapshot matters: terms text and delivery paths used to be resolved from
+ * live code and the mutable listing row, so a seller edit rewrote history.
+ */
 export async function purchaseBeatLicense(
   client: SupabaseClient,
   listingId: string,
   licenseTier: BeatLicenseTier,
-  message: string | null
+  licenseSnapshot: Record<string, unknown> | null
 ) {
   assertClient(client);
   const { data, error } = await client.rpc("purchase_listing_license", {
     p_listing_id: listingId,
     p_license_tier: toDatabaseLicenseTier(licenseTier),
-    p_message: message
+    p_license_snapshot: licenseSnapshot
   });
 
   if (error) {

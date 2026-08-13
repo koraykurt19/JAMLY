@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import { useI18n } from "@/components/language-provider";
 import {
   beatLicenseTiers,
+  buildLicenseSnapshot,
   getBeatLicenseCopy,
   getBeatLicensePrice,
   isBeatLicenseListing,
@@ -113,19 +114,16 @@ export function LicenseCheckout({ listing }: { listing: Listing }) {
         client,
         listing.id,
         selectedTier,
-        `${listing.title} - ${selectedCopy.name}`
+        buildLicenseSnapshot(listing, selectedTier)
       );
       setOrderId(createdOrderId);
       setPurchaseState("success");
       setMessage(t("licensePurchaseRecorded"));
       router.prefetch(`/orders/${createdOrderId}`);
     } catch (error) {
-      if (isSupabaseRecoverableError(error)) {
-        setAccountState("demo");
-        setPurchaseState("success");
-        setMessage(t("mockPurchaseCopy"));
-        return;
-      }
+      // Never report a purchase as successful because of a runtime error. Demo
+      // mode is decided up front by configuration; a transient network or JWT
+      // failure here means no order exists and the buyer must be told so.
       setPurchaseState("error");
       setMessage(
         `${t("purchaseFailed")}: ${

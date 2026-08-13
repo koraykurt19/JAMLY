@@ -65,6 +65,18 @@ const recoveryScript = `
 })();
 `;
 
+/**
+ * Runs before the React bundle so a failed/stale chunk can self-recover.
+ *
+ * It stays inline deliberately: an external script would itself be a network
+ * request that can fail in exactly the situation this code exists to handle.
+ * See SECURITY.md for why `script-src 'unsafe-inline'` remains.
+ */
 export function ClientRuntimeRecovery() {
-  return <script id="jamly-client-runtime-recovery" dangerouslySetInnerHTML={{ __html: recoveryScript }} />;
+  return (
+    <script
+      id="jamly-client-runtime-recovery"
+      dangerouslySetInnerHTML={{ __html: recoveryScript }}
+    />
+  );
 }
