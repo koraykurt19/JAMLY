@@ -10,13 +10,14 @@ export const dynamic = "force-dynamic";
 export default async function CollabProjectPage({
   params
 }: {
-  params: { projectId: string };
+  params: Promise<{ projectId: string }>;
 }) {
-  const auth = await requireServerUser(`/collab/${params.projectId}`);
+  const { projectId } = await params;
+  const auth = await requireServerUser(`/collab/${projectId}`);
   if (!auth.user) redirect(auth.redirectTo ?? "/auth/sign-in");
   const userId = auth.user.id;
 
-  const project = await getCollabProject(params.projectId, userId);
+  const project = await getCollabProject(projectId, userId);
   if (!project) notFound();
 
   return (

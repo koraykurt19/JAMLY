@@ -1,19 +1,19 @@
 import { MarketplacePageContent } from "@/components/marketplace-page-content";
 
 type MarketplacePageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default function MarketplacePage({ searchParams }: MarketplacePageProps) {
+export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
   return (
     <MarketplacePageContent
       mode="discover"
-      initialQuery={getSearchQuery(searchParams)}
+      initialQuery={getSearchQuery(await searchParams)}
     />
   );
 }
 
-function getSearchQuery(searchParams: MarketplacePageProps["searchParams"]) {
+function getSearchQuery(searchParams: Record<string, string | string[] | undefined> | undefined) {
   const value = searchParams?.q;
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }

@@ -17,7 +17,7 @@ type ProfilePreview = Pick<
 >;
 
 export async function getCollabDashboard(userId: string) {
-  const client = getSupabaseServerClient();
+  const client = await getSupabaseServerClient();
   if (!client) return { projects: [], invitations: [], configured: false };
 
   const [{ data: projects, error: projectsError }, { data: invitations, error: invitationsError }] =
@@ -62,7 +62,7 @@ export async function getCollabDashboard(userId: string) {
 }
 
 export async function getOwnedListings(userId: string) {
-  const client = getSupabaseServerClient();
+  const client = await getSupabaseServerClient();
   if (!client) return [];
   const { data, error } = await client
     .from("listings")
@@ -75,7 +75,7 @@ export async function getOwnedListings(userId: string) {
 }
 
 export async function getCollabProject(projectId: string, userId: string) {
-  const client = getSupabaseServerClient();
+  const client = await getSupabaseServerClient();
   if (!client) return null;
 
   const { data: project, error: projectError } = await client

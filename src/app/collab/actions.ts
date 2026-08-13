@@ -12,7 +12,7 @@ import { getSupabaseServerClient } from "@/lib/supabase-server";
 const roles: CollabRole[] = ["producer", "composer", "mixing", "mastering", "other"];
 
 async function getContext() {
-  const client = getSupabaseServerClient();
+  const client = await getSupabaseServerClient();
   if (!client) return { client: null, user: null };
   const {
     data: { user }

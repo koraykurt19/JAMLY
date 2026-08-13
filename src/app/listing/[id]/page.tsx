@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { ListingDetailView } from "@/components/listing-detail-view";
 import { useI18n } from "@/components/language-provider";
 import { creators, getCreatorByHandle, getCreatorListings, getListingById } from "@/lib/data";
@@ -14,9 +14,9 @@ import { fetchCreator, fetchCreatorListings, fetchListing } from "@/lib/supabase
 import type { Creator, Listing } from "@/lib/types";
 
 type ListingDetailPageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 type ListingState =
@@ -26,18 +26,19 @@ type ListingState =
   | { status: "ready"; listing: Listing; creator: Creator | null; related: Listing[] };
 
 export default function ListingDetailPage({ params }: ListingDetailPageProps) {
+  const { id } = use(params);
   const { t } = useI18n();
-  const [state, setState] = useState<ListingState>(() => getInitialState(params.id));
+  const [state, setState] = useState<ListingState>(() => getInitialState(id));
 
   useEffect(() => {
-    if (!isUuid(params.id) || !isSupabaseConfigured()) return;
+    if (!isUuid(id) || !isSupabaseConfigured()) return;
     const client = getSupabaseBrowserClient();
     if (!client) return;
 
     let active = true;
     async function load() {
       try {
-        const listing = await fetchListing(client, params.id);
+        const listing = await fetchListing(client, id);
         if (!active) return;
         if (!listing) {
           setState({ status: "not-found" });
@@ -72,7 +73,7 @@ export default function ListingDetailPage({ params }: ListingDetailPageProps) {
     return () => {
       active = false;
     };
-  }, [params.id, t]);
+  }, [id, t]);
 
   if (state.status === "loading") {
     return <PageNotice icon={<Loader2 className="animate-spin" />} title={t("dashboardLoading")} />;

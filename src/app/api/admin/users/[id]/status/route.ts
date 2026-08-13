@@ -12,10 +12,11 @@ const accountStatuses = new Set(["active", "suspended", "banned"]);
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    assertUuid(params.id, "user id");
+    const { id } = await params;
+    assertUuid(id, "user id");
     const { client } = await requireAdmin(request);
     const body = await request.json().catch(() => null);
     const status = typeof body?.status === "string" ? body.status : "";
@@ -28,7 +29,7 @@ export async function PATCH(
     }
 
     const { error } = await client.rpc("admin_set_profile_status", {
-      p_profile_id: params.id,
+      p_profile_id: id,
       p_status: status as Database["public"]["Enums"]["account_status"]
     });
 

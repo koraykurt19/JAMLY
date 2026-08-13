@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft, Loader2, MessageSquareText, Send } from "lucide-react";
 import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useI18n } from "@/components/language-provider";
 import { LicenseDeliveryPanel } from "@/components/license-delivery-panel";
 import { OrderStatusControl } from "@/components/order-status-control";
@@ -19,7 +19,7 @@ import {
   type OrderMessage
 } from "@/lib/supabase-data";
 
-type OrderPageProps = { params: { id: string } };
+type OrderPageProps = { params: Promise<{ id: string }> };
 type OrderPageState =
   | { status: "loading" }
   | { status: "signed-out" }
@@ -29,6 +29,7 @@ type OrderPageState =
   | { status: "ready"; detail: OrderDetail };
 
 export default function OrderPage({ params }: OrderPageProps) {
+  const { id } = use(params);
   const { currencyCode, language, t, usdTryRate } = useI18n();
   const [state, setState] = useState<OrderPageState>(() =>
     isSupabaseConfigured() ? { status: "loading" } : { status: "demo" }
@@ -66,7 +67,7 @@ export default function OrderPage({ params }: OrderPageProps) {
           return;
         }
 
-        const detail = await fetchOrderDetail(client, params.id, user.id);
+        const detail = await fetchOrderDetail(client, id, user.id);
         if (!active) return;
         setState(detail ? { status: "ready", detail } : { status: "not-found" });
       } catch (error) {
@@ -83,7 +84,7 @@ export default function OrderPage({ params }: OrderPageProps) {
     return () => {
       active = false;
     };
-  }, [params.id, t]);
+  }, [id, t]);
 
   if (state.status !== "ready") {
     const loading = state.status === "loading";

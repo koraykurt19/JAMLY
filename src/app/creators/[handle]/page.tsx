@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { CreatorProfileView } from "@/components/creator-profile-view";
 import { useI18n } from "@/components/language-provider";
 import { getCreatorByHandle, getCreatorListings } from "@/lib/data";
@@ -14,9 +14,9 @@ import { fetchCreatorByHandle, fetchCreatorListings } from "@/lib/supabase-data"
 import type { Creator, Listing } from "@/lib/types";
 
 type CreatorProfilePageProps = {
-  params: {
+  params: Promise<{
     handle: string;
-  };
+  }>;
 };
 
 type CreatorState =
@@ -26,18 +26,19 @@ type CreatorState =
   | { status: "ready"; creator: Creator; listings: Listing[] };
 
 export default function CreatorProfilePage({ params }: CreatorProfilePageProps) {
+  const { handle } = use(params);
   const { t } = useI18n();
-  const [state, setState] = useState<CreatorState>(() => getInitialState(params.handle));
+  const [state, setState] = useState<CreatorState>(() => getInitialState(handle));
 
   useEffect(() => {
-    if (getCreatorByHandle(params.handle) || !isSupabaseConfigured()) return;
+    if (getCreatorByHandle(handle) || !isSupabaseConfigured()) return;
     const client = getSupabaseBrowserClient();
     if (!client) return;
 
     let active = true;
     async function load() {
       try {
-        const creator = await fetchCreatorByHandle(client, params.handle);
+        const creator = await fetchCreatorByHandle(client, handle);
         if (!active) return;
         if (!creator) {
           setState({ status: "not-found" });
@@ -62,7 +63,7 @@ export default function CreatorProfilePage({ params }: CreatorProfilePageProps) 
     return () => {
       active = false;
     };
-  }, [params.handle, t]);
+  }, [handle, t]);
 
   if (state.status !== "ready") {
     const loading = state.status === "loading";

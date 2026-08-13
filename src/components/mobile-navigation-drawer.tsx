@@ -41,7 +41,7 @@ export function MobileNavigationDrawer({
   open: boolean;
   onClose: () => void;
   navigationItems: NavigationItem[];
-  triggerRef: RefObject<HTMLButtonElement>;
+  triggerRef: RefObject<HTMLButtonElement | null>;
   account: { handle: string; fullName: string; isAdmin?: boolean } | null;
   onSignOut: () => Promise<void>;
 }) {

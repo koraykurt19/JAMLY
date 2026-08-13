@@ -3,11 +3,11 @@ import { cookies } from "next/headers";
 import type { Database } from "@/lib/database.types";
 import { getSupabaseConfig } from "@/lib/supabase";
 
-export function getSupabaseServerClient() {
+export async function getSupabaseServerClient() {
   const config = getSupabaseConfig();
   if (!config) return null;
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   return createServerClient<Database>(config.url, config.anonKey, {
     cookies: {
       getAll() {
@@ -27,7 +27,7 @@ export function getSupabaseServerClient() {
 }
 
 export async function requireServerUser(nextPath: string) {
-  const client = getSupabaseServerClient();
+  const client = await getSupabaseServerClient();
   if (!client) return { client: null, user: null, redirectTo: null };
 
   const {

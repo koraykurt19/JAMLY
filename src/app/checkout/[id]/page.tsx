@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { LicenseCheckout } from "@/components/license-checkout";
 import { useI18n } from "@/components/language-provider";
 import { getListingById } from "@/lib/data";
@@ -14,7 +14,7 @@ import { fetchListing } from "@/lib/supabase-data";
 import type { Listing } from "@/lib/types";
 import { isBeatLicenseListing } from "@/lib/beat-licenses";
 
-type CheckoutPageProps = { params: { id: string } };
+type CheckoutPageProps = { params: Promise<{ id: string }> };
 type CheckoutState =
   | { status: "loading" }
   | { status: "not-found" }
@@ -22,22 +22,23 @@ type CheckoutState =
   | { status: "ready"; listing: Listing };
 
 export default function CheckoutPage({ params }: CheckoutPageProps) {
+  const { id } = use(params);
   const { t } = useI18n();
   const [state, setState] = useState<CheckoutState>(() => {
-    const demoListing = getListingById(params.id);
+    const demoListing = getListingById(id);
     if (demoListing) return { status: "ready", listing: demoListing };
-    return isUuid(params.id) && isSupabaseConfigured()
+    return isUuid(id) && isSupabaseConfigured()
       ? { status: "loading" }
       : { status: "not-found" };
   });
 
   useEffect(() => {
-    if (!isUuid(params.id) || !isSupabaseConfigured()) return;
+    if (!isUuid(id) || !isSupabaseConfigured()) return;
     const client = getSupabaseBrowserClient();
     if (!client) return;
 
     let active = true;
-    fetchListing(client, params.id)
+    fetchListing(client, id)
       .then((listing) => {
         if (!active) return;
         setState(listing ? { status: "ready", listing } : { status: "not-found" });
@@ -57,7 +58,7 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
     return () => {
       active = false;
     };
-  }, [params.id, t]);
+  }, [id, t]);
 
   if (state.status === "ready" && isBeatLicenseListing(state.listing)) {
     return <LicenseCheckout listing={state.listing} />;

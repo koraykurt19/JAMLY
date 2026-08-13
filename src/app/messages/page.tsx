@@ -1,14 +1,13 @@
 import { MessagesPage } from "@/components/messages-page";
 
 type MessagesRouteProps = {
-  searchParams: {
+  searchParams: Promise<{
     conversation?: string | string[];
-  };
+  }>;
 };
 
-export default function MessagesRoute({ searchParams }: MessagesRouteProps) {
-  const conversation = Array.isArray(searchParams.conversation)
-    ? searchParams.conversation[0]
-    : searchParams.conversation;
+export default async function MessagesRoute({ searchParams }: MessagesRouteProps) {
+  const { conversation: value } = await searchParams;
+  const conversation = Array.isArray(value) ? value[0] : value;
   return <MessagesPage initialConversationId={conversation} />;
 }
