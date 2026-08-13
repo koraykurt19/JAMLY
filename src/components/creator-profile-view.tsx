@@ -14,6 +14,8 @@ import {
   Star,
   XCircle
 } from "lucide-react";
+import { ProfileBadgeShowcase } from "@/components/badge-display";
+import { ReportButton } from "@/components/report-button";
 import { ListingCard } from "@/components/listing-card";
 import { SocialLinkList } from "@/components/social-link-list";
 import { StatCard } from "@/components/stat-card";
@@ -114,8 +116,11 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
                     {t("respondsIn")}: {localizedCreator.responseTime}
                   </span>
                 </div>
-                <div className="mt-4">
+                <div className="mt-4 flex flex-wrap items-center gap-3">
                   <SocialLinkList links={localizedCreator.socialLinks} />
+                  {isOwnProfile ? null : (
+                    <ReportButton targetType="profile" targetId={localizedCreator.id} compact />
+                  )}
                 </div>
               </div>
             </div>
@@ -152,6 +157,7 @@ export function CreatorProfileView({ creator, listings }: CreatorProfileViewProp
 
       <section className="mx-auto grid w-full max-w-7xl gap-8 px-4 pb-20 sm:px-6 lg:grid-cols-[0.72fr_1.28fr] lg:px-8">
         <aside className="space-y-5">
+          <ProfileBadgePanel creatorId={creator.id} />
           <div className="rounded-lg border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.035))] p-6">
             <h2 className="text-lg font-semibold text-white">{t("about")}</h2>
             <p className="mt-3 text-sm leading-7 text-white/60">{localizedCreator.about}</p>
@@ -313,6 +319,19 @@ function InfoPanel({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Badges render in their own panel above the bio. The showcase returns null
+ * when the creator has none, so demo profiles and unconfigured environments
+ * simply show nothing rather than an empty box.
+ */
+function ProfileBadgePanel({ creatorId }: { creatorId: string }) {
+  return (
+    <div className="empty:hidden">
+      <ProfileBadgeShowcase profileId={creatorId} />
     </div>
   );
 }
