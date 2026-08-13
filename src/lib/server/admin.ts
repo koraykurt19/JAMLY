@@ -30,9 +30,7 @@ export async function requireAdmin(request: Request) {
     throw new AdminApiError(401, "invalid_token", "The session is no longer valid.");
   }
 
-  const { data: isAdmin, error: adminError } = await client.rpc("is_admin", {
-    p_user_id: user.id
-  });
+  const { data: isAdmin, error: adminError } = await client.rpc("is_current_user_admin");
 
   if (adminError) {
     throw new AdminApiError(
@@ -47,6 +45,44 @@ export async function requireAdmin(request: Request) {
   }
 
   return { client, user };
+}
+
+/**
+ * Requires a specific capability, not just "is an admin". Menu hiding is not
+ * authorization — every privileged route calls this and the database enforces
+ * the same rule again through `admin_has` inside its RPCs.
+ */
+export async function requireCapability(request: Request, capability: string) {
+  const context = await requireAdmin(request);
+
+  const { data: allowed, error } = await context.client.rpc("admin_has", {
+    p_capability: capability
+  });
+
+  if (error) {
+    throw new AdminApiError(
+      isSchemaSetupError(error.message) ? 503 : 403,
+      isSchemaSetupError(error.message) ? "admin_setup_required" : "capability_check_failed",
+      error.message
+    );
+  }
+
+  if (!allowed) {
+    throw new AdminApiError(
+      403,
+      "capability_required",
+      `This action requires the ${capability} capability.`
+    );
+  }
+
+  return context;
+}
+
+/** Reads the caller's admin role so the UI can render the right surface. */
+export async function getAdminRole(request: Request) {
+  const context = await requireAdmin(request);
+  const { data } = await context.client.rpc("current_admin_role");
+  return { ...context, role: data ?? null };
 }
 
 export function adminErrorResponse(error: unknown) {
@@ -83,12 +119,19 @@ export function assertUuid(value: string, field = "id") {
   }
 }
 
+/**
+ * Strips everything that could break out of a PostgREST `.or()` filter
+ * expression — notably commas and parentheses — before interpolation.
+ *
+ * Trims again at the end: replacing a trailing metacharacter with a space
+ * previously left the padding in place, so "foo(bar)" became "foo bar ".
+ */
 export function sanitizeSearch(value: string | null) {
   return (
     value
-      ?.trim()
-      .replace(/[^a-zA-Z0-9@.\-\s]/g, " ")
+      ?.replace(/[^a-zA-Z0-9@.\-\s]/g, " ")
       .replace(/\s+/g, " ")
+      .trim()
       .slice(0, 80) ?? ""
   );
 }
