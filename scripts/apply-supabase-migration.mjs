@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, sep } from "node:path";
 import pg from "pg";
 
 const migrationName = process.argv[2];
@@ -17,7 +17,7 @@ if (!databaseUrl) {
 
 const migrationsDirectory = resolve(process.cwd(), "supabase", "migrations");
 const migrationPath = resolve(migrationsDirectory, migrationName);
-if (!migrationPath.startsWith(`${migrationsDirectory}/`) || !existsSync(migrationPath)) {
+if (!migrationPath.startsWith(`${migrationsDirectory}${sep}`) || !existsSync(migrationPath)) {
   console.error("Migration file was not found.");
   process.exit(1);
 }

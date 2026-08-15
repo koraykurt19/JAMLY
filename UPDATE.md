@@ -23,7 +23,7 @@ Doğrula (hepsi geçmeli):
 npm run typecheck && npm run lint && npm test && npm run build
 ```
 
-Beklenen: typecheck temiz, lint temiz, **21/21 test**, build **54 route**,
+Beklenen: typecheck temiz, lint temiz, **21/21 test**, build **49 route girdisi**,
 `npm audit` **0 açık**.
 
 `.env.local` yoksa uygulama demo modunda çalışır — marketplace, Jam Match ve
@@ -67,19 +67,9 @@ sonra bunlar. Tam liste: `RELEASE_CHECKLIST.md` adım 2.
 
 ### Nasıl uygulanır
 
-`npm run supabase:apply-migration` **Windows'ta bozuk** — `scripts/apply-supabase-migration.mjs:20`
-yol kontrolü ters bölü (`\`) üreten `resolve()` çıktısını düz bölü (`/`) ile
-karşılaştırıyor, bu yüzden her zaman "Migration file was not found" diyor.
-
-Üç seçenek:
-1. Supabase SQL editörüne dosyayı yapıştır (en güvenlisi, önerilen)
-2. WSL / Git Bash'ten çalıştır
-3. Önce şu satırı düzelt:
-   ```js
-   // scripts/apply-supabase-migration.mjs:20
-   if (!migrationPath.startsWith(migrationsDirectory + sep) || !existsSync(migrationPath))
-   ```
-   (`import { resolve, sep } from "node:path"`)
+`npm run supabase:apply-migration` yol doğrulaması Windows ve POSIX ayraçlarıyla
+uyumludur. Yine de production migration'larında SQL editörü ile adım adım
+uygulamak ve her adımdan sonra doğrulamak en güvenli yöntemdir.
 
 Migration'lar idempotent — tekrar çalıştırmak güvenli.
 

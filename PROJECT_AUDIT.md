@@ -115,7 +115,7 @@ reports all failures instead of dying on the first.
 
 ## Verification
 
-typecheck clean · lint clean · 21/21 tests · production build 54 routes ·
+typecheck clean · lint clean · 21/21 tests · production build 49 route entries ·
 `npm audit` 0 vulnerabilities · production server smoke-tested (8 routes 200,
 CSP verified, authorization boundaries return 401/400) · Early Access page
 verified in-browser at desktop and 375px.

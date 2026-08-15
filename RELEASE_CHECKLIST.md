@@ -15,7 +15,7 @@ npm audit
 ```
 
 All must pass. Current status on `feat/launch-readiness`: typecheck clean, lint
-clean, 21/21 tests pass, build succeeds (37 routes), `npm audit` reports 0
+clean, 21/21 tests pass, build succeeds (49 route entries), `npm audit` reports 0
 vulnerabilities.
 
 ## 2. Supabase project — **BLOCKER**
@@ -50,9 +50,9 @@ Order matters: `security_hardening` must precede `badges` (badge rules read
 `payment_status`), and `admin_rbac_audit` must precede `email_outbox` (its RLS
 policy calls `admin_has`).
 
-> On Windows, `npm run supabase:apply-migration` fails with "Migration file was
-> not found" because of a path-separator bug in the guard. Paste the SQL into
-> the Supabase SQL editor, or run the script from WSL/Git Bash.
+> `npm run supabase:apply-migration` supports Windows and POSIX path separators.
+> For production, applying one file at a time in the Supabase SQL editor remains
+> the safest option because the migration order is part of the release contract.
 
 4. Verify: `npm run supabase:check`
 
