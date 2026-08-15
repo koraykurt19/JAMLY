@@ -22,6 +22,7 @@ not claim otherwise.
 | Provider boundary | `src/lib/server/payments/provider.ts` |
 | Sandbox provider | signs its own webhooks so the path is really exercised |
 | Webhook endpoint | `/api/payments/webhook` |
+| Test checkout endpoint | `/api/payments/sandbox/complete` (authenticated buyer, env-gated) |
 | Money arithmetic | `src/lib/money.ts` (integer minor units) |
 
 ## State machines
@@ -37,6 +38,10 @@ failed | reversed`
 
 **Entitlement:** granted only when `payment_status = 'paid'` and the order is
 not cancelled. Enforced in the storage RLS policy.
+
+Settlement also rejects an amount or currency that differs from the immutable
+order snapshot. A partial or wrong-currency provider event cannot unlock the
+full delivery package.
 
 ## Money representation
 
@@ -133,8 +138,21 @@ launch.
 
 ## Testing the sandbox path
 
-The sandbox provider signs webhooks with `PAYMENT_WEBHOOK_SECRET` (default
-`jamly-sandbox-webhook-secret`). Compute
+For the in-app test panel set the following **server-only** environment values:
+
+```env
+SUPABASE_SERVICE_ROLE_KEY=<secret server key>
+SANDBOX_PAYMENTS_ENABLED=true
+PAYMENT_WEBHOOK_SECRET=<long random value>
+```
+
+Create a beat-license order from the checkout page, then use the fixed Jamly
+Sandbox Payment panel. It never accepts personal card data and never moves
+money. The endpoint verifies the authenticated buyer owns the order before it
+records a sandbox settlement.
+
+For direct webhook testing, the sandbox provider signs webhooks with
+`PAYMENT_WEBHOOK_SECRET` (default `jamly-sandbox-webhook-secret`). Compute
 `HMAC-SHA256(secret, body)` and send it as `x-jamly-signature`:
 
 ```json

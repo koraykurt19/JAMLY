@@ -20,6 +20,12 @@ bundle.
 | `SUPABASE_SERVICE_ROLE_KEY` | **Server only** | Lets the payment webhook call settlement functions that are revoked from `anon`/`authenticated` | Webhook returns 500; orders never reach `paid`, so no deliverable is ever released |
 | `PAYMENT_WEBHOOK_SECRET` | Server only | HMAC secret for webhook signature verification | Falls back to a known development secret — **any caller can forge a settlement** |
 | `PAYMENT_PROVIDER` | Server only | Selects the provider implementation | Defaults to `sandbox`, which moves no money |
+| `SANDBOX_PAYMENTS_ENABLED` | Server only | Enables the authenticated no-money test checkout | Test checkout endpoint returns 404 |
+
+Jamly routes public support inquiries to `support@getjamly.com`, payment
+questions to `payment@getjamly.com`, partnerships to `social@getjamly.com`, and
+general inquiries to `contact@getjamly.com`. Transactional email defaults to
+`noreply@getjamly.com` with `support@getjamly.com` as reply-to.
 
 > **Never** prefix `SUPABASE_SERVICE_ROLE_KEY` with `NEXT_PUBLIC_`. It bypasses
 > every RLS policy. In Vercel, add it without the "Expose to browser" option.
@@ -53,6 +59,13 @@ Create `.env.local` (git-ignored):
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+PAYMENT_PROVIDER=sandbox
+SANDBOX_PAYMENTS_ENABLED=false
+PAYMENT_WEBHOOK_SECRET=
+EMAIL_FROM_ADDRESS=noreply@getjamly.com
+EMAIL_REPLY_TO_ADDRESS=support@getjamly.com
 ```
 
 Then verify:
@@ -63,6 +76,14 @@ npm run supabase:check
 
 Leave both blank to work in demo mode — the marketplace, Jam Match and the
 Early Access page all render with sample data.
+
+`SUPABASE_SERVICE_ROLE_KEY` is server-only. It is required for payment webhook
+settlement and the sandbox test-payment completion endpoint. Never add a
+`NEXT_PUBLIC_` prefix and never commit its value.
+
+Set `SANDBOX_PAYMENTS_ENABLED=true` only in an intentional test environment.
+The sandbox moves no money and shows fixed sample card values. Keep it `false`
+for a real launch until a live payment provider has replaced the sandbox.
 
 ## Production behaviour without configuration
 

@@ -16,6 +16,7 @@ import {
 import type { ElementType } from "react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/components/language-provider";
+import { SandboxPaymentPanel } from "@/components/sandbox-payment-panel";
 import {
   beatLicenseTiers,
   buildLicenseSnapshot,
@@ -34,7 +35,7 @@ import { getCurrentProfile, purchaseBeatLicense } from "@/lib/supabase-data";
 import type { BeatLicenseTier, Listing } from "@/lib/types";
 
 type AccountState = "checking" | "demo" | "signed-out" | "ready" | "own-listing";
-type PurchaseState = "idle" | "loading" | "success" | "error";
+type PurchaseState = "idle" | "loading" | "order-created" | "success" | "error";
 
 const tierIcons: Record<BeatLicenseTier, ElementType> = {
   nonExclusive: FileAudio,
@@ -117,7 +118,7 @@ export function LicenseCheckout({ listing }: { listing: Listing }) {
         buildLicenseSnapshot(listing, selectedTier)
       );
       setOrderId(createdOrderId);
-      setPurchaseState("success");
+      setPurchaseState("order-created");
       setMessage(t("licensePurchaseRecorded"));
       router.prefetch(`/orders/${createdOrderId}`);
     } catch (error) {
@@ -180,7 +181,11 @@ export function LicenseCheckout({ listing }: { listing: Listing }) {
                 currencyCode={currencyCode}
                 usdTryRate={usdTryRate}
                 selected={selectedTier === tier}
-                disabled={!available || purchaseState === "success"}
+                disabled={
+                  !available ||
+                  purchaseState === "order-created" ||
+                  purchaseState === "success"
+                }
                 onSelect={() => setSelectedTier(tier)}
               />
             ))}
@@ -243,6 +248,10 @@ export function LicenseCheckout({ listing }: { listing: Listing }) {
             purchaseState={purchaseState}
             available={available}
             orderId={orderId}
+            onPaid={() => {
+              setPurchaseState("success");
+              setMessage("");
+            }}
             onPurchase={completePurchase}
           />
 
@@ -347,17 +356,19 @@ function CheckoutAction({
   purchaseState,
   available,
   orderId,
+  onPaid,
   onPurchase
 }: {
   accountState: AccountState;
   purchaseState: PurchaseState;
   available: boolean;
   orderId: string | null;
+  onPaid: () => void;
   onPurchase: () => void;
 }) {
   const { t } = useI18n();
 
-  if (orderId) {
+  if (orderId && purchaseState === "success") {
     return (
       <Link
         href={`/orders/${orderId}`}
@@ -366,6 +377,10 @@ function CheckoutAction({
         {t("viewOrder")}
       </Link>
     );
+  }
+
+  if (orderId) {
+    return <SandboxPaymentPanel orderId={orderId} onPaid={onPaid} />;
   }
 
   if (accountState === "signed-out") {

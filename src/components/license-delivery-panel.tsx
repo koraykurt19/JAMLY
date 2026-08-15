@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Download, Loader2, PackageCheck, ShieldCheck } from "lucide-react";
+import { Check, Clock3, Download, Loader2, PackageCheck, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useI18n } from "@/components/language-provider";
 import {
@@ -30,6 +30,29 @@ export function LicenseDeliveryPanel({
   const tier = order.licenseTier satisfies BeatLicenseTier;
   const copy = getBeatLicenseCopy(tier, language);
   const deliveryPath = getBeatDeliveryPath(listing, tier);
+
+  if (order.paymentStatus !== "paid") {
+    return (
+      <div className="rounded-lg border border-jam-gold/25 bg-jam-gold/10 p-5">
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-jam-gold/15 text-jam-gold">
+            <Clock3 size={20} />
+          </span>
+          <div>
+            <p className="text-xs font-semibold uppercase text-jam-gold">
+              {language === "tr" ? "Ödeme bekleniyor" : "Awaiting payment"}
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-white">{copy.name}</h2>
+            <p className="mt-2 text-sm leading-6 text-white/52">
+              {language === "tr"
+                ? "Teslim paketi yalnızca ödeme durumu onaylandıktan sonra açılır."
+                : "The delivery package unlocks only after the payment status is confirmed."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   async function downloadPackage() {
     const client = getSupabaseBrowserClient();

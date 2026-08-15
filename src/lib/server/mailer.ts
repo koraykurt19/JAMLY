@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/server/rate-limit";
+import { JAMLY_EMAILS } from "@/lib/jamly-contacts";
 
 /**
  * Outbound email.
@@ -33,6 +34,14 @@ export function siteOrigin() {
     process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim().replace(/^/, "https://") ||
     "http://localhost:3000"
   );
+}
+
+export function emailSender() {
+  return process.env.EMAIL_FROM_ADDRESS?.trim() || JAMLY_EMAILS.noreply;
+}
+
+export function emailReplyTo() {
+  return process.env.EMAIL_REPLY_TO_ADDRESS?.trim() || JAMLY_EMAILS.support;
 }
 
 export async function enqueueEmail(input: EnqueueInput) {

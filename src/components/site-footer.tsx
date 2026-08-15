@@ -5,6 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import { JamlyWordmark } from "@/components/jamly-logo";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useI18n } from "@/components/language-provider";
+import { createMailto, JAMLY_EMAILS } from "@/lib/jamly-contacts";
 
 export function SiteFooter() {
   const { language } = useI18n();
@@ -49,6 +50,35 @@ export function SiteFooter() {
           label: language === "tr" ? "Hesap oluştur" : "Create account"
         }
       ]
+    },
+    {
+      title: language === "tr" ? "Destek" : "Support",
+      links: [
+        {
+          href: createMailto(JAMLY_EMAILS.support, {
+            subject: language === "tr" ? "Jamly destek talebi" : "Jamly support request"
+          }),
+          label: language === "tr" ? "Destek ekibi" : "Support team"
+        },
+        {
+          href: createMailto(JAMLY_EMAILS.payment, {
+            subject: language === "tr" ? "Jamly ödeme desteği" : "Jamly payment support"
+          }),
+          label: language === "tr" ? "Ödeme desteği" : "Payment support"
+        },
+        {
+          href: createMailto(JAMLY_EMAILS.contact, {
+            subject: language === "tr" ? "Jamly iletişim" : "Contact Jamly"
+          }),
+          label: language === "tr" ? "Bize ulaşın" : "Contact us"
+        },
+        {
+          href: createMailto(JAMLY_EMAILS.social, {
+            subject: language === "tr" ? "Jamly iş birliği" : "Jamly partnership"
+          }),
+          label: language === "tr" ? "İş birlikleri" : "Partnerships"
+        }
+      ]
     }
   ];
 
@@ -72,7 +102,7 @@ export function SiteFooter() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
             {groups.map((group) => (
               <div key={group.title}>
                 <h2 className="text-xs font-semibold uppercase text-white/36">

@@ -677,6 +677,8 @@ export const orderRequests: OrderRequest[] = [
     price: 180,
     licenseTier: "service",
     licenseTermsVersion: null,
+    paymentStatus: "unpaid",
+    currency: "USD",
     status: "In Review",
     createdAt: "2026-06-14T12:00:00.000Z"
   },
@@ -689,6 +691,8 @@ export const orderRequests: OrderRequest[] = [
     price: 240,
     licenseTier: "service",
     licenseTermsVersion: null,
+    paymentStatus: "unpaid",
+    currency: "USD",
     status: "Requested",
     createdAt: "2026-06-15T12:00:00.000Z"
   },
@@ -701,6 +705,8 @@ export const orderRequests: OrderRequest[] = [
     price: 199,
     licenseTier: "unlimited",
     licenseTermsVersion: "2026-07-07",
+    paymentStatus: "paid",
+    currency: "USD",
     status: "Delivered",
     createdAt: "2026-06-11T12:00:00.000Z"
   }

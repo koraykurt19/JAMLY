@@ -36,6 +36,7 @@ import { defaultPriorityFor, validateReport } from "../src/lib/reports";
 import { sortBadgesForProfile, type ProfileBadge } from "../src/lib/badges";
 import { assertUuid, sanitizeSearch } from "../src/lib/server/admin";
 import { roleHas } from "../src/lib/admin-client";
+import { createMailto, JAMLY_EMAILS } from "../src/lib/jamly-contacts";
 
 type TestCase = {
   name: string;
@@ -43,6 +44,16 @@ type TestCase = {
 };
 
 const tests: TestCase[] = [
+  {
+    name: "Jamly contact routes build encoded mailto links",
+    run() {
+      assert.equal(JAMLY_EMAILS.noreply, "noreply@getjamly.com");
+      assert.equal(
+        createMailto(JAMLY_EMAILS.payment, { subject: "Order #42" }),
+        "mailto:payment@getjamly.com?subject=Order+%2342"
+      );
+    }
+  },
   {
     name: "marketplace config keeps labels in sync with categories",
     run() {

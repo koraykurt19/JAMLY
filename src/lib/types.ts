@@ -117,6 +117,17 @@ export type OrderRequest = {
   price: number;
   licenseTier: OrderLicenseTier;
   licenseTermsVersion: string | null;
+  paymentStatus:
+    | "unpaid"
+    | "processing"
+    | "requires_action"
+    | "paid"
+    | "failed"
+    | "refunded"
+    | "partially_refunded"
+    | "disputed"
+    | "chargeback";
+  currency: "USD" | "TRY";
   status: "Draft" | "Requested" | "In Review" | "Delivered" | "Cancelled";
   createdAt: string;
 };

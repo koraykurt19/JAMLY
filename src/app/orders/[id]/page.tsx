@@ -175,6 +175,8 @@ export default function OrderPage({ params }: OrderPageProps) {
           <OrderStatusControl
             order={detail.order}
             isCreator={role === "creator"}
+            isBuyer={role === "buyer"}
+            paymentSettled={detail.order.paymentStatus === "paid"}
             onChanged={updateVisibleOrderStatus}
           />
         </aside>

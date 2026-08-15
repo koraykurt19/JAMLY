@@ -1,4 +1,4 @@
-import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type { Currency } from "@/lib/money";
 
 /**
@@ -65,7 +65,11 @@ class SandboxPaymentProvider implements PaymentProvider {
   }
 
   async createCheckout(request: CheckoutRequest): Promise<CheckoutSession> {
-    const providerPaymentId = `sbx_${request.idempotencyKey.slice(0, 24)}_${randomUUID().slice(0, 8)}`;
+    const digest = createHash("sha256")
+      .update(request.idempotencyKey)
+      .digest("hex")
+      .slice(0, 32);
+    const providerPaymentId = `sbx_${digest}`;
     return {
       providerPaymentId,
       // The sandbox has no hosted page; the app renders its own confirmation.

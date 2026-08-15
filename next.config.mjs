@@ -28,7 +28,14 @@ const csp = [
     ...supabaseOrigins,
     ...supabaseOrigins.map((origin) => origin.replace("https://", "wss://")),
     // Turbopack's HMR socket. Dev only — never emitted in production.
-    ...(isProduction ? [] : ["ws://localhost:*", "http://localhost:*"])
+    ...(isProduction
+      ? []
+      : [
+          "ws://localhost:*",
+          "http://localhost:*",
+          "ws://127.0.0.1:*",
+          "http://127.0.0.1:*"
+        ])
   ].join(" "),
   ["img-src 'self' data: blob: https://images.unsplash.com", ...supabaseOrigins].join(" "),
   ["media-src 'self' blob: https://www.soundhelix.com", ...supabaseOrigins].join(" "),
@@ -87,6 +94,7 @@ const faviconAssetRoutes = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  ...(isProduction ? {} : { allowedDevOrigins: ["127.0.0.1"] }),
   images: {
     deviceSizes: [360, 480, 640, 768, 1024, 1280, 1536],
     imageSizes: [32, 48, 64, 96, 128, 256, 384],

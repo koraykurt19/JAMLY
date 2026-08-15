@@ -369,8 +369,17 @@ export type Database = {
           license_tier: Database["public"]["Enums"]["license_tier"];
           license_price: number | null;
           license_terms_version: string | null;
+          license_snapshot: Json | null;
+          delivery_path_snapshot: string | null;
+          listing_title_snapshot: string | null;
           status: Database["public"]["Enums"]["order_status"];
+          payment_status: Database["public"]["Enums"]["payment_state"];
+          currency: string;
+          provider_reference: string | null;
+          paid_at: string | null;
+          delivered_at: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -382,8 +391,17 @@ export type Database = {
           license_tier?: Database["public"]["Enums"]["license_tier"];
           license_price?: number | null;
           license_terms_version?: string | null;
+          license_snapshot?: Json | null;
+          delivery_path_snapshot?: string | null;
+          listing_title_snapshot?: string | null;
           status?: Database["public"]["Enums"]["order_status"];
+          payment_status?: Database["public"]["Enums"]["payment_state"];
+          currency?: string;
+          provider_reference?: string | null;
+          paid_at?: string | null;
+          delivered_at?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["order_requests"]["Insert"]>;
         Relationships: [];
