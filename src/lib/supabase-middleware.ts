@@ -95,7 +95,13 @@ function gatePreRegisterHost(request: NextRequest, response: NextResponse) {
   if (path === "/") {
     const url = request.nextUrl.clone();
     url.pathname = "/early-access";
-    return copyCookies(response, NextResponse.redirect(url));
+    return copyCookies(response, NextResponse.rewrite(url));
+  }
+
+  if (path === "/verify") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/early-access/verify";
+    return copyCookies(response, NextResponse.rewrite(url));
   }
 
   if (isPreRegisterPublicPath(path)) {
@@ -110,7 +116,7 @@ function gatePreRegisterHost(request: NextRequest, response: NextResponse) {
   }
 
   const url = request.nextUrl.clone();
-  url.pathname = "/early-access";
+  url.pathname = "/";
   url.search = "";
   return copyCookies(response, NextResponse.redirect(url));
 }
@@ -148,6 +154,8 @@ function isMainPublicPath(path: string) {
 
 function isPreRegisterPublicPath(path: string) {
   return (
+    path === "/" ||
+    path === "/verify" ||
     path === "/early-access" ||
     path === "/early-access/verify" ||
     path === "/api/waitlist" ||
@@ -163,7 +171,7 @@ function redirectToPreRegister(
   response: NextResponse
 ) {
   const host = [...preRegisterHosts][0] ?? "pre-register.getjamly.com";
-  const url = new URL("/early-access", `https://${host}`);
+  const url = new URL("/", `https://${host}`);
   return copyCookies(response, NextResponse.redirect(url));
 }
 
