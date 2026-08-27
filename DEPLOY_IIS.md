@@ -311,10 +311,53 @@ davranışları değişmez.
 .\wacs.exe --target manual --host getjamly.hakanefe.online --installation iis --installationsiteid <site-id>
 ```
 
+Doğrulamayı **açıkça `--validation filesystem`** ver, tahmine bırakma —
+hazırladığımız `.well-known/acme-challenge` yolunu kullansın.
+
 Mevcut wildcard sertifikan varsa onu binding'e eklemen yeterli, win-acme
 gerekmez.
 
-5. Site → *Bindings* → `https` / 443 / `getjamly.hakanefe.online` / sertifikayı seç.
+> **Tuzak: `--installation iis` HTTPS binding'i oluşturmayabilir.**
+>
+> `--target manual` kullanıldığında win-acme'nin hedef siteyi çıkarabileceği
+> bir kaynak yoktur. `--installationsiteid` verilse bile yenileme kaydına
+> yalnızca plugin GUID'i yazılır, site bilgisi yazılmaz:
+>
+> ```json
+> "InstallationPluginOptions": [ { "Plugin": "aecc502c-..." } ]
+> ```
+>
+> Sonuç: sertifika depoya girer ama **binding oluşmaz**, site HTTPS'te açılmaz.
+> IIS *source* plugin'i kullanan sitelerde bu sorun görülmez, çünkü site
+> bilgisi oradan gelir.
+>
+> Sertifika elindeyse **yeni talep yapma** (haftalık 5 limitini yakma);
+> binding'i elle kur. 443'ü diğer sitelerle paylaşacaksan **SNI zorunlu**:
+> `sslFlags=1`.
+
+5. **Yenilemeyi şimdi doğrula.** Yukarıdaki eksik yalnızca ilk kurulumu değil,
+   yenilemeyi de etkiler: 60 gün sonra sertifika yenilenir ama binding eski
+   sertifikayı tutmaya devam edebilir ve site **sessizce süresi dolmuş**
+   sertifika sunmaya başlar. Hata vermez, sadece bir gün çalışmayı bırakır.
+
+   Yenileme kaydını hedef siteyi bilecek şekilde düzelt, sonra bir kez
+   `--renew --force` çalıştırıp binding'in parmak izinin **yeni sertifikaya
+   döndüğünü** doğrula:
+
+   ```powershell
+   # once
+   Get-ChildItem IIS:\SslBindings | Where-Object { $_.Host -eq "getjamly.hakanefe.online" }
+   # --renew --force sonrasi ayni komut: Thumbprint DEGISMELI
+   ```
+
+   Parmak izi değişmiyorsa yenileme binding'i güncellemiyor demektir; bunu
+   sertifikanın son gününde değil şimdi öğrenmek gerekir.
+
+6. Sertifika süresi için takvim hatırlatıcısı kur. Otomatik yenileme doğrulansa
+   bile tek savunma hattı olmamalı.
+
+7. Site → *Bindings* → `https` / 443 / `getjamly.hakanefe.online` / sertifikayı seç
+   (win-acme kurduysa bu adım zaten yapılmıştır).
 
 ---
 
@@ -413,6 +456,7 @@ Sonra `/admin` açılmalı ve rol rozetini göstermeli. Admin olmayan bir hesap
 | Supabase "schema cache" hatası | Migration uygulanmamış → Bölüm 2 |
 | Sürekli 429 | Supabase erişilemiyor ve `NODE_ENV=production` → limiter fail-closed davranıyor. Dış bağlantıyı kontrol et. |
 | Yüklemede 413 | `maxAllowedContentLength` yetersiz → `web.config` |
+| Sertifika alındı ama HTTPS açılmıyor | win-acme binding kurmamış (manual source + eksik site bilgisi) → binding'i elle kur, SNI için `sslFlags=1` (Bölüm 6.4) |
 | Sertifika alınamıyor | ACME challenge Node'a gidiyor → `AcmeChallenge` kuralı ilk sırada mı, `.well-known/acme-challenge/web.config` var mı (Bölüm 6.3b) |
 
 Kod güncellemesi:
