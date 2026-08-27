@@ -81,6 +81,13 @@ export async function enqueueEmail(input: EnqueueInput) {
 
   const id = data as unknown as string;
   const rendered = renderEmail(input);
+
+  if (isSuppressedRecipient(input.to)) {
+    await markEmailSuppressed(id, "suppressed_test_recipient");
+    logRenderedEmail(input);
+    return { queued: true as const, id, delivery: "suppressed" as const };
+  }
+
   const delivery = await deliverEmail({ ...input, ...rendered });
 
   if (!delivery.configured) {
@@ -281,6 +288,45 @@ async function markEmailDelivery(
   if (error) {
     console.error("email_outbox_update_failed", { id, message: error.message });
   }
+}
+
+async function markEmailSuppressed(id: string, reason: string) {
+  const client = createServiceRoleClient();
+  if (!client) return;
+
+  const { error } = await (client as never as {
+    from(table: "email_outbox"): {
+      update(values: {
+        status: "suppressed";
+        attempts: 0;
+        last_error: string;
+        provider_message_id: null;
+        sent_at: null;
+      }): { eq(column: "id", value: string): Promise<{ error: Error | null }> };
+    };
+  })
+    .from("email_outbox")
+    .update({
+      status: "suppressed",
+      attempts: 0,
+      last_error: reason,
+      provider_message_id: null,
+      sent_at: null
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("email_outbox_suppress_failed", { id, message: error.message });
+  }
+}
+
+function isSuppressedRecipient(email: string) {
+  const domain = email.split("@").at(-1)?.trim().toLowerCase();
+  if (!domain) return false;
+
+  const defaults = ["example.com", "example.net", "example.org", "invalid.test", "test"];
+  const configured = process.env.EMAIL_SUPPRESSED_RECIPIENT_DOMAINS?.split(",") ?? defaults;
+  return configured.map((item) => item.trim().toLowerCase()).filter(Boolean).includes(domain);
 }
 
 function parseBoolean(value: string | undefined) {
