@@ -5,7 +5,7 @@ import type { Database } from "@/lib/database.types";
 export async function updateSupabaseSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-  if (!url || !key) return NextResponse.next({ request });
+  if (!url || !key) return launchGate(request, NextResponse.next({ request }), null);
 
   let response = NextResponse.next({ request });
   const client = createServerClient<Database>(url, key, {
@@ -23,8 +23,10 @@ export async function updateSupabaseSession(request: NextRequest) {
     }
   });
 
+  let userId: string | null = null;
   try {
-    const { error } = await client.auth.getUser();
+    const { data, error } = await client.auth.getUser();
+    userId = data.user?.id ?? null;
     if (error && isInvalidAuthState(error.message)) {
       clearSupabaseAuthCookies(request, response);
     }
@@ -37,7 +39,151 @@ export async function updateSupabaseSession(request: NextRequest) {
     }
   }
 
-  return response;
+  return launchGate(request, response, userId ? { client, userId } : null);
+}
+
+type GateContext = {
+  client: ReturnType<typeof createServerClient<Database>>;
+  userId: string;
+};
+
+async function launchGate(
+  request: NextRequest,
+  response: NextResponse,
+  context: GateContext | null
+) {
+  const host = normalizeHost(request.headers.get("host"));
+  const path = request.nextUrl.pathname;
+  const mainHosts = hostList(process.env.JAMLY_MAIN_HOSTS, ["getjamly.com", "www.getjamly.com"]);
+  const preRegisterHosts = hostList(process.env.JAMLY_PRE_REGISTER_HOSTS, [
+    "pre-register.getjamly.com"
+  ]);
+
+  if (preRegisterHosts.has(host)) {
+    return gatePreRegisterHost(request, response);
+  }
+
+  if (!mainHosts.has(host)) {
+    return response;
+  }
+
+  if (path === "/auth/sign-up") {
+    return redirectToPreRegister(request, preRegisterHosts, response);
+  }
+
+  if (isMainPublicPath(path)) {
+    return response;
+  }
+
+  if (!context) {
+    const signInUrl = request.nextUrl.clone();
+    signInUrl.pathname = "/auth/sign-in";
+    signInUrl.search = "";
+    signInUrl.searchParams.set("next", path === "/" ? "/admin" : `${path}${request.nextUrl.search}`);
+    return copyCookies(response, NextResponse.redirect(signInUrl));
+  }
+
+  const allowed = await isBetaAllowed(context);
+  if (allowed) return response;
+
+  return redirectToPreRegister(request, preRegisterHosts, response);
+}
+
+function gatePreRegisterHost(request: NextRequest, response: NextResponse) {
+  const path = request.nextUrl.pathname;
+
+  if (path === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/early-access";
+    return copyCookies(response, NextResponse.redirect(url));
+  }
+
+  if (isPreRegisterPublicPath(path)) {
+    return response;
+  }
+
+  if (path.startsWith("/api/")) {
+    return Response.json(
+      { error: "pre_register_only", message: "This host only serves pre-registration." },
+      { status: 404, headers: { "Cache-Control": "no-store" } }
+    );
+  }
+
+  const url = request.nextUrl.clone();
+  url.pathname = "/early-access";
+  url.search = "";
+  return copyCookies(response, NextResponse.redirect(url));
+}
+
+async function isBetaAllowed({ client, userId }: GateContext) {
+  const { data: isAdmin } = await client.rpc("is_current_user_admin");
+  if (isAdmin) return true;
+
+  const { data: profile } = await client
+    .from("profiles")
+    .select("handle, account_status")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (profile?.account_status !== "active") return false;
+
+  const allowedHandles = hostList(process.env.JAMLY_BETA_ALLOWED_HANDLES, [
+    "koraykurt",
+    "hakanefe"
+  ]);
+  return allowedHandles.has(String(profile.handle ?? "").toLowerCase());
+}
+
+function isMainPublicPath(path: string) {
+  return (
+    path === "/auth/sign-in" ||
+    path === "/auth/forgot-password" ||
+    path === "/auth/reset-password" ||
+    path === "/api/health" ||
+    path.startsWith("/api/admin/") ||
+    path === "/api/admin" ||
+    path === "/api/payments/webhook"
+  );
+}
+
+function isPreRegisterPublicPath(path: string) {
+  return (
+    path === "/early-access" ||
+    path === "/early-access/verify" ||
+    path === "/api/waitlist" ||
+    path === "/api/waitlist/verify" ||
+    path === "/api/health" ||
+    path.startsWith("/_next/")
+  );
+}
+
+function redirectToPreRegister(
+  request: NextRequest,
+  preRegisterHosts: Set<string>,
+  response: NextResponse
+) {
+  const host = [...preRegisterHosts][0] ?? "pre-register.getjamly.com";
+  const url = new URL("/early-access", `https://${host}`);
+  return copyCookies(response, NextResponse.redirect(url));
+}
+
+function normalizeHost(value: string | null) {
+  return (value ?? "").split(":")[0]?.toLowerCase() ?? "";
+}
+
+function hostList(value: string | undefined, fallback: string[]) {
+  return new Set(
+    (value?.split(",") ?? fallback)
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+function copyCookies(source: NextResponse, target: NextResponse) {
+  source.cookies.getAll().forEach((cookie) => {
+    target.cookies.set(cookie);
+  });
+  return target;
 }
 
 function isInvalidAuthState(message: string) {
