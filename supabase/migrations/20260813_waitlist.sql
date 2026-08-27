@@ -343,7 +343,7 @@ begin
   if p_referral_code is not null and length(trim(p_referral_code)) > 0 then
     select * into referrer
     from public.waitlist_entries
-    where referral_code = upper(trim(p_referral_code));
+    where waitlist_entries.referral_code = upper(trim(p_referral_code));
 
     if found and referrer.status = 'blocked' then
       referrer := null;
@@ -361,9 +361,9 @@ begin
 
   -- Unpredictable, human-typable referral code.
   loop
-    new_code := upper(substr(encode(gen_random_bytes(8), 'hex'), 1, 10));
+    new_code := upper(substr(encode(extensions.gen_random_bytes(8), 'hex'), 1, 10));
     exit when not exists (
-      select 1 from public.waitlist_entries where referral_code = new_code
+      select 1 from public.waitlist_entries where waitlist_entries.referral_code = new_code
     );
   end loop;
 
