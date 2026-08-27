@@ -35,6 +35,22 @@ const supabaseHostname = (() => {
 // optimization.
 const supabaseOrigins = supabaseHostname ? [`https://${supabaseHostname}`] : [];
 
+const preRegisterOrigins = (() => {
+  const explicitUrl = process.env.NEXT_PUBLIC_PRE_REGISTER_SITE_URL?.trim();
+  if (explicitUrl) {
+    try {
+      return [new URL(explicitUrl).origin];
+    } catch {
+      return [];
+    }
+  }
+
+  return (process.env.JAMLY_PRE_REGISTER_HOSTS?.split(",") ?? [])
+    .map((host) => host.trim())
+    .filter(Boolean)
+    .map((host) => `https://${host}`);
+})();
+
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -46,6 +62,7 @@ const csp = [
     "connect-src 'self'",
     ...supabaseOrigins,
     ...supabaseOrigins.map((origin) => origin.replace("https://", "wss://")),
+    ...preRegisterOrigins,
     // Turbopack's HMR socket. Dev only — never emitted in production.
     ...(isProduction
       ? []

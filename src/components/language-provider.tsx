@@ -56,6 +56,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, [currencyCode, preferencesLoaded]);
 
   useEffect(() => {
+    if (window.location.hostname === "pre-register.getjamly.com") {
+      return;
+    }
+
     let active = true;
 
     async function loadExchangeRate() {
