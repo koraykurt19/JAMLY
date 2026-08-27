@@ -60,7 +60,7 @@ async function launchGate(
   ]);
 
   if (preRegisterHosts.has(host)) {
-    return gatePreRegisterHost(request, response);
+    return hardenPreRegisterResponse(gatePreRegisterHost(request, response));
   }
 
   if (!mainHosts.has(host)) {
@@ -161,8 +161,29 @@ function isPreRegisterPublicPath(path: string) {
     path === "/api/waitlist" ||
     path === "/api/waitlist/verify" ||
     path === "/api/health" ||
+    isPublicAssetPath(path) ||
     path.startsWith("/_next/")
   );
+}
+
+function isPublicAssetPath(path: string) {
+  return (
+    path === "/favicon.ico" ||
+    path === "/favicon.svg" ||
+    path === "/apple-touch-icon.png" ||
+    path === "/icon.png" ||
+    path === "/icon-192.png" ||
+    path === "/icon-512.png" ||
+    path === "/site.webmanifest" ||
+    path.startsWith("/brand/")
+  );
+}
+
+function hardenPreRegisterResponse(response: NextResponse | Response) {
+  response.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+  response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  response.headers.set("X-Pre-Register-Gate", "active");
+  return response;
 }
 
 function redirectToPreRegister(

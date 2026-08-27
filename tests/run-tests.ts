@@ -16,6 +16,7 @@ import { findJamMatches } from "../src/lib/jam-match";
 import { sanitizeExternalUrl, socialLinksFromRecord } from "../src/lib/social-links";
 import {
   foundingTierFor,
+  buildReferralUrl,
   normalizeEmail,
   normalizeReferralCode,
   normalizeUsername,
@@ -215,6 +216,15 @@ const tests: TestCase[] = [
       assert.equal(foundingTierFor(101), "first_1000");
       assert.equal(foundingTierFor(1000), "first_1000");
       assert.equal(foundingTierFor(1001), "community");
+    }
+  },
+  {
+    name: "waitlist referral links stay on the pre-register root",
+    run() {
+      assert.equal(
+        buildReferralUrl("https://pre-register.getjamly.com", "ABC123"),
+        "https://pre-register.getjamly.com/?ref=ABC123"
+      );
     }
   },
 

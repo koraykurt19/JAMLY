@@ -99,7 +99,7 @@ export function foundingTierFor(position: number) {
 }
 
 export function buildReferralUrl(origin: string, code: string) {
-  const url = new URL("/early-access", origin);
+  const url = new URL("/", origin);
   url.searchParams.set("ref", code);
   return url.toString();
 }
