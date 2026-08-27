@@ -166,10 +166,7 @@ These are **not** fixed and must be understood before launch:
    flagging exist; a CAPTCHA/Turnstile integration point does not.
 4. **Migrations are not applied to any live database yet.** Every fix above
    exists as SQL in `supabase/migrations/` and takes effect only once applied.
-5. **`scripts/apply-supabase-migration.mjs` path guard is broken on Windows**
-   (compares a backslash path against a forward slash). Apply migrations from
-   the Supabase SQL editor or a POSIX shell until fixed.
-6. **Password minimum is enforced client-side at 8 characters.** Set the same
+5. **Password minimum is enforced client-side at 8 characters.** Set the same
    minimum in the Supabase Auth dashboard so it holds server-side.
 
 ## Reporting a vulnerability

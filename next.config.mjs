@@ -1,4 +1,23 @@
+import { execSync } from "node:child_process";
+
 const isProduction = process.env.NODE_ENV === "production";
+
+const buildId = (() => {
+  const explicitBuildId = process.env.JAMLY_BUILD_ID?.trim();
+  if (explicitBuildId) return explicitBuildId;
+
+  const vercelCommit = process.env.VERCEL_GIT_COMMIT_SHA?.trim();
+  if (vercelCommit) return vercelCommit;
+
+  try {
+    return execSync("git rev-parse HEAD", {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim();
+  } catch {
+    return null;
+  }
+})();
 
 const supabaseHostname = (() => {
   try {
@@ -94,6 +113,7 @@ const faviconAssetRoutes = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  ...(buildId ? { generateBuildId: async () => buildId } : {}),
   ...(isProduction ? {} : { allowedDevOrigins: ["127.0.0.1"] }),
   images: {
     deviceSizes: [360, 480, 640, 768, 1024, 1280, 1536],

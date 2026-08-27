@@ -9,9 +9,12 @@ it. **No secret values appear in this file or in `.env.example`.**
 | --- | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Client + server | Supabase project URL | App runs in demo mode: sample data, no auth, no persistence |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + server | Supabase anon/publishable key | Same as above |
+| `JAMLY_DEPLOYMENT` | Server | Optional `/api/health` deployment label, for example `self-hosted` on IIS | Inferred as `vercel` on Vercel and `self-hosted` elsewhere |
+| `JAMLY_BUILD_ID` | Build | Optional fixed Next build id for no-git deployments | Inferred from Vercel or `git rev-parse HEAD` |
+| `JAMLY_SOURCE_REVISION` | Server | Optional source revision for `/api/health` stale-build detection | Inferred from Vercel or `.git/HEAD` |
 
-Both are public by design and protected by RLS. They are safe in the browser
-bundle.
+The `NEXT_PUBLIC_*` values are public by design and protected by RLS. They are
+safe in the browser bundle.
 
 ## Required for payments
 
@@ -59,6 +62,8 @@ Create `.env.local` (git-ignored):
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+JAMLY_DEPLOYMENT=self-hosted
+RATE_LIMIT_SALT=
 SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 PAYMENT_PROVIDER=sandbox

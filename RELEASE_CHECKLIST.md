@@ -14,41 +14,37 @@ npm run build
 npm audit
 ```
 
-All must pass. Current status on `feat/launch-readiness`: typecheck clean, lint
-clean, 21/21 tests pass, build succeeds (49 route entries), `npm audit` reports 0
-vulnerabilities.
+All must pass before deployment. The historical `feat/launch-readiness` gate
+was typecheck clean, lint clean, 21/21 tests passing, build succeeding, and
+`npm audit` reporting 0 vulnerabilities; re-run the gate on the commit being
+deployed.
 
 ## 2. Supabase project — **BLOCKER**
 
 1. Create the project. Copy the URL and anon key.
-2. Apply the base schema to a **fresh** project:
-   `supabase/schema.sql`
-3. Apply migrations **in this order**:
+2. For a fresh project, apply `supabase/schema.sql` first.
+3. Then apply the post-schema migrations **in this order**:
 
 ```
-20260629_add_conversations.sql
-20260707_add_beat_license_tiers.sql
-20260712_unify_account_capabilities.sql
-20260715_username_policy.sql
-20260731_protect_founder_headline.sql
-20260801_ensure_listing_storage.sql
-20260809_admin_and_platform_config.sql
-20260811_add_collaboration_revenue.sql
-20260811_add_collaboration_workspace.sql
-20260811_add_profile_follows.sql
-20260811_tighten_collaboration_rls.sql
-20260813_security_hardening.sql      <- new
-20260813_rate_limiting.sql           <- new
-20260813_waitlist.sql                <- new
-20260813_badges.sql                  <- new
-20260813_admin_rbac_audit.sql        <- new
-20260813_email_outbox.sql            <- new
-20260813_payments.sql                <- new
+20260813_security_hardening.sql
+20260813_rate_limiting.sql
+20260813_waitlist.sql
+20260813_badges.sql
+20260813_admin_rbac_audit.sql
+20260813_email_outbox.sql
+20260813_payments.sql
+20260815_validate_payment_amount.sql
 ```
 
-Order matters: `security_hardening` must precede `badges` (badge rules read
-`payment_status`), and `admin_rbac_audit` must precede `email_outbox` (its RLS
-policy calls `admin_has`).
+For an older Jamly database that predates the current `schema.sql`, apply every
+missing migration in dependency order from `NEW_VDS_SETUP_WINDOWS.md`. Do not
+blindly run the old migrations after `schema.sql`; some of those changes are
+already in the base schema.
+
+Order matters: `security_hardening` must precede `badges` because badge rules
+read `payment_status`; `admin_rbac_audit` must precede `email_outbox` and
+`payments` because they call `admin_has`; `20260815_validate_payment_amount`
+patches the settlement function created by `20260813_payments`.
 
 > `npm run supabase:apply-migration` supports Windows and POSIX path separators.
 > For production, applying one file at a time in the Supabase SQL editor remains
@@ -132,15 +128,15 @@ but means nothing can be bought.
 ## 9. Deploy
 
 1. Push the branch, open a PR, merge to `main`.
-2. Connect the repo in Vercel.
-3. Add environment variables (step 5).
-4. Deploy.
+2. For Vercel, connect the repo and add environment variables (step 5).
+3. For Windows/IIS, follow `NEW_VDS_SETUP_WINDOWS.md`.
+4. Deploy only after Supabase verification returns ready.
 
 ## 10. Post-deploy smoke test
 
 | Check | Expected |
 | --- | --- |
-| `/api/health` | 200 |
+| `/api/health` | 200, `supabase.status: "ready"`, `build.status: "current"` |
 | `/` | Marketplace renders |
 | `/early-access` | Hero, counter, form render |
 | Waitlist submit | 201, queue position returned |
@@ -165,7 +161,8 @@ but means nothing can be bought.
 
 ## 12. Rollback
 
-Deployment: revert in Vercel.
+Deployment: revert in Vercel, or check out the known-good commit and rebuild on
+the Windows VDS.
 
 Database: migrations are additive and idempotent, but
 `20260813_security_hardening.sql` **revokes** the direct order-update policy and

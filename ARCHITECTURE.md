@@ -27,7 +27,7 @@ Two clients, deliberately:
 - **Browser** (`supabase.ts`) — anon key, user's JWT, RLS applies.
 - **Server** (`supabase-server.ts`) — anon key + cookie session, RLS applies.
 
-`proxy.ts` (renamed from `middleware.ts` for Next 16) refreshes the session on
+`src/proxy.ts` (renamed from `middleware.ts` for Next 16) refreshes the session on
 every non-static request and clears cookies that are structurally invalid.
 
 The only elevated path is the payment webhook, which uses the service role

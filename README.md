@@ -72,9 +72,9 @@ can later be replaced or enhanced by Supabase search, embeddings, or an AI model
 
 | Layer | Technology |
 | --- | --- |
-| Framework | Next.js 14, App Router |
+| Framework | Next.js 16, App Router |
 | Language | TypeScript 5, strict mode |
-| UI | React 18, Tailwind CSS 3 |
+| UI | React 19, Tailwind CSS 3 |
 | Icons | Lucide React |
 | Auth | Supabase Auth |
 | Database | Supabase Postgres |
@@ -82,13 +82,13 @@ can later be replaced or enhanced by Supabase search, embeddings, or an AI model
 | Realtime | Supabase Realtime |
 | Media storage | Supabase Storage |
 | Package manager | npm with lockfile |
-| Deployment | Vercel or Docker |
+| Deployment | Vercel, Docker, or Windows/IIS reverse proxy |
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 20 or newer
+- Node.js 24.x
 - npm 10 or newer
 
 ### Run in demo mode
@@ -97,7 +97,7 @@ Demo mode requires no external service or credentials.
 
 ```bash
 git clone <repository-url>
-cd build-an-mvp-for-jamly-a
+cd JAMLY
 npm ci
 npm run dev
 ```
@@ -141,11 +141,12 @@ variables are missing, placeholder values, invalid, or unreachable.
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase mode | Public Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase mode | Public Supabase publishable/anonymous key; RLS remains the authorization boundary |
+| `JAMLY_DEPLOYMENT` | No | Optional `/api/health` label, for example `self-hosted` |
 | `APP_PORT` | Docker only | Host port mapped to the application; defaults to `3000` |
 
-Use `.env.local` for local Next.js development. Docker Compose reads values
-from `.env` or the shell environment. Vercel values belong in the project's
-Environment Variables settings.
+Use `.env.local` for local Next.js development and Windows/IIS self-hosting.
+Docker Compose reads values from `.env` or the shell environment. Vercel values
+belong in the project's Environment Variables settings.
 
 ## Supabase Setup
 
@@ -154,11 +155,13 @@ Environment Variables settings.
 1. Create a Supabase project.
 2. Open the Supabase SQL Editor.
 3. Run [`supabase/schema.sql`](supabase/schema.sql).
-4. Copy `.env.example` to `.env.local`.
-5. Add the project URL and publishable/anonymous key.
-6. Restart the development server.
+4. Run the post-schema migrations listed in
+   [`NEW_VDS_SETUP_WINDOWS.md`](NEW_VDS_SETUP_WINDOWS.md).
+5. Copy `.env.example` to `.env.local`.
+6. Add the project URL and publishable/anonymous key.
+7. Rebuild/restart the app.
 
-The schema creates:
+The base schema creates:
 
 - `profiles`
 - `listings`
@@ -168,14 +171,14 @@ The schema creates:
 - `message_attachments`
 - `collab_projects`, `collab_participants`, `collab_versions`, and `collab_comments`
 - `notifications` and `revenue_splits`
-- `listing-covers`, `audio-previews`, and private `license-deliverables` Storage buckets
+- `listing-covers`, `profile-media`, `audio-previews`, and private `license-deliverables` Storage buckets
 - private `collab-files` Storage bucket
 - RLS policies, indexes, triggers, and Realtime publications
 
 ### Existing project
 
 If an older Jamly schema is already installed, apply the relevant migrations in
-date order instead of re-running the complete schema:
+dependency order instead of re-running the base schema file:
 
 1. [`supabase/migrations/20260629_add_conversations.sql`](supabase/migrations/20260629_add_conversations.sql)
 2. [`supabase/migrations/20260707_add_beat_license_tiers.sql`](supabase/migrations/20260707_add_beat_license_tiers.sql)
@@ -185,8 +188,17 @@ date order instead of re-running the complete schema:
 6. [`supabase/migrations/20260801_ensure_listing_storage.sql`](supabase/migrations/20260801_ensure_listing_storage.sql)
 7. [`supabase/migrations/20260809_admin_and_platform_config.sql`](supabase/migrations/20260809_admin_and_platform_config.sql)
 8. [`supabase/migrations/20260811_add_collaboration_workspace.sql`](supabase/migrations/20260811_add_collaboration_workspace.sql)
-9. [`supabase/migrations/20260811_tighten_collaboration_rls.sql`](supabase/migrations/20260811_tighten_collaboration_rls.sql)
-10. [`supabase/migrations/20260811_add_collaboration_revenue.sql`](supabase/migrations/20260811_add_collaboration_revenue.sql)
+9. [`supabase/migrations/20260811_add_collaboration_revenue.sql`](supabase/migrations/20260811_add_collaboration_revenue.sql)
+10. [`supabase/migrations/20260811_add_profile_follows.sql`](supabase/migrations/20260811_add_profile_follows.sql)
+11. [`supabase/migrations/20260811_tighten_collaboration_rls.sql`](supabase/migrations/20260811_tighten_collaboration_rls.sql)
+12. [`supabase/migrations/20260813_security_hardening.sql`](supabase/migrations/20260813_security_hardening.sql)
+13. [`supabase/migrations/20260813_rate_limiting.sql`](supabase/migrations/20260813_rate_limiting.sql)
+14. [`supabase/migrations/20260813_waitlist.sql`](supabase/migrations/20260813_waitlist.sql)
+15. [`supabase/migrations/20260813_badges.sql`](supabase/migrations/20260813_badges.sql)
+16. [`supabase/migrations/20260813_admin_rbac_audit.sql`](supabase/migrations/20260813_admin_rbac_audit.sql)
+17. [`supabase/migrations/20260813_email_outbox.sql`](supabase/migrations/20260813_email_outbox.sql)
+18. [`supabase/migrations/20260813_payments.sql`](supabase/migrations/20260813_payments.sql)
+19. [`supabase/migrations/20260815_validate_payment_amount.sql`](supabase/migrations/20260815_validate_payment_amount.sql)
 
 The licensing migration backfills prices for existing beat rows, adds the
 transactional purchase function, and creates the private delivery bucket. Existing
@@ -211,12 +223,11 @@ The admin dashboard lives at `/admin`. It is visible in the account menu only
 after `is_admin` confirms membership in `admin_accounts`, and every `/api/admin/*`
 route repeats the same server-side check with the current bearer token.
 
-For a fresh database, `supabase/schema.sql` includes admin tables, reports,
-platform skills, account status controls, and initial skill seeds. For an
-existing database, apply `20260809_admin_and_platform_config.sql` after the
-earlier migrations. If the founder profile already exists with
-`koraykurt.vrdn@gmail.com`, the migration bootstraps it as `owner`; otherwise
-insert the intended owner into `admin_accounts` after the profile is created.
+For a fresh database, `supabase/schema.sql` includes the base admin tables,
+reports, platform skills, account status controls, and initial skill seeds.
+The RBAC/audit migration upgrades that surface with admin roles and capability
+checks. If no super admin exists after signup, insert the intended owner into
+`admin_accounts` as `super_admin` from the Supabase SQL Editor.
 
 ## Data Model
 
@@ -246,10 +257,10 @@ insert the intended owner into `admin_accounts` after the profile is created.
 - Message inserts require `sender_id = auth.uid()`.
 - Authenticated users can create order requests for themselves.
 - Authenticated users can create or update their own listings.
-- Beat license purchases use a row lock so an Exclusive sale and another license cannot race.
-- Exclusive purchase atomically marks the listing sold and removes it from public discovery.
-- Storage upload policies require an authenticated account.
-- Buyers can read only the private folder matching the tier recorded on their order.
+- Beat license orders are created unpaid; settled payments unlock delivery.
+- A settled Exclusive payment marks the listing sold and removes it from public discovery.
+- Storage upload policies require an authenticated account and owner folder isolation.
+- Buyers can read only paid private delivery folders matching the tier recorded on their order.
 - Admin APIs require a valid Supabase session bearer token and an `admin_accounts`
   membership check before returning moderation data.
 - Profile account status changes are protected by RLS, trigger checks, and the
@@ -257,8 +268,8 @@ insert the intended owner into `admin_accounts` after the profile is created.
 - External social links are normalized and restricted to `http` and `https`.
 - Security headers set a baseline CSP, frame protection, MIME sniffing
   protection, referrer policy, and permissions policy for every route.
-- Public clients use only the Supabase publishable/anonymous key; no service-role or `sb_secret` key is
-  required by the application.
+- Public clients use only the Supabase publishable/anonymous key. Server-only
+  payment settlement uses the service-role key when that path is enabled.
 - Public listing media is readable, while uploads remain policy-controlled.
 - Collab files are private and can only be read or uploaded by the owner and accepted participants.
 - Revenue shares are constrained to 100% in both the UI and PostgreSQL triggers.
@@ -287,7 +298,7 @@ add automated authorization tests for every role and table.
 | `/admin` | Admin console for users, listings, orders, reports, and platform skills |
 | `/auth/sign-in` | Sign-in flow |
 | `/auth/sign-up` | Role-aware registration flow |
-| `/api/health` | Vercel and Supabase readiness check without exposing secrets |
+| `/api/health` | Deployment, build, and Supabase readiness check without exposing secrets |
 | `/api/admin/*` | Bearer-token protected admin data and moderation endpoints |
 | `/api/exchange-rate` | Server-side USD/TRY rate response with timeout and fallback |
 
@@ -297,13 +308,15 @@ add automated authorization tests for every role and table.
 src/
 ├── app/                  Next.js routes, layouts, and API handlers
 ├── components/           Reusable UI and feature components
-└── lib/                  Data access, Supabase clients, hooks, i18n, and matching
+├── lib/                  Data access, Supabase clients, hooks, i18n, and matching
+└── proxy.ts              Next 16 Proxy for Supabase session refresh
 supabase/
 ├── migrations/           Incremental database migrations
-└── schema.sql             Complete schema for a new project
+└── schema.sql             Base schema for a new project
 Dockerfile                 Production multi-stage Node image
 docker-compose.yml         Local production-style container orchestration
 vercel.json                Vercel build command and Next.js project hints
+NEW_VDS_SETUP_WINDOWS.md   Windows Server 2022 + IIS + Supabase runbook
 ```
 
 ## Development Commands
@@ -349,40 +362,23 @@ Expected live result:
 ```
 
 For an empty Supabase project, if the result says `schema_missing`, apply the
-complete schema with a direct Supabase Postgres connection string:
+base schema with a direct Supabase Postgres connection string:
 
 ```bash
 SUPABASE_DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require" npm run supabase:apply-schema
 ```
 
-For an existing project where the database is ready but `storage` reports
-`buckets_missing`, apply only the safe, repeatable storage migration instead:
-
-```bash
-SUPABASE_DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require" npm run supabase:apply-migration -- 20260801_ensure_listing_storage.sql
-```
-
-This creates the public cover, profile-media, and audio-preview buckets plus
-the private license-delivery bucket and their access policies. Re-run
-`npm run supabase:check` afterwards; it must return `storage: "ready"` before
-testing uploads.
-
-To enable the admin console on an existing project, apply the admin/config
-migration:
-
-```bash
-SUPABASE_DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require" npm run supabase:apply-migration -- 20260809_admin_and_platform_config.sql
-```
-
-After migration, ensure the intended owner profile has a matching row in
-`admin_accounts`.
+Then apply the post-schema migrations from
+[`NEW_VDS_SETUP_WINDOWS.md`](NEW_VDS_SETUP_WINDOWS.md). For production, the
+Supabase SQL Editor is preferred for the first launch because the required
+order is explicit and each error is visible.
 
 Use the database password or connection string from Supabase Dashboard. Do not
 commit this value, and do not put it in Vercel frontend environment variables.
 
 ## Docker
 
-The repository includes a multi-stage Node 20 Alpine image, a non-root runtime
+The repository includes a multi-stage Node 24 Alpine image, a non-root runtime
 user, health checks, restart policy, named network, and persistent Next.js cache.
 
 ```bash
@@ -405,6 +401,12 @@ docker compose down
 Docker Compose runs the Jamly web application only. Supabase Auth, Postgres,
 Realtime, and Storage must come from a hosted Supabase project or a separately
 managed local Supabase stack.
+
+## Windows/IIS Deployment
+
+For `getjamly.com` on Windows Server 2022, use
+[`NEW_VDS_SETUP_WINDOWS.md`](NEW_VDS_SETUP_WINDOWS.md). It runs Next.js as a
+local Node service and uses IIS only as the public reverse proxy and TLS layer.
 
 ## Vercel Deployment
 
