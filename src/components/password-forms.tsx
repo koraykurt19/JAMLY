@@ -120,7 +120,7 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
       active = false;
       data.subscription.unsubscribe();
     };
-  }, []);
+  }, [mode]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
