@@ -1,9 +1,9 @@
-# Jamly — Windows IIS kurulumu (`jamly.hakanefe.online`)
+# Jamly — Windows IIS kurulumu (`getjamly.hakanefe.online`)
 
 Bu doküman, Jamly'yi mevcut bir Windows IIS sunucusuna **Supabase bağlı** ve
 **şifre korumalı** biçimde kurmak içindir. Vercel gerekmez.
 
-Hedef: `https://jamly.hakanefe.online` — half-production. Gerçek Supabase
+Hedef: `https://getjamly.hakanefe.online` — half-production. Gerçek Supabase
 projesi, gerçek veri, ama dışarıya kapalı (HTTP Basic Auth).
 
 ---
@@ -14,7 +14,7 @@ projesi, gerçek veri, ama dışarıya kapalı (HTTP Basic Auth).
 gerektirir. Dolayısıyla kurulum şu şekildedir:
 
 ```
-Tarayıcı → HTTPS → IIS (jamly.hakanefe.online)
+Tarayıcı → HTTPS → IIS (getjamly.hakanefe.online)
                     └─ reverse proxy → http://127.0.0.1:3001  (Node: next start)
                                         └─ HTTPS → Supabase (bulut)
 ```
@@ -38,7 +38,7 @@ Sunucuda kurulu olmalı:
   - URL Rewrite 2.1 — https://www.iis.net/downloads/microsoft/url-rewrite
   - Application Request Routing 3.0 — https://www.iis.net/downloads/microsoft/application-request-routing
 - **NSSM** (Node'u servis yapmak için) — https://nssm.cc/download
-- `jamly.hakanefe.online` için DNS A kaydı sunucunun IP'sine bakmalı
+- `getjamly.hakanefe.online` için DNS A kaydı sunucunun IP'sine bakmalı
 
 ARR kurulduktan sonra **proxy'yi etkinleştirmeyi unutma**: IIS Manager →
 sunucu düğümü → *Application Request Routing Cache* → sağ panel *Server Proxy
@@ -99,10 +99,10 @@ fonksiyonunu çağırır.
 Hepsi idempotent; tekrar çalıştırmak güvenlidir.
 
 4. **Authentication → URL Configuration**:
-   - Site URL: `https://jamly.hakanefe.online`
+   - Site URL: `https://getjamly.hakanefe.online`
    - Redirect URLs:
-     `https://jamly.hakanefe.online/auth/reset-password`
-     `https://jamly.hakanefe.online/early-access/verify`
+     `https://getjamly.hakanefe.online/auth/reset-password`
+     `https://getjamly.hakanefe.online/early-access/verify`
 5. **Authentication → Providers → Email**: minimum şifre uzunluğunu **8** yap.
    Uygulama tarafında zaten 8, ama sunucu tarafında da geçerli olmalı.
 6. **Storage**: `license-deliverables` bucket'ının **public olmadığını** doğrula.
@@ -112,11 +112,10 @@ Hepsi idempotent; tekrar çalıştırmak güvenlidir.
 ## 3. Kodu sunucuya al
 
 ```powershell
-New-Item -ItemType Directory -Force C:\apps
-cd C:\apps
+cd C:\
 git clone https://github.com/koraykurt19/JAMLY.git jamly
-cd C:\apps\jamly
-git checkout main
+cd C:\jamly
+git checkout feat/iis-deployment
 npm ci
 ```
 
@@ -124,7 +123,7 @@ npm ci
 
 ## 4. Ortam değişkenleri
 
-`C:\apps\jamly\.env.local` oluştur. Bu dosya git'e girmez.
+`C:\jamly\.env.local` oluştur. Bu dosya git'e girmez.
 
 ```ini
 # --- Supabase ---
@@ -134,7 +133,7 @@ SUPABASE_SERVICE_ROLE_KEY=<service_role key>
 
 # --- Public origin (KRITIK) ---
 # Ayarlanmazsa e-posta dogrulama linkleri localhost'a gider.
-NEXT_PUBLIC_SITE_URL=https://jamly.hakanefe.online
+NEXT_PUBLIC_SITE_URL=https://getjamly.hakanefe.online
 
 # --- Test kapisi (HTTP Basic Auth) ---
 # Deger ayrica iletildi. Sadece SHA-256 hash icerir, sifre icermez.
@@ -169,7 +168,7 @@ node scripts/generate-staging-credentials.mjs kullanici1 kullanici2
 ## 5. Derle ve Node servisini kur
 
 ```powershell
-cd C:\apps\jamly
+cd C:\jamly
 npm run build
 ```
 
@@ -180,14 +179,14 @@ Servis olarak kaydet. Port 3001 kullanılıyor çünkü 3000'de başka bir uygul
 olabilir:
 
 ```powershell
-New-Item -ItemType Directory -Force C:\apps\jamly\logs
+New-Item -ItemType Directory -Force C:\jamly\logs
 
-nssm install JamlyApp "C:\Program Files\nodejs\node.exe" "C:\apps\jamly\node_modules\next\dist\bin\next" "start" "-p" "3001"
-nssm set JamlyApp AppDirectory C:\apps\jamly
+nssm install JamlyApp "C:\Program Files\nodejs\node.exe" "C:\jamly\node_modules\next\dist\bin\next" "start" "-p" "3001"
+nssm set JamlyApp AppDirectory C:\jamly
 nssm set JamlyApp AppEnvironmentExtra NODE_ENV=production
 nssm set JamlyApp Start SERVICE_AUTO_START
-nssm set JamlyApp AppStdout C:\apps\jamly\logs\out.log
-nssm set JamlyApp AppStderr C:\apps\jamly\logs\err.log
+nssm set JamlyApp AppStdout C:\jamly\logs\out.log
+nssm set JamlyApp AppStderr C:\jamly\logs\err.log
 nssm set JamlyApp AppRotateFiles 1
 nssm start JamlyApp
 ```
@@ -210,9 +209,9 @@ davranışı buna bağlıdır.
 
 1. IIS Manager → **Sites** → *Add Website*
    - Site name: `jamly`
-   - Physical path: `C:\apps\jamly\iis-root` (boş bir klasör oluştur; IIS dosya
+   - Physical path: `C:\jamly\iis-root` (boş bir klasör oluştur; IIS dosya
      servis etmeyecek, yalnızca proxy yapacak)
-   - Binding: `http`, port `80`, host name `jamly.hakanefe.online`
+   - Binding: `http`, port `80`, host name `getjamly.hakanefe.online`
 
 2. `serverVariables` kullanabilmek için önce izin ver: IIS Manager → sunucu
    düğümü → **URL Rewrite** → sağ panel *View Server Variables* → *Add* →
@@ -227,6 +226,14 @@ davranışı buna bağlıdır.
   <system.webServer>
     <rewrite>
       <rules>
+        <!-- ACME HTTP-01 dogrulamasi IIS'te kalmali, Node'a gitmemeli.
+             Bu kural olmazsa challenge istegi ProxyToNode'a takilir, Node 404
+             doner ve Let's Encrypt sertifika vermez. -->
+        <rule name="AcmeChallenge" stopProcessing="true">
+          <match url="^\.well-known/acme-challenge/" />
+          <action type="None" />
+        </rule>
+
         <rule name="ForceHttps" stopProcessing="true">
           <match url="(.*)" />
           <conditions>
@@ -261,24 +268,72 @@ davranışı buna bağlıdır.
 `maxAllowedContentLength` 500 MB'dir; lisans teslimat paketlerinin bucket
 limiti ile aynı.
 
+Kural sırası **AcmeChallenge → ForceHttps → ProxyToNode** olmalı.
+`stopProcessing="true"` sayesinde challenge istekleri diğer iki kurala hiç
+uğramaz.
+
+3b. Challenge dosyalarının uzantısı yoktur ve IIS varsayılanda bunları servis
+etmez. Site kökünde `.well-known/acme-challenge/web.config` oluştur:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <system.webServer>
+    <staticContent>
+      <mimeMap fileExtension=".*" mimeType="text/plain" />
+    </staticContent>
+  </system.webServer>
+</configuration>
+```
+
+3c. **`allowedServerVariables` site kapsamında ayarlanamaz.** IIS bu bölümü
+tasarım gereği üst seviyede kilitler (`overrideModeDefault="Deny"`), site
+seviyesinde denenirse hata verir. Global eklemek zorunludur. Pratikte zararsız:
+bu liste yalnızca *izin verir*, hiçbir siteye değişken *set etmez*. Diğer
+siteler kendi rewrite kurallarında bu değişkenleri set etmediği sürece
+davranışları değişmez.
+
 4. **HTTPS sertifikası** — win-acme ile (https://www.win-acme.com):
 
 ```powershell
-.\wacs.exe --target manual --host jamly.hakanefe.online --installation iis --installationsiteid <site-id>
+.\wacs.exe --target manual --host getjamly.hakanefe.online --installation iis --installationsiteid <site-id>
 ```
 
 Mevcut wildcard sertifikan varsa onu binding'e eklemen yeterli, win-acme
 gerekmez.
 
-5. Site → *Bindings* → `https` / 443 / `jamly.hakanefe.online` / sertifikayı seç.
+5. Site → *Bindings* → `https` / 443 / `getjamly.hakanefe.online` / sertifikayı seç.
 
 ---
 
 ## 7. Doğrulama
 
+### 7.0 Sertifika gününden önce proxy'yi kanıtla
+
+`ForceHttps` tüm HTTP trafiğini yakaladığı için `ProxyToNode` normal şartlarda
+hiç çalışmaz — yani `serverVariables` izni hatalı olsa bile 500'ü ancak
+sertifika alındıktan sonra görürsün. Bunu önceden test et:
+
+1. IIS Manager → site → URL Rewrite → `ForceHttps` kuralını **geçici olarak
+   devre dışı bırak**
+2. `curl.exe -s -o NUL -w "%{http_code}" http://getjamly.hakanefe.online/`
+3. Sonucu yorumla:
+   - **502** → proxy çalışıyor, `serverVariables` izni doğru, sadece Node
+     henüz ayakta değil. Beklenen sonuç budur.
+   - **500** → `serverVariables` izni eksik. Bölüm 6 madde 2 ve 3c.
+   - **404** → ARR proxy açılmamış. Bölüm 1.
+4. `ForceHttps` kuralını **hemen geri aç**
+
+ACME kuralını da doğrula: `.well-known/acme-challenge/` altına uzantısız bir
+test dosyası bırak, `http://getjamly.hakanefe.online/.well-known/acme-challenge/<dosya>`
+adresine git. **200 + `Content-Type: text/plain`** dönmeli. 404 dönerse istek
+Node'a gidiyor demektir, kural sırası yanlıştır. Testten sonra dosyayı sil.
+
+### 7.1 Kurulum doğrulaması
+
 | Kontrol | Beklenen |
 | --- | --- |
-| `curl -I https://jamly.hakanefe.online/` | **401** + `WWW-Authenticate: Basic` |
+| `curl -I https://getjamly.hakanefe.online/` | **401** + `WWW-Authenticate: Basic` |
 | Tarayıcıda aç | Kullanıcı adı/şifre kutusu |
 | Yanlış şifre | 401, tekrar sorar |
 | Doğru şifre | Ana sayfa açılır |
@@ -289,7 +344,7 @@ gerekmez.
 Supabase bağlantısını doğrula:
 
 ```powershell
-cd C:\apps\jamly
+cd C:\jamly
 npm run supabase:check
 ```
 
@@ -346,11 +401,12 @@ Sonra `/admin` açılmalı ve rol rozetini göstermeli. Admin olmayan bir hesap
 | Supabase "schema cache" hatası | Migration uygulanmamış → Bölüm 2 |
 | Sürekli 429 | Supabase erişilemiyor ve `NODE_ENV=production` → limiter fail-closed davranıyor. Dış bağlantıyı kontrol et. |
 | Yüklemede 413 | `maxAllowedContentLength` yetersiz → `web.config` |
+| Sertifika alınamıyor | ACME challenge Node'a gidiyor → `AcmeChallenge` kuralı ilk sırada mı, `.well-known/acme-challenge/web.config` var mı (Bölüm 6.3b) |
 
 Kod güncellemesi:
 
 ```powershell
-cd C:\apps\jamly
+cd C:\jamly
 git pull
 npm ci
 npm run build
