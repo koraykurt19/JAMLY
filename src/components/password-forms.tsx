@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2, Loader2, LockKeyhole } from "lucide-react";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
@@ -84,6 +85,7 @@ export function ForgotPasswordForm() {
 
 export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
   const { t } = useI18n();
+  const router = useRouter();
   const [availability, setAvailability] = useState<"checking" | "ready" | "missing" | "unavailable">(
     "checking"
   );
@@ -157,10 +159,12 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
 
     if (mode === "recovery") {
       await client.auth.signOut();
-      setAvailability("missing");
     }
 
     setStatus({ kind: "success", message: t("passwordUpdated") });
+    if (mode === "recovery") {
+      window.setTimeout(() => router.replace("/"), 1400);
+    }
   }
 
   if (availability === "checking") {
