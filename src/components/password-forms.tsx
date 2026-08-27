@@ -104,7 +104,12 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
       if (active) setAvailability(hasSession ? "ready" : "missing");
     };
 
-    void establishRecoverySession(client).then(applySession);
+    void establishRecoverySession(client)
+      .then(applySession)
+      .catch((error) => {
+        console.error("password_recovery_session_failed", error);
+        applySession(false);
+      });
     const { data } = client.auth.onAuthStateChange((_event, session) => {
       applySession(Boolean(session));
     });
@@ -228,6 +233,10 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
 }
 
 async function establishRecoverySession(client: JamlyPasswordClient) {
+  return withTimeout(establishRecoverySessionUnsafe(client), 8000);
+}
+
+async function establishRecoverySessionUnsafe(client: JamlyPasswordClient) {
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
   const accessToken = hash.get("access_token");
   const refreshToken = hash.get("refresh_token");
@@ -249,6 +258,15 @@ async function establishRecoverySession(client: JamlyPasswordClient) {
 }
 
 type JamlyPasswordClient = NonNullable<ReturnType<typeof getSupabaseBrowserClient>>;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => {
+      window.setTimeout(() => resolve(false as T), timeoutMs);
+    })
+  ]);
+}
 
 function Notice({ kind, message }: { kind: Status["kind"]; message: string }) {
   if (kind === "idle") return null;
