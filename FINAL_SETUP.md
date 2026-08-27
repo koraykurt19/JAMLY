@@ -136,10 +136,10 @@ Bu üçü geçmiyorsa devam etme, migration sırasını gözden geçir.
 
 ### 3.1 Authentication → URL Configuration
 
-- **Site URL:** `https://jamly.hakanefe.online`
+- **Site URL:** `https://getjamly.hakanefe.online`
 - **Redirect URLs** (ikisini de ekle):
-  - `https://jamly.hakanefe.online/auth/reset-password`
-  - `https://jamly.hakanefe.online/early-access/verify`
+  - `https://getjamly.hakanefe.online/auth/reset-password`
+  - `https://getjamly.hakanefe.online/early-access/verify`
 
 Bunlar eksikse şifre sıfırlama ve e-posta doğrulama linkleri çalışmaz.
 
@@ -207,7 +207,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
 # --- Public origin ---
-NEXT_PUBLIC_SITE_URL=https://jamly.hakanefe.online
+NEXT_PUBLIC_SITE_URL=https://getjamly.hakanefe.online
 
 # --- Test kapisi (degistirme, hash'ler zaten dogru) ---
 STAGING_AUTH_USERS=koraykurt:b23cf694ca724e6890aa144fe5a38be3983f538a8481dfa411e49471b32517a0,hakanefe:04893408c89f3115889c3a6b81a9abe366bf4d8719a0d11cf3a5acdfaca73ca2
