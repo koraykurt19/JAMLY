@@ -52,6 +52,28 @@ inline:
 SUPABASE_DATABASE_URL="postgresql://..." npm run supabase:apply-migration -- 20260813_security_hardening.sql
 ```
 
+## Changing variables after a build
+
+`NEXT_PUBLIC_*` values and the Content-Security-Policy are fixed at **build**
+time, not read at startup. Editing the environment and restarting is not
+enough: the server picks up the new values while the browser bundle and the
+CSP still carry the old ones, and the failure surfaces as an opaque network
+error rather than a configuration message.
+
+After changing any `NEXT_PUBLIC_*` variable:
+
+```bash
+npm run build
+# then restart the process
+```
+
+`/api/health` reports `build.status: "stale"` when the running environment
+names a different Supabase host than the one the bundle was built against.
+
+Server-only variables (`SUPABASE_SERVICE_ROLE_KEY`, `RATE_LIMIT_SALT`,
+`PAYMENT_WEBHOOK_SECRET`, `STAGING_AUTH_USERS`) are read at runtime and take
+effect on restart alone.
+
 ## Local setup
 
 Create `.env.local` (git-ignored):

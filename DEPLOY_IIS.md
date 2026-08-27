@@ -175,6 +175,18 @@ npm run build
 Build çıktısında `ƒ Proxy (Middleware)` satırı **görünmeli**. Görünmüyorsa
 şifre kapısı ve Supabase oturum yenileme çalışmaz — bkz. Bölüm 9.
 
+> **Ortam değişkeni değişirse rebuild ŞART — restart yetmez.**
+>
+> CSP ve tarayıcı paketindeki tüm `NEXT_PUBLIC_*` değerleri **build sırasında**
+> sabitlenir. `.env.local`'a Supabase anahtarlarını ekleyip yalnızca
+> `nssm restart` yaparsan sunucu yeni projeye konuşur, tarayıcı ise eski
+> yapılandırmayı taşımaya devam eder ve CSP `connect-src` Supabase'i bloke
+> eder. Belirtisi yanıltıcıdır: konsolda ağ hatası görürsün, "yapılandırma
+> eksik" gibi net bir mesaj değil. Realtime de aynı sebeple düşer.
+>
+> `/api/health` bunu yakalar: `build.status` **`stale`** dönerse rebuild
+> gerekiyor demektir.
+
 Servis olarak kaydet. Port 3001 kullanılıyor çünkü 3000'de başka bir uygulama
 olabilir:
 
@@ -395,7 +407,7 @@ Sonra `/admin` açılmalı ve rol rozetini göstermeli. Admin olmayan bir hesap
 | --- | --- |
 | Tüm istekler 404 | ARR proxy açılmamış → *Server Proxy Settings* → Enable proxy |
 | Site 500 | `serverVariables` izni verilmemiş → URL Rewrite → View Server Variables |
-| Şifre sorulmuyor | Build çıktısında `ƒ Proxy (Middleware)` yok. Dosya **`src/proxy.ts`** olmalı. Proje kökünde durursa Next onu hiç derlemez, çünkü `src/` dizini kullanan projelerde convention taraması `src/` altında yapılır. |
+| Şifre sorulmuyor | Build çıktısında `ƒ Proxy (Middleware)` yok. Dosya **`src/proxy.ts`** olmalı. Proje kökünde durursa Next onu hiç derlemez, çünkü `src/` dizini kullanan projelerde convention taraması `src/` altında yapılır. **`middleware-manifest.json`'un boş olmasına bakma** — o Edge runtime'ın manifest'i. Node runtime'da çalışan proxy `functions-config-manifest.json` içine `/_middleware` olarak yazılır ve bundle `.next/server/middleware.js` olur. |
 | 502 / bağlantı yok | Node servisi kapalı → `nssm status JamlyApp`, `logs\err.log` |
 | Doğrulama linkleri localhost | `NEXT_PUBLIC_SITE_URL` set değil → ayarla, rebuild, restart |
 | Supabase "schema cache" hatası | Migration uygulanmamış → Bölüm 2 |

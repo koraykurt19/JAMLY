@@ -94,6 +94,19 @@ const faviconAssetRoutes = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Records which Supabase host this bundle was BUILT against.
+  //
+  // The CSP above, and every NEXT_PUBLIC_* value the browser bundle uses, are
+  // baked in at build time. Changing .env.local and only restarting therefore
+  // leaves the client pointing at the old configuration while the server uses
+  // the new one — the browser then fails with opaque network errors rather
+  // than a clear "not configured" message.
+  //
+  // /api/health compares this against the current environment and reports a
+  // stale build explicitly.
+  env: {
+    JAMLY_BUILD_SUPABASE_HOST: supabaseHostname ?? ""
+  },
   ...(isProduction ? {} : { allowedDevOrigins: ["127.0.0.1"] }),
   images: {
     deviceSizes: [360, 480, 640, 768, 1024, 1280, 1536],

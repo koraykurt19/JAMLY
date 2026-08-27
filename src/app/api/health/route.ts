@@ -10,13 +10,17 @@ type SupabaseHealth =
 
 export async function GET() {
   const supabase = await checkSupabase();
+  const build = checkBuildFreshness();
 
   return NextResponse.json(
     {
       app: "jamly",
-      ok: supabase.status === "ready" || supabase.status === "not_configured",
-      deployment: "vercel",
+      ok:
+        (supabase.status === "ready" || supabase.status === "not_configured") &&
+        build.status === "current",
+      deployment: detectDeployment(),
       supabase,
+      build,
       checkedAt: new Date().toISOString()
     },
     {
@@ -25,6 +29,54 @@ export async function GET() {
       }
     }
   );
+}
+
+/**
+ * Detects the host rather than asserting one. This used to report "vercel"
+ * unconditionally, which is wrong on any self-hosted deployment and misleads
+ * whatever is scraping the endpoint.
+ */
+function detectDeployment() {
+  if (process.env.VERCEL) return "vercel";
+  if (process.env.WEBSITE_SITE_NAME) return "azure";
+  if (process.env.KUBERNETES_SERVICE_HOST) return "kubernetes";
+  return "self-hosted";
+}
+
+type BuildHealth =
+  | { status: "current" }
+  | { status: "stale"; message: string };
+
+/**
+ * Catches the "edited .env.local and only restarted" mistake.
+ *
+ * The CSP and every NEXT_PUBLIC_* value in the browser bundle are fixed at
+ * build time. If the running environment now names a different Supabase host,
+ * the server will talk to the new project while the browser still carries the
+ * old configuration and a CSP that forbids connecting to it. The visible
+ * symptom is an opaque network error, so surface it here instead.
+ */
+function checkBuildFreshness(): BuildHealth {
+  const builtHost = process.env.JAMLY_BUILD_SUPABASE_HOST ?? "";
+  const currentUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
+
+  let currentHost = "";
+  if (currentUrl) {
+    try {
+      currentHost = new URL(currentUrl).hostname;
+    } catch {
+      return { status: "stale", message: "NEXT_PUBLIC_SUPABASE_URL is not a valid URL." };
+    }
+  }
+
+  if (builtHost === currentHost) return { status: "current" };
+
+  return {
+    status: "stale",
+    message: builtHost
+      ? `Built against ${builtHost} but configured for ${currentHost || "no Supabase"}. Run npm run build again.`
+      : `Configured for ${currentHost} but built without Supabase. The browser bundle and CSP still lack it — run npm run build again.`
+  };
 }
 
 async function checkSupabase(): Promise<SupabaseHealth> {
