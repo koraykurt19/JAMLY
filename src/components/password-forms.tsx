@@ -104,7 +104,7 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
       if (active) setAvailability(hasSession ? "ready" : "missing");
     };
 
-    void establishRecoverySession(client)
+    void establishPasswordSession(client, mode)
       .then(applySession)
       .catch((error) => {
         console.error("password_recovery_session_failed", error);
@@ -154,6 +154,12 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
 
     setPassword("");
     setConfirmation("");
+
+    if (mode === "recovery") {
+      await client.auth.signOut();
+      setAvailability("missing");
+    }
+
     setStatus({ kind: "success", message: t("passwordUpdated") });
   }
 
@@ -232,11 +238,11 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
   );
 }
 
-async function establishRecoverySession(client: JamlyPasswordClient) {
-  return withTimeout(establishRecoverySessionUnsafe(client), 8000);
+async function establishPasswordSession(client: JamlyPasswordClient, mode: PasswordFormMode) {
+  return withTimeout(establishPasswordSessionUnsafe(client, mode), 8000);
 }
 
-async function establishRecoverySessionUnsafe(client: JamlyPasswordClient) {
+async function establishPasswordSessionUnsafe(client: JamlyPasswordClient, mode: PasswordFormMode) {
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
   const accessToken = hash.get("access_token");
   const refreshToken = hash.get("refresh_token");
@@ -251,6 +257,10 @@ async function establishRecoverySessionUnsafe(client: JamlyPasswordClient) {
       window.history.replaceState(null, "", window.location.pathname);
       return true;
     }
+  }
+
+  if (mode === "recovery") {
+    return false;
   }
 
   const { data } = await client.auth.getSession();
