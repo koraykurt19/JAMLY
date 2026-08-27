@@ -104,7 +104,7 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
       if (active) setAvailability(hasSession ? "ready" : "missing");
     };
 
-    void client.auth.getSession().then(({ data }) => applySession(Boolean(data.session)));
+    void establishRecoverySession(client).then(applySession);
     const { data } = client.auth.onAuthStateChange((_event, session) => {
       applySession(Boolean(session));
     });
@@ -226,6 +226,29 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
     </form>
   );
 }
+
+async function establishRecoverySession(client: JamlyPasswordClient) {
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const accessToken = hash.get("access_token");
+  const refreshToken = hash.get("refresh_token");
+
+  if (accessToken && refreshToken) {
+    const { error } = await client.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+
+    if (!error) {
+      window.history.replaceState(null, "", window.location.pathname);
+      return true;
+    }
+  }
+
+  const { data } = await client.auth.getSession();
+  return Boolean(data.session);
+}
+
+type JamlyPasswordClient = NonNullable<ReturnType<typeof getSupabaseBrowserClient>>;
 
 function Notice({ kind, message }: { kind: Status["kind"]; message: string }) {
   if (kind === "idle") return null;
