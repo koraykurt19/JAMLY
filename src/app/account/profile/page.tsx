@@ -11,7 +11,11 @@ import {
   isSupabaseConfigured,
   isSupabaseRecoverableError
 } from "@/lib/supabase";
-import { ensureCurrentProfile, fetchCreator } from "@/lib/supabase-data";
+import {
+  ensureCurrentProfile,
+  fetchActiveCreatorListingCount,
+  fetchCreator
+} from "@/lib/supabase-data";
 import { profileReadiness, type ProfileReadiness } from "@/lib/profile-readiness";
 import type { Creator } from "@/lib/types";
 
@@ -19,13 +23,13 @@ type PageState =
   | { status: "loading" }
   | { status: "signed-out" }
   | { status: "error"; message: string }
-  | { status: "ready"; creator: Creator; isDemo: boolean };
+  | { status: "ready"; creator: Creator; activeListingCount: number; isDemo: boolean };
 
 export default function ProfileSettingsPage() {
   const { language } = useI18n();
   const [state, setState] = useState<PageState>(() => {
     if (!isSupabaseConfigured()) {
-      return { status: "ready", creator: creators[0], isDemo: true };
+      return { status: "ready", creator: creators[0], activeListingCount: 1, isDemo: true };
     }
     return { status: "loading" };
   });
@@ -43,9 +47,12 @@ export default function ProfileSettingsPage() {
         return;
       }
 
-      const creator = await fetchCreator(client, user.id);
+      const [creator, activeListingCount] = await Promise.all([
+        fetchCreator(client, user.id),
+        fetchActiveCreatorListingCount(client, user.id)
+      ]);
       if (!creator) throw new Error("Profile could not be loaded.");
-      setState({ status: "ready", creator, isDemo: false });
+      setState({ status: "ready", creator, activeListingCount, isDemo: false });
     } catch (error) {
       if (isMissingOrInvalidSession(error)) {
         await client.auth.signOut({ scope: "local" });
@@ -137,7 +144,10 @@ export default function ProfileSettingsPage() {
         </Link>
       </div>
 
-      <ProfileReadinessPanel readiness={profileReadinessFromCreator(state.creator)} language={language} />
+      <ProfileReadinessPanel
+        readiness={profileReadinessFromCreator(state.creator, state.activeListingCount)}
+        language={language}
+      />
 
       <CreatorProfileEditor
         creator={state.creator}
@@ -217,7 +227,7 @@ function ProfileReadinessPanel({
   );
 }
 
-function profileReadinessFromCreator(creator: Creator) {
+function profileReadinessFromCreator(creator: Creator, activeListingCount: number) {
   return profileReadiness({
     role: creator.role,
     handle: creator.handle,
@@ -229,7 +239,7 @@ function profileReadinessFromCreator(creator: Creator) {
     location: creator.location,
     specialties: creator.specialties,
     socialLinkCount: creator.socialLinks.length,
-    activeListingCount: creator.completedOrders > 0 ? 1 : 0
+    activeListingCount
   });
 }
 

@@ -98,6 +98,8 @@ const adminRetentionPanelSource = () =>
   readFileSync(resolve(process.cwd(), "src/components/admin/retention-panel.tsx"), "utf8");
 const accountStatusApiSource = () =>
   readFileSync(resolve(process.cwd(), "src/app/api/account/status/route.ts"), "utf8");
+const accountProfilePageSource = () =>
+  readFileSync(resolve(process.cwd(), "src/app/account/profile/page.tsx"), "utf8");
 const currentAccountHookSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/use-current-account.ts"), "utf8");
 const mailerSource = () =>
@@ -934,6 +936,19 @@ const tests: TestCase[] = [
       assert.ok(panel.includes("ReadinessBadge"));
       assert.ok(panel.includes("text.readiness"));
       assert.ok(panel.includes("user.readiness.score"));
+    }
+  },
+  {
+    name: "account profile readiness uses real active listing count",
+    run() {
+      const page = accountProfilePageSource();
+      const data = readFileSync(resolve(process.cwd(), "src/lib/supabase-data.ts"), "utf8");
+
+      assert.ok(data.includes("fetchActiveCreatorListingCount"));
+      assert.ok(data.includes('.eq("is_active", true)'));
+      assert.ok(page.includes("fetchActiveCreatorListingCount(client, user.id)"));
+      assert.ok(page.includes("activeListingCount"));
+      assert.ok(!page.includes("creator.completedOrders > 0"));
     }
   },
   {

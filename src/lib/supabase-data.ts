@@ -190,6 +190,21 @@ export async function fetchCreator(client: SupabaseClient, creatorId: string) {
   return data ? mapProfileToCreator(data) : null;
 }
 
+export async function fetchActiveCreatorListingCount(client: SupabaseClient, creatorId: string) {
+  assertClient(client);
+  const { count, error } = await client
+    .from("listings")
+    .select("id", { count: "exact", head: true })
+    .eq("creator_id", creatorId)
+    .eq("is_active", true);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return count ?? 0;
+}
+
 export async function fetchCreatorByHandle(client: SupabaseClient, handle: string) {
   assertClient(client);
   const cached = Array.from(profileCache.values()).find(
