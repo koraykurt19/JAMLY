@@ -84,9 +84,10 @@ try {
   await expectVisible(page.getByText(/never deleted|asla silinmeyen/i).first(), "retention protected-data copy renders");
 
   await page.goto(`${baseUrl}/admin/waitlist`, { waitUntil: "networkidle", timeout: 45000 });
-  await expectVisible(page.getByText(/pre-register pipeline|ön kayıt hattı/i).first(), "waitlist summary renders");
-  await expectVisible(page.getByText(/total pre-registers|toplam ön kayıt/i).first(), "waitlist total metric renders");
-  await expectVisible(page.getByText(/creator intent|üretici ilgisi/i).first(), "waitlist persona metric renders");
+  await expectVisible(page.getByText(/pre-register pipeline|on kayit hatti/i).first(), "waitlist summary renders");
+  await expectVisible(page.getByText(/invite-ready|davete hazir/i).first(), "waitlist invite-ready metric renders");
+  await expectVisible(page.getByText(/growth signal|buyume sinyali/i).first(), "waitlist growth metric renders");
+  await expectVisible(page.getByText(/signal|sinyal/i).first(), "waitlist intent column renders");
 
   const usersResponse = await context.request.get(`${baseUrl}/api/admin/users?q=jamlyadminsmoke`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -132,7 +133,10 @@ try {
       Number.isInteger(waitlistBody.summary?.total) &&
       Number.isInteger(waitlistBody.summary?.joinedLast24h) &&
       Number.isInteger(waitlistBody.summary?.personas?.creator) &&
-      Number.isInteger(waitlistBody.summary?.statuses?.invited),
+      Number.isInteger(waitlistBody.summary?.statuses?.invited) &&
+      Number.isInteger(waitlistBody.summary?.triage?.inviteReady) &&
+      Number.isInteger(waitlistBody.summary?.triage?.growthLeads) &&
+      Number.isInteger(waitlistBody.summary?.triage?.needsReview),
     `HTTP ${waitlistResponse.status()}`
   );
 

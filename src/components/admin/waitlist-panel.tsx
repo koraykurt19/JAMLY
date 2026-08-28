@@ -22,6 +22,8 @@ import { shortDate } from "@/lib/format";
 import {
   allowedWaitlistTransitions,
   canTransitionWaitlistStatus,
+  waitlistIntentBucket,
+  waitlistIntentScore,
   type WaitlistStatus
 } from "@/lib/waitlist-admin";
 
@@ -72,6 +74,12 @@ type WaitlistSummary = {
   flagged: number;
   joinedLast24h: number;
   withReferrals: number;
+  triage: {
+    inviteReady: number;
+    growthLeads: number;
+    needsReview: number;
+    conversionBacklog: number;
+  };
 };
 
 export function WaitlistPanel() {
@@ -222,6 +230,7 @@ export function WaitlistPanel() {
           tr ? "Ad" : "Name",
           tr ? "Kullanici adi" : "Username",
           tr ? "Tip" : "Persona",
+          tr ? "Sinyal" : "Signal",
           tr ? "Durum" : "Status",
           tr ? "Davet" : "Referrals",
           tr ? "Kaynak" : "Source",
@@ -252,6 +261,9 @@ export function WaitlistPanel() {
               {entry.reserved_username ? `@${entry.reserved_username}` : "-"}
             </AdminCell>
             <AdminCell nowrap>{entry.persona}</AdminCell>
+            <AdminCell nowrap>
+              <IntentPill entry={entry} language={language} />
+            </AdminCell>
             <AdminCell nowrap>
               <StatusPill value={entry.status} label={statusLabel(entry.status, language)} />
             </AdminCell>
@@ -294,11 +306,40 @@ function WaitlistSummaryBand({
   const tr = language === "tr";
   const metrics = [
     {
-      label: tr ? "Toplam ön kayıt" : "Total pre-registers",
+      label: tr ? "Davete hazir" : "Invite-ready",
+      value: summary.triage.inviteReady,
+      detail: tr
+        ? "Dogrulanmis, beta dalgasina alinabilir"
+        : "Verified entries ready for a beta wave",
+      icon: MailCheck,
+      tone: "success"
+    },
+    {
+      label: tr ? "Buyume sinyali" : "Growth signal",
+      value: summary.triage.growthLeads,
+      detail: tr ? "Referral getiren on kayit" : "Pre-registers bringing referrals",
+      icon: Sparkles,
+      tone: "brand"
+    },
+    {
+      label: tr ? "Inceleme" : "Review",
+      value: summary.triage.needsReview,
+      detail: tr ? "Riskli veya bloklu kayit" : "Flagged or blocked entries",
+      icon: AlertTriangle,
+      tone: summary.triage.needsReview > 0 ? "warning" : "neutral"
+    },
+    {
+      label: tr ? "Davet takip" : "Invite follow-up",
+      value: summary.triage.conversionBacklog,
+      detail: tr ? "Davet edildi, henuz hesaba donmedi" : "Invited but not converted yet",
+      icon: Clock3
+    },
+    {
+      label: tr ? "Toplam on kayit" : "Total pre-registers",
       value: summary.total,
       detail: tr
-        ? `${summary.statuses.pending} beklemede`
-        : `${summary.statuses.pending} pending`,
+        ? String(summary.statuses.pending) + " beklemede"
+        : String(summary.statuses.pending) + " pending",
       icon: UsersRound
     },
     {
@@ -308,35 +349,35 @@ function WaitlistSummaryBand({
       icon: Clock3
     },
     {
-      label: tr ? "Üretici ilgisi" : "Creator intent",
+      label: tr ? "Uretici ilgisi" : "Creator intent",
       value: summary.personas.creator + summary.personas.both,
       detail: tr
-        ? `${summary.personas.buyer + summary.personas.both} alıcı ilgisi`
-        : `${summary.personas.buyer + summary.personas.both} buyer intent`,
+        ? String(summary.personas.buyer + summary.personas.both) + " alici ilgisi"
+        : String(summary.personas.buyer + summary.personas.both) + " buyer intent",
       icon: Sparkles
     },
     {
       label: tr ? "Davet edilen" : "Invited",
       value: summary.statuses.invited,
       detail: tr
-        ? `${summary.statuses.converted} hesaba dönüştü`
-        : `${summary.statuses.converted} converted`,
+        ? String(summary.statuses.converted) + " hesaba donustu"
+        : String(summary.statuses.converted) + " converted",
       icon: MailCheck
     },
     {
-      label: tr ? "Referral taşıyan" : "With referrals",
+      label: tr ? "Referral tasiyan" : "With referrals",
       value: summary.withReferrals,
-      detail: tr ? "Ağı büyüten kayıt" : "Growth-bearing entries",
+      detail: tr ? "Agi buyuten kayit" : "Growth-bearing entries",
       icon: CheckCircle2
     },
     {
-      label: tr ? "Riskli kayıt" : "Flagged",
+      label: tr ? "Riskli kayit" : "Flagged",
       value: summary.flagged,
       detail: tr
-        ? `${summary.statuses.blocked} bloklandı`
-        : `${summary.statuses.blocked} blocked`,
+        ? String(summary.statuses.blocked) + " bloklandi"
+        : String(summary.statuses.blocked) + " blocked",
       icon: AlertTriangle,
-      tone: summary.flagged > 0 ? "warning" : "default"
+      tone: summary.flagged > 0 ? "warning" : "neutral"
     }
   ];
 
@@ -345,18 +386,18 @@ function WaitlistSummaryBand({
       <div className="flex flex-col gap-2 border-b border-white/8 pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-jam-blue">
-            {tr ? "Ön kayıt hattı" : "Pre-register pipeline"}
+            {tr ? "On kayit hatti" : "Pre-register pipeline"}
           </p>
           <h2 className="mt-1 text-xl font-semibold text-white">
-            {tr ? "Talep, niyet ve risk özeti" : "Demand, intent, and risk snapshot"}
+            {tr ? "Talep, niyet ve risk ozeti" : "Demand, intent, and risk snapshot"}
           </h2>
         </div>
         <Pill tone="brand">
-          {summary.statuses.verified} {tr ? "doğrulanmış" : "verified"}
+          {summary.statuses.verified} {tr ? "dogrulanmis" : "verified"}
         </Pill>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => {
           const Icon = metric.icon;
           return (
@@ -365,7 +406,11 @@ function WaitlistSummaryBand({
               className={
                 metric.tone === "warning"
                   ? "border-l-2 border-jam-warning bg-jam-warning/[0.045] px-4 py-3"
-                  : "border-l border-white/10 bg-white/[0.025] px-4 py-3"
+                  : metric.tone === "success"
+                    ? "border-l-2 border-jam-success bg-jam-success/[0.045] px-4 py-3"
+                    : metric.tone === "brand"
+                      ? "border-l-2 border-jam-blue bg-jam-blue/[0.045] px-4 py-3"
+                      : "border-l border-white/10 bg-white/[0.025] px-4 py-3"
               }
             >
               <div className="flex items-start justify-between gap-3">
@@ -387,6 +432,48 @@ function WaitlistSummaryBand({
         })}
       </div>
     </Card>
+  );
+}
+
+function IntentPill({
+  entry,
+  language
+}: {
+  entry: WaitlistEntry;
+  language: "tr" | "en";
+}) {
+  const score = waitlistIntentScore(entry);
+  const bucket = waitlistIntentBucket(score);
+  const tr = language === "tr";
+  const label =
+    bucket === "high"
+      ? tr
+        ? "Sicak"
+        : "Hot"
+      : bucket === "warm"
+        ? tr
+          ? "Hazir"
+          : "Warm"
+        : bucket === "watch"
+          ? tr
+            ? "Izle"
+            : "Watch"
+          : tr
+            ? "Dusuk"
+            : "Low";
+  const tone =
+    bucket === "high"
+      ? "success"
+      : bucket === "warm"
+        ? "brand"
+        : bucket === "watch"
+          ? "warning"
+          : "neutral";
+
+  return (
+    <Pill tone={tone} className="text-[10px]">
+      {label} {score}
+    </Pill>
   );
 }
 

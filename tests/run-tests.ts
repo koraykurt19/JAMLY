@@ -43,7 +43,9 @@ import { createMailto, JAMLY_EMAILS } from "../src/lib/jamly-contacts";
 import {
   allowedWaitlistTransitions,
   canTransitionWaitlistStatus,
-  isAdminMutableWaitlistStatus
+  isAdminMutableWaitlistStatus,
+  waitlistIntentBucket,
+  waitlistIntentScore
 } from "../src/lib/waitlist-admin";
 import { betaAllowedHandleSet, isHandleBetaAllowed } from "../src/lib/beta-access";
 import {
@@ -523,6 +525,36 @@ const tests: TestCase[] = [
       assert.ok(!canTransitionWaitlistStatus("converted", "verified"));
       assert.ok(!isAdminMutableWaitlistStatus("converted"));
       assert.ok(isAdminMutableWaitlistStatus("invited"));
+    }
+  },
+  {
+    name: "admin waitlist intent scoring prioritizes safe high-signal entries",
+    run() {
+      const highSignal = waitlistIntentScore({
+        status: "verified",
+        persona: "both",
+        referral_count: 4,
+        risk_flags: [],
+        verified_at: "2026-08-28T00:00:00.000Z"
+      });
+      const risky = waitlistIntentScore({
+        status: "verified",
+        persona: "both",
+        referral_count: 4,
+        risk_flags: ["disposable_email"],
+        verified_at: "2026-08-28T00:00:00.000Z"
+      });
+      const blocked = waitlistIntentScore({
+        status: "blocked",
+        persona: "creator",
+        referral_count: 8,
+        risk_flags: ["manual_review"],
+        verified_at: null
+      });
+
+      assert.equal(waitlistIntentBucket(highSignal), "high");
+      assert.ok(risky < highSignal);
+      assert.equal(waitlistIntentBucket(blocked), "cold");
     }
   },
   {

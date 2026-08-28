@@ -114,7 +114,13 @@ async function getWaitlistSummary(client: Awaited<ReturnType<typeof requireCapab
     personas: { creator, buyer, both },
     flagged,
     joinedLast24h,
-    withReferrals: referrals
+    withReferrals: referrals,
+    triage: {
+      inviteReady: verified,
+      growthLeads: referrals,
+      needsReview: flagged + blocked,
+      conversionBacklog: invited
+    }
   };
 }
 
