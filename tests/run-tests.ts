@@ -48,6 +48,8 @@ import {
 import { betaAllowedHandleSet, isHandleBetaAllowed } from "../src/lib/beta-access";
 import {
   buildBeatSequence,
+  launchChallengeBenefit,
+  launchChallengeTier,
   launchBenefitForScore,
   scoreBeatAttempt
 } from "../src/lib/launch-mini-game";
@@ -308,6 +310,18 @@ const tests: TestCase[] = [
       assert.equal(launchBenefitForScore(1200, "en"), "Early wave priority");
       assert.equal(launchBenefitForScore(2400, "en"), "Studio Alpha badge");
       assert.equal(launchBenefitForScore(1200, "tr"), "Erken dalga onceligi");
+    }
+  },
+  {
+    name: "pre-register launch challenge tiers remain stable",
+    run() {
+      assert.equal(launchChallengeTier([]), "starter");
+      assert.equal(launchChallengeTier(["profile"]), "warm");
+      assert.equal(launchChallengeTier(["profile", "referral"]), "priority");
+      assert.equal(launchChallengeTier(["profile", "referral", "drop"]), "alpha");
+      assert.equal(launchChallengeTier(["profile", "profile", "drop"]), "priority");
+      assert.equal(launchChallengeBenefit("alpha", "en"), "Alpha wave signal");
+      assert.equal(launchChallengeBenefit("priority", "tr"), "Oncelikli davet sinyali");
     }
   },
 

@@ -12,10 +12,12 @@ import {
   Music4,
   RotateCcw,
   Rocket,
+  Share2,
   Shield,
   SlidersHorizontal,
   Sparkles,
   Target,
+  Trophy,
   Users,
   Wallet
 } from "lucide-react";
@@ -28,9 +30,13 @@ import { cn } from "@/lib/format";
 import {
   beatPads,
   buildBeatSequence,
+  launchChallengeBenefit,
+  launchChallengeKeys,
+  launchChallengeTier,
   launchBenefitForScore,
   scoreBeatAttempt,
-  type BeatPad
+  type BeatPad,
+  type LaunchChallengeKey
 } from "@/lib/launch-mini-game";
 
 const featureIcons = {
@@ -96,6 +102,7 @@ export function EarlyAccessPage() {
 
             <LaunchPass language={language} />
             <LaunchBeatGame language={language} />
+            <LaunchChallenge language={language} />
 
             <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <a
@@ -426,6 +433,119 @@ function MiniGameMetric({
       >
         {value}
       </p>
+    </div>
+  );
+}
+
+const launchChallengeLabels: Record<LaunchChallengeKey, { tr: string; en: string; detailTr: string; detailEn: string }> = {
+  profile: {
+    tr: "Rümuzunu ayır",
+    en: "Reserve your handle",
+    detailTr: "Formda kullanıcı adını bırak.",
+    detailEn: "Leave a username in the form."
+  },
+  referral: {
+    tr: "Davet linkini paylaş",
+    en: "Share your invite",
+    detailTr: "Kayıt sonrası referral linkini kullan.",
+    detailEn: "Use your referral link after signup."
+  },
+  drop: {
+    tr: "İlk ihtiyacını seç",
+    en: "Pick your first need",
+    detailTr: "Beat, hizmet veya collab niyetini bildir.",
+    detailEn: "Signal beats, services, or collab intent."
+  }
+};
+
+function LaunchChallenge({ language }: { language: "tr" | "en" }) {
+  const tr = language === "tr";
+  const [completed, setCompleted] = useState<LaunchChallengeKey[]>(["profile"]);
+  const tier = launchChallengeTier(completed);
+  const benefit = launchChallengeBenefit(tier, language);
+  const progress = Math.round((new Set(completed).size / launchChallengeKeys.length) * 100);
+
+  function toggle(key: LaunchChallengeKey) {
+    setCompleted((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key]
+    );
+  }
+
+  return (
+    <div className="mt-4 w-full max-w-3xl rounded-lg border border-white/10 bg-black/24 p-4 text-left shadow-soft">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-jam-blue">
+            <Trophy size={15} />
+            Launch Challenge
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-white">
+            {tr ? "Kurucu avantajını büyüt" : "Build your founding edge"}
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-white/58">
+            {tr
+              ? "Ön kayıt ürün girişi açmaz; bu görevler sadece launch sinyalini ve avantaj segmentini netleştirir."
+              : "Pre-register does not unlock product access; these tasks only clarify your launch signal and benefit segment."}
+          </p>
+        </div>
+        <div className="rounded-md border border-jam-mint/28 bg-jam-mint/10 px-3 py-2 text-center">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/42">
+            {tr ? "Avantaj" : "Benefit"}
+          </p>
+          <p className="text-sm font-bold text-jam-mint">{benefit}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/8">
+        <div className="h-full rounded-full bg-jam-mint transition-all" style={{ width: `${progress}%` }} />
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        {launchChallengeKeys.map((key) => {
+          const active = completed.includes(key);
+          const label = launchChallengeLabels[key];
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={active}
+              onClick={() => toggle(key)}
+              className={cn(
+                "focus-ring min-h-[6.75rem] rounded-md border px-3 py-3 text-left transition",
+                active
+                  ? "border-jam-mint/38 bg-jam-mint/10 text-white"
+                  : "border-white/10 bg-white/[0.025] text-white/62 hover:border-white/20 hover:text-white"
+              )}
+            >
+              <span className="flex items-center gap-2 text-sm font-bold">
+                {key === "referral" ? <Share2 size={15} /> : <Sparkles size={15} />}
+                {tr ? label.tr : label.en}
+              </span>
+              <span className="mt-2 block text-[12px] leading-5 text-white/48">
+                {tr ? label.detailTr : label.detailEn}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 flex flex-col gap-3 border-t border-white/8 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm leading-6 text-white/58">
+          {tr
+            ? tier === "alpha"
+              ? "Tam set: admin panelde yüksek niyetli ön kayıt olarak okunur."
+              : "Görevleri tamamladıkça referral ve launch önceliğin daha net görünür."
+            : tier === "alpha"
+              ? "Full set: admins can read this as high-intent pre-register behavior."
+              : "Completing tasks makes your referral and launch priority easier to read."}
+        </p>
+        <a
+          href="#join"
+          className="focus-ring inline-flex min-h-10 shrink-0 items-center justify-center rounded-md border border-jam-mint/32 px-4 text-sm font-bold text-jam-mint transition hover:bg-jam-mint hover:text-black"
+        >
+          {tr ? "Ön kayda yaz" : "Join pre-register"}
+        </a>
+      </div>
     </div>
   );
 }
