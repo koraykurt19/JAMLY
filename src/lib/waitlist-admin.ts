@@ -51,6 +51,12 @@ export type WaitlistIntentInput = {
   referral_count: number | null;
   risk_flags: readonly string[] | null;
   verified_at: string | null;
+  launch_signal?: {
+    priority?: string;
+    beatScore?: number;
+    challengeTier?: string;
+    completedChallenges?: readonly string[];
+  } | null;
 };
 
 export function waitlistIntentScore(entry: WaitlistIntentInput) {
@@ -61,6 +67,13 @@ export function waitlistIntentScore(entry: WaitlistIntentInput) {
   if (entry.verified_at) score += 10;
   if (entry.persona === "both") score += 20;
   if (entry.persona === "creator") score += 12;
+  if (entry.launch_signal?.priority === "A") score += 18;
+  if (entry.launch_signal?.priority === "B") score += 10;
+  if (entry.launch_signal?.challengeTier === "alpha") score += 16;
+  if (entry.launch_signal?.challengeTier === "priority") score += 12;
+  if (entry.launch_signal?.challengeTier === "warm") score += 8;
+  if (Number(entry.launch_signal?.beatScore ?? 0) >= 120) score += 10;
+  if ((entry.launch_signal?.completedChallenges?.length ?? 0) >= 3) score += 8;
 
   const referrals = Math.max(Number(entry.referral_count ?? 0), 0);
   score += Math.min(referrals * 8, 32);

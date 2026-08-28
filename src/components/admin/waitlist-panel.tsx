@@ -41,6 +41,12 @@ type WaitlistEntry = {
   risk_flags: string[];
   utm_source: string | null;
   utm_campaign: string | null;
+  launch_signal: {
+    priority?: string;
+    beatScore?: number;
+    challengeTier?: string;
+    completedChallenges?: string[];
+  } | null;
   verified_at: string | null;
   invited_at: string | null;
   converted_at: string | null;
@@ -231,6 +237,7 @@ export function WaitlistPanel() {
           tr ? "Kullanici adi" : "Username",
           tr ? "Tip" : "Persona",
           tr ? "Sinyal" : "Signal",
+          "Launch",
           tr ? "Durum" : "Status",
           tr ? "Davet" : "Referrals",
           tr ? "Kaynak" : "Source",
@@ -263,6 +270,9 @@ export function WaitlistPanel() {
             <AdminCell nowrap>{entry.persona}</AdminCell>
             <AdminCell nowrap>
               <IntentPill entry={entry} language={language} />
+            </AdminCell>
+            <AdminCell nowrap>
+              <LaunchSignalPill entry={entry} language={language} />
             </AdminCell>
             <AdminCell nowrap>
               <StatusPill value={entry.status} label={statusLabel(entry.status, language)} />
@@ -473,6 +483,30 @@ function IntentPill({
   return (
     <Pill tone={tone} className="text-[10px]">
       {label} {score}
+    </Pill>
+  );
+}
+
+function LaunchSignalPill({
+  entry,
+  language
+}: {
+  entry: WaitlistEntry;
+  language: "tr" | "en";
+}) {
+  const signal = entry.launch_signal;
+  if (!signal || Object.keys(signal).length === 0) {
+    return <span className="text-xs text-white/38">-</span>;
+  }
+
+  const priority = signal.priority ? `P${signal.priority}` : null;
+  const tier = signal.challengeTier ?? null;
+  const beat = typeof signal.beatScore === "number" && signal.beatScore > 0 ? `${signal.beatScore} XP` : null;
+  const label = [priority, tier, beat].filter(Boolean).join(" / ");
+
+  return (
+    <Pill tone={signal.priority === "A" || signal.challengeTier === "alpha" ? "success" : "brand"} className="text-[10px]">
+      {label || (language === "tr" ? "Sinyal var" : "Signal")}
     </Pill>
   );
 }

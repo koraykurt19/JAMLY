@@ -21,6 +21,7 @@ import {
   buildReferralUrl,
   normalizeEmail,
   normalizeReferralCode,
+  sanitizeLaunchSignal,
   normalizeUsername,
   validateWaitlistSubmission
 } from "../src/lib/waitlist";
@@ -76,6 +77,11 @@ const retentionPlanActionSql = () =>
 const betaAccessSql = () =>
   readFileSync(
     resolve(process.cwd(), "supabase/migrations/20260828_beta_access_controls.sql"),
+    "utf8"
+  );
+const waitlistLaunchSignalSql = () =>
+  readFileSync(
+    resolve(process.cwd(), "supabase/migrations/20260828_waitlist_launch_signal.sql"),
     "utf8"
   );
 const retentionSelfReadSql = () =>
@@ -292,6 +298,35 @@ const tests: TestCase[] = [
         buildReferralUrl("https://pre-register.getjamly.com", "ABC123"),
         "https://pre-register.getjamly.com/?ref=ABC123"
       );
+    }
+  },
+  {
+    name: "waitlist launch signal is sanitized before persistence",
+    run() {
+      assert.deepEqual(
+        sanitizeLaunchSignal({
+          priority: "A",
+          role: "both",
+          need: "collab",
+          readiness: "ready",
+          beatScore: 240.8,
+          beatRounds: 4,
+          challengeTier: "alpha",
+          completedChallenges: ["profile", "drop", "referral", "unknown"],
+          extra: "discard"
+        }),
+        {
+          priority: "A",
+          role: "both",
+          need: "collab",
+          readiness: "ready",
+          challengeTier: "alpha",
+          beatScore: 240,
+          beatRounds: 4,
+          completedChallenges: ["profile", "drop", "referral"]
+        }
+      );
+      assert.deepEqual(sanitizeLaunchSignal({ priority: "Z", beatScore: 999999 }), {});
     }
   },
   {
@@ -665,6 +700,19 @@ const tests: TestCase[] = [
       assert.ok(sql.includes("perform public.record_admin_action"));
       assert.ok(sql.includes("grant execute on function public.admin_set_beta_access"));
       assert.ok(!/waitlist_entries[\s\S]+references public\.profile_beta_access/i.test(sql));
+    }
+  },
+  {
+    name: "waitlist launch signals are stored as bounded metadata only",
+    run() {
+      const sql = waitlistLaunchSignalSql();
+
+      assert.ok(sql.includes("add column if not exists launch_signal jsonb"));
+      assert.ok(sql.includes("jsonb_typeof(launch_signal) = 'object'"));
+      assert.ok(sql.includes("p_launch_signal jsonb default '{}'::jsonb"));
+      assert.ok(sql.includes("clean_launch_signal"));
+      assert.ok(sql.includes("'launch_signal', clean_launch_signal"));
+      assert.ok(!/grant\s+select\s+on\s+public\.waitlist_entries\s+to\s+anon/i.test(sql));
     }
   },
   {

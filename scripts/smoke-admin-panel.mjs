@@ -98,6 +98,7 @@ try {
   await expectVisible(page.getByText(/invite-ready|davete hazir/i).first(), "waitlist invite-ready metric renders");
   await expectVisible(page.getByText(/growth signal|buyume sinyali/i).first(), "waitlist growth metric renders");
   await expectVisible(page.getByText(/signal|sinyal/i).first(), "waitlist intent column renders");
+  await expectVisible(page.getByText(/launch/i).first(), "waitlist launch signal column renders");
 
   const usersResponse = await context.request.get(`${baseUrl}/api/admin/users?q=jamlyadminsmoke`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -201,6 +202,14 @@ try {
       Number.isInteger(waitlistBody.summary?.triage?.inviteReady) &&
       Number.isInteger(waitlistBody.summary?.triage?.growthLeads) &&
       Number.isInteger(waitlistBody.summary?.triage?.needsReview),
+    `HTTP ${waitlistResponse.status()}`
+  );
+  const waitlistEntry = Array.isArray(waitlistBody.entries) ? waitlistBody.entries[0] : null;
+  record(
+    "admin waitlist API returns launch signal metadata",
+    waitlistResponse.ok() &&
+      (!waitlistEntry ||
+        (waitlistEntry.launch_signal !== null && typeof waitlistEntry.launch_signal === "object")),
     `HTTP ${waitlistResponse.status()}`
   );
 

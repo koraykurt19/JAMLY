@@ -25,7 +25,7 @@ export async function GET(request: Request) {
       .select(
         "id,email,display_name,reserved_username,persona,locale,status,queue_position," +
           "referral_code,referral_count,risk_flags,utm_source,utm_campaign," +
-          "verified_at,invited_at,converted_at,created_at",
+          "launch_signal,verified_at,invited_at,converted_at,created_at",
         { count: "exact" }
       )
       .order("queue_position", { ascending: true })

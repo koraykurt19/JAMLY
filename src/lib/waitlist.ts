@@ -29,6 +29,18 @@ export type WaitlistSubmission = {
   acceptedTerms: boolean;
   marketingOptIn: boolean;
   utm?: Record<string, string | undefined>;
+  launchSignal?: WaitlistLaunchSignal;
+};
+
+export type WaitlistLaunchSignal = {
+  priority?: "A" | "B" | "C";
+  role?: "creator" | "buyer" | "both";
+  need?: "beats" | "services" | "collab";
+  readiness?: "ready" | "soon" | "explore";
+  beatScore?: number;
+  beatRounds?: number;
+  challengeTier?: "starter" | "warm" | "priority" | "alpha";
+  completedChallenges?: Array<"profile" | "referral" | "drop">;
 };
 
 export type WaitlistFieldError = {
@@ -88,6 +100,36 @@ export function validateWaitlistSubmission(input: WaitlistSubmission): WaitlistF
   return errors;
 }
 
+export function sanitizeLaunchSignal(input: unknown): WaitlistLaunchSignal {
+  if (!input || typeof input !== "object") return {};
+  const raw = input as Record<string, unknown>;
+  const signal: WaitlistLaunchSignal = {};
+
+  if (isOneOf(raw.priority, ["A", "B", "C"])) signal.priority = raw.priority;
+  if (isOneOf(raw.role, ["creator", "buyer", "both"])) signal.role = raw.role;
+  if (isOneOf(raw.need, ["beats", "services", "collab"])) signal.need = raw.need;
+  if (isOneOf(raw.readiness, ["ready", "soon", "explore"])) signal.readiness = raw.readiness;
+  if (isOneOf(raw.challengeTier, ["starter", "warm", "priority", "alpha"])) {
+    signal.challengeTier = raw.challengeTier;
+  }
+
+  const beatScore = boundedInteger(raw.beatScore, 0, 5000);
+  if (beatScore !== null) signal.beatScore = beatScore;
+  const beatRounds = boundedInteger(raw.beatRounds, 0, 50);
+  if (beatRounds !== null) signal.beatRounds = beatRounds;
+
+  if (Array.isArray(raw.completedChallenges)) {
+    const completed = raw.completedChallenges
+      .filter((value): value is "profile" | "referral" | "drop" =>
+        isOneOf(value, ["profile", "referral", "drop"])
+      )
+      .slice(0, 3);
+    if (completed.length > 0) signal.completedChallenges = Array.from(new Set(completed));
+  }
+
+  return signal;
+}
+
 /**
  * Founding-order label. Position is 1-indexed and assigned by the database, so
  * it is stable even if earlier entries are later removed.
@@ -112,4 +154,15 @@ export function extractUtm(params: URLSearchParams) {
     if (value && value.length <= 120) utm[key] = value;
   }
   return utm;
+}
+
+function isOneOf<const T extends readonly string[]>(value: unknown, allowed: T): value is T[number] {
+  return typeof value === "string" && (allowed as readonly string[]).includes(value);
+}
+
+function boundedInteger(value: unknown, min: number, max: number) {
+  if (!Number.isFinite(Number(value))) return null;
+  const integer = Math.trunc(Number(value));
+  if (integer < min || integer > max) return null;
+  return integer;
 }

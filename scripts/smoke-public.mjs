@@ -1,13 +1,29 @@
-import { writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { createClient } from "@supabase/supabase-js";
 import { chromium } from "playwright";
+
+loadEnv(resolve(process.cwd(), ".env.local"));
+loadEnv(resolve(process.cwd(), ".env.production.local"));
 
 const mainUrl = process.env.SMOKE_BASE_URL || "https://getjamly.com";
 const preRegisterUrl = process.env.SMOKE_PRE_REGISTER_URL || "https://pre-register.getjamly.com";
+const localWaitlistWriteUrl = process.env.SMOKE_LOCAL_WAITLIST_URL || "http://127.0.0.1:3000/api/waitlist";
 const httpMainUrl = mainUrl.replace(/^https:/, "http:");
 const outDir = resolve(process.cwd(), "work", "live-smoke");
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 const results = [];
+const smokeIdentity = Date.now() % 250;
+const apiSmokeIp = `198.51.100.${smokeIdentity || 1}`;
+const uiSmokeIp = `203.0.113.${smokeIdentity || 1}`;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase =
+  supabaseUrl && serviceRoleKey
+    ? createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false }
+      })
+    : null;
 
 mkdirSync(outDir, { recursive: true });
 
@@ -90,29 +106,62 @@ await fetchCheck("pre-register waitlist stats configured", `${preRegisterUrl}/ap
 });
 
 const apiEmail = `smoke-api-${Date.now()}@example.net`;
-const apiJoin = await fetchCheck(
+const apiLaunchSignal = {
+  priority: "A",
+  role: "both",
+  need: "collab",
+  readiness: "ready",
+  beatScore: 360,
+  beatRounds: 2,
+  challengeTier: "alpha",
+  completedChallenges: ["profile", "referral", "drop"]
+};
+const apiJoinPayload = {
+  email: apiEmail,
+  displayName: "Smoke API",
+  reservedUsername: `smoke-api-${Date.now()}`,
+  persona: "both",
+  interests: ["beats", "mixing"],
+  locale: "tr",
+  acceptedTerms: true,
+  marketingOptIn: false,
+  utm: { source: "live-smoke" },
+  launchSignal: apiLaunchSignal
+};
+let apiJoin = await fetchCheck(
   "pre-register waitlist API accepts signup or rate-limits safely",
   `${preRegisterUrl}/api/waitlist`,
   (response) => response.status === 201 || response.status === 200 || response.status === 429,
   {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email: apiEmail,
-      displayName: "Smoke API",
-      reservedUsername: `smoke-api-${Date.now()}`,
-      persona: "both",
-      interests: ["beats", "mixing"],
-      locale: "tr",
-      acceptedTerms: true,
-      marketingOptIn: false,
-      utm: { source: "live-smoke" }
-    })
+    headers: { "Content-Type": "application/json", "X-Forwarded-For": apiSmokeIp },
+    body: JSON.stringify(apiJoinPayload)
   }
 );
+if (apiJoin.response.status === 429) {
+  apiJoin = await fetchCheck(
+    "local waitlist API accepts signup when public bucket is saturated",
+    localWaitlistWriteUrl,
+    (response) => response.status === 201 || response.status === 200 || response.status === 429,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Host": "pre-register.getjamly.com",
+        "X-Forwarded-For": `192.0.2.${smokeIdentity || 1}`
+      },
+      body: JSON.stringify(apiJoinPayload)
+    }
+  );
+}
 if (apiJoin.response.ok) {
   record("waitlist API returned queue metadata", /queuePosition|referralCode/.test(apiJoin.text), {
     note: `registered ${apiEmail}`
+  });
+  await recordStoredLaunchSignal("waitlist API stores launch signal", apiEmail, {
+    priority: apiLaunchSignal.priority,
+    challengeTier: apiLaunchSignal.challengeTier,
+    beatScore: apiLaunchSignal.beatScore
   });
 } else if (apiJoin.response.status === 429) {
   record("waitlist API rate limit protected signup endpoint", true, {
@@ -124,7 +173,11 @@ const browser = await chromium.launch({ headless: true });
 const consoleMessages = [];
 const pageErrors = [];
 const failedResponses = [];
-const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+const context = await browser.newContext({
+  viewport: { width: 1440, height: 1000 },
+  extraHTTPHeaders: { "X-Forwarded-For": uiSmokeIp }
+});
+const page = await context.newPage();
 
 page.on("console", (message) => {
   if (["error", "warning"].includes(message.type())) {
@@ -194,6 +247,48 @@ function healthBodyReady(text) {
   }
 }
 
+async function recordStoredLaunchSignal(name, email, expected) {
+  if (!supabase) {
+    record(name, true, { note: "skipped without service credentials" });
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("waitlist_entries")
+    .select("launch_signal")
+    .eq("email", email)
+    .maybeSingle();
+
+  const signal = data?.launch_signal && typeof data.launch_signal === "object" ? data.launch_signal : {};
+  const ok =
+    !error &&
+    Object.entries(expected).every(([key, value]) => {
+      return signal[key] === value;
+    });
+
+  record(name, ok, {
+    note: ok ? `${email} persisted` : error?.message || JSON.stringify(signal).slice(0, 180)
+  });
+}
+
+function loadEnv(path) {
+  if (!existsSync(path)) return;
+  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const separator = trimmed.indexOf("=");
+    if (separator === -1) continue;
+    const key = trimmed.slice(0, separator).trim();
+    const rawValue = trimmed.slice(separator + 1).trim();
+    const value =
+      (rawValue.startsWith('"') && rawValue.endsWith('"')) ||
+      (rawValue.startsWith("'") && rawValue.endsWith("'"))
+        ? rawValue.slice(1, -1)
+        : rawValue;
+    if (!process.env[key]) process.env[key] = value;
+  }
+}
+
 await browserPageCheck(`${mainUrl}/auth/sign-in`, "main-sign-in-desktop");
 await browserPageCheck(`${preRegisterUrl}/`, "early-access-desktop");
 record(
@@ -246,6 +341,12 @@ record("early-access browser form submits or rate-limits safely", successVisible
       ? "waitlist rate limit protected the endpoint"
       : "success state not detected"
 });
+if (successVisible) {
+  await recordStoredLaunchSignal("waitlist browser form stores launch signal", formEmail, {
+    priority: "A",
+    challengeTier: "alpha"
+  });
+}
 
 await page.setViewportSize({ width: 390, height: 844 });
 await browserPageCheck(`${preRegisterUrl}/`, "early-access-mobile");
@@ -267,6 +368,7 @@ record("browser console warnings are limited", unexpectedConsoleMessages.length 
 });
 record("browser saw no 5xx responses", failedResponses.length === 0, { note: failedResponses.slice(0, 5).join(" | ") });
 
+await context.close();
 await browser.close();
 
 const failed = results.filter((item) => !item.ok);

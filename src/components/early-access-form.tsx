@@ -13,8 +13,10 @@ import {
   buildReferralUrl,
   extractUtm,
   normalizeReferralCode,
+  sanitizeLaunchSignal,
   validateWaitlistSubmission,
   waitlistInterests,
+  type WaitlistLaunchSignal,
   type WaitlistInterest,
   type WaitlistPersona
 } from "@/lib/waitlist";
@@ -25,7 +27,7 @@ type SubmitState =
   | { status: "error"; message: string; fields: Record<string, string> }
   | { status: "success"; queuePosition: number; referralCode: string; alreadyRegistered: boolean };
 
-export function EarlyAccessForm() {
+export function EarlyAccessForm({ launchSignal }: { launchSignal?: WaitlistLaunchSignal }) {
   const { language } = useI18n();
   const copy = getEarlyAccessCopy(language);
   const formId = useId();
@@ -68,7 +70,8 @@ export function EarlyAccessForm() {
       referralCode,
       acceptedTerms,
       marketingOptIn,
-      utm
+      utm,
+      launchSignal: sanitizeLaunchSignal(launchSignal)
     };
 
     const localErrors = validateWaitlistSubmission(submission);

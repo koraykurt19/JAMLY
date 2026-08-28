@@ -11,6 +11,7 @@ import {
   normalizeEmail,
   normalizeReferralCode,
   normalizeUsername,
+  sanitizeLaunchSignal,
   validateWaitlistSubmission,
   type WaitlistPersona,
   type WaitlistSubmission
@@ -89,7 +90,8 @@ export async function POST(request: Request) {
     referralCode: normalizeReferralCode(payload.referralCode),
     acceptedTerms: Boolean(payload.acceptedTerms),
     marketingOptIn: Boolean(payload.marketingOptIn),
-    utm: payload.utm
+    utm: payload.utm,
+    launchSignal: sanitizeLaunchSignal(payload.launchSignal)
   };
 
   const errors = validateWaitlistSubmission(submission);
@@ -128,7 +130,8 @@ export async function POST(request: Request) {
     p_accepted_terms: submission.acceptedTerms,
     p_marketing_opt_in: submission.marketingOptIn,
     p_verification_token_hash: verificationTokenHash,
-    p_ip_hash: ipIdentity
+    p_ip_hash: ipIdentity,
+    p_launch_signal: submission.launchSignal ?? {}
   });
 
   if (error) {

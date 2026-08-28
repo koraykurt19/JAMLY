@@ -617,6 +617,7 @@ export type Database = {
           utm_medium: string | null;
           utm_campaign: string | null;
           utm_content: string | null;
+          launch_signal: Json;
           accepted_terms: boolean;
           marketing_opt_in: boolean;
           consent_recorded_at: string | null;
@@ -986,6 +987,7 @@ export type Database = {
           p_marketing_opt_in?: boolean;
           p_verification_token_hash?: string | null;
           p_ip_hash?: string | null;
+          p_launch_signal?: Record<string, unknown>;
         };
         Returns: {
           entry_id: string;

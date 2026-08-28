@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -27,6 +27,7 @@ import { JamlyWordmark } from "@/components/jamly-logo";
 import { Card, Pill } from "@/components/ui/surface";
 import { getEarlyAccessCopy } from "@/lib/early-access-copy";
 import { cn } from "@/lib/format";
+import type { WaitlistLaunchSignal } from "@/lib/waitlist";
 import {
   beatPads,
   buildBeatSequence,
@@ -59,6 +60,10 @@ export function EarlyAccessPage() {
   const { language } = useI18n();
   const copy = getEarlyAccessCopy(language);
   const [stats, setStats] = useState<WaitlistStats | null>(null);
+  const [launchSignal, setLaunchSignal] = useState<WaitlistLaunchSignal>({});
+  const mergeLaunchSignal = useCallback((signal: WaitlistLaunchSignal) => {
+    setLaunchSignal((current) => ({ ...current, ...signal }));
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -100,9 +105,18 @@ export function EarlyAccessPage() {
 
             <WaitlistCounter stats={stats} copy={copy} locale={locale} />
 
-            <LaunchPass language={language} />
-            <LaunchBeatGame language={language} />
-            <LaunchChallenge language={language} />
+            <LaunchPass
+              language={language}
+              onSignalChange={mergeLaunchSignal}
+            />
+            <LaunchBeatGame
+              language={language}
+              onSignalChange={mergeLaunchSignal}
+            />
+            <LaunchChallenge
+              language={language}
+              onSignalChange={mergeLaunchSignal}
+            />
 
             <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <a
@@ -208,7 +222,7 @@ export function EarlyAccessPage() {
           </div>
 
           <div className="lg:sticky lg:top-6 lg:self-start">
-            <EarlyAccessForm />
+            <EarlyAccessForm launchSignal={launchSignal} />
           </div>
         </div>
       </section>
@@ -277,7 +291,13 @@ const beatPadLabels: Record<BeatPad, string> = {
   bass: "Bass"
 };
 
-function LaunchBeatGame({ language }: { language: "tr" | "en" }) {
+function LaunchBeatGame({
+  language,
+  onSignalChange
+}: {
+  language: "tr" | "en";
+  onSignalChange: (signal: WaitlistLaunchSignal) => void;
+}) {
   const tr = language === "tr";
   const [round, setRound] = useState(1);
   const [attempt, setAttempt] = useState<BeatPad[]>([]);
@@ -286,6 +306,10 @@ function LaunchBeatGame({ language }: { language: "tr" | "en" }) {
   const sequence = useMemo(() => buildBeatSequence(round), [round]);
   const nextPad = sequence[attempt.length];
   const benefit = launchBenefitForScore(score, language);
+
+  useEffect(() => {
+    onSignalChange({ beatScore: score, beatRounds: Math.max(round - 1, 0) });
+  }, [onSignalChange, round, score]);
 
   function pressPad(pad: BeatPad) {
     const nextAttempt = [...attempt, pad];
@@ -458,12 +482,22 @@ const launchChallengeLabels: Record<LaunchChallengeKey, { tr: string; en: string
   }
 };
 
-function LaunchChallenge({ language }: { language: "tr" | "en" }) {
+function LaunchChallenge({
+  language,
+  onSignalChange
+}: {
+  language: "tr" | "en";
+  onSignalChange: (signal: WaitlistLaunchSignal) => void;
+}) {
   const tr = language === "tr";
   const [completed, setCompleted] = useState<LaunchChallengeKey[]>(["profile"]);
   const tier = launchChallengeTier(completed);
   const benefit = launchChallengeBenefit(tier, language);
   const progress = Math.round((new Set(completed).size / launchChallengeKeys.length) * 100);
+
+  useEffect(() => {
+    onSignalChange({ challengeTier: tier, completedChallenges: completed });
+  }, [completed, onSignalChange, tier]);
 
   function toggle(key: LaunchChallengeKey) {
     setCompleted((current) =>
@@ -550,7 +584,13 @@ function LaunchChallenge({ language }: { language: "tr" | "en" }) {
   );
 }
 
-function LaunchPass({ language }: { language: "tr" | "en" }) {
+function LaunchPass({
+  language,
+  onSignalChange
+}: {
+  language: "tr" | "en";
+  onSignalChange: (signal: WaitlistLaunchSignal) => void;
+}) {
   const tr = language === "tr";
   const [role, setRole] = useState("both");
   const [need, setNeed] = useState("beats");
@@ -561,6 +601,15 @@ function LaunchPass({ language }: { language: "tr" | "en" }) {
     (need === "collab" ? 24 : need === "services" ? 22 : 20) +
     (readiness === "ready" ? 36 : readiness === "soon" ? 28 : 18);
   const priority = score >= 88 ? "A" : score >= 72 ? "B" : "C";
+
+  useEffect(() => {
+    onSignalChange({
+      priority,
+      role: role as "creator" | "buyer" | "both",
+      need: need as "beats" | "services" | "collab",
+      readiness: readiness as "ready" | "soon" | "explore"
+    });
+  }, [need, onSignalChange, priority, readiness, role]);
 
   return (
     <div className="mt-8 w-full max-w-3xl rounded-lg border border-white/10 bg-black/24 p-4 text-left shadow-soft">
