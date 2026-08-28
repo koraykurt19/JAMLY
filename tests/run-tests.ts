@@ -742,6 +742,13 @@ const tests: TestCase[] = [
       assert.equal(plan.protectedObjects, 1);
       assert.equal(plan.orphanObjects, 2);
       assert.equal(plan.deletionCandidates, 1);
+      assert.deepEqual(plan.deletionCandidateObjects, [
+        {
+          bucket: "audio-previews",
+          name: "user/orphan.mp3",
+          sizeBytes: 20
+        }
+      ]);
       assert.deepEqual(plan.sampleCandidates[0], {
         bucket: "audio-previews",
         name: "user/orphan.mp3",

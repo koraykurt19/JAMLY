@@ -338,6 +338,7 @@ NEW_VDS_SETUP_WINDOWS.md   Windows Server 2022 + IIS + Supabase runbook
 | `npm run retention:dry-run` | Inspect Supabase retention cleanup counts without deleting rows |
 | `npm run retention:execute` | Execute the guarded retention cleanup and write a local JSON report |
 | `npm run storage:audit` | Inspect Supabase Storage references and old orphan candidates without deleting files |
+| `npm run storage:prune` | Delete only old orphan Supabase Storage objects after the same reference audit, guarded by confirmation |
 | `npm run smoke:admin-panel` | Verify a temporary admin can sign in, open admin UI, read retention controls, and that pre-register blocks admin APIs |
 | `npm run smoke:beta-gate` | Verify a non-admin, non-allowlisted auth account is redirected back to pre-register |
 | `npm run smoke:public` | Verify live public routing, pre-register UI, mini-games, safe waitlist submission/rate-limit behavior, and anonymous admin guard |

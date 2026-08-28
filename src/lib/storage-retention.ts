@@ -59,6 +59,11 @@ export function planStorageRetentionAudit(
       name: object.name,
       sizeBytes: object.sizeBytes
     })),
+    deletionCandidateObjects: deletionCandidates.map((object) => ({
+      bucket: object.bucket,
+      name: object.name,
+      sizeBytes: object.sizeBytes
+    })),
     neverDelete: [
       "referenced profile media",
       "referenced listing covers",

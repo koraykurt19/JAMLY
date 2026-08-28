@@ -353,6 +353,19 @@ npm run storage:audit
 
 Reports are written under `C:\jamly\work\storage-retention-runs\`.
 
+After reviewing the audit report, prune old orphan Storage objects manually:
+
+```powershell
+Set-Location C:\jamly
+npm run storage:prune
+```
+
+The prune command reruns the same reference audit before deleting anything and
+only removes old orphan objects from audited buckets. It never targets
+referenced profile media, listing covers, audio previews, paid license
+deliverables, collaboration files, unknown buckets, user profiles, auth users,
+orders, payments, or ledger records.
+
 Live smoke tests and retention audits write screenshots and JSON reports under
 `C:\jamly\work\`. Inspect local artifact cleanup with:
 

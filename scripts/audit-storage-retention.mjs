@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
+import { createClient } from "@supabase/supabase-js";
 import {
   extractStorageReference,
   planStorageRetentionAudit
@@ -10,11 +11,28 @@ loadEnv(resolve(process.cwd(), ".env.local"));
 loadEnv(resolve(process.cwd(), ".env.production.local"));
 
 const databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const logDir = resolve(process.cwd(), "work", "storage-retention-runs");
 const orphanGraceDays = Number(process.env.STORAGE_ORPHAN_GRACE_DAYS ?? 2);
+const args = new Set(process.argv.slice(2));
+const execute = args.has("--execute");
+const confirmIndex = process.argv.indexOf("--confirm");
+const confirmValue = confirmIndex >= 0 ? process.argv[confirmIndex + 1] : "";
+const expectedConfirm = "PRUNE_STORAGE_ORPHANS";
 
 if (!databaseUrl) {
   console.error("Missing SUPABASE_DATABASE_URL or DATABASE_URL. Storage audit was not run.");
+  process.exit(1);
+}
+
+if (execute && confirmValue !== expectedConfirm) {
+  console.error(`Refusing to delete storage objects without --confirm ${expectedConfirm}.`);
+  process.exit(1);
+}
+
+if (execute && (!supabaseUrl || !serviceRoleKey)) {
+  console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Storage prune was not run.");
   process.exit(1);
 }
 
@@ -33,14 +51,25 @@ try {
 
   const report = {
     checkedAt: new Date().toISOString(),
-    mode: "dry_run",
+    mode: execute ? "execute" : "dry_run",
     orphanGraceDays,
-    ...plan
+    ...plan,
+    deletedObjects: 0,
+    deletedBytes: 0,
+    failedDeletes: []
   };
+
+  if (execute && plan.deletionCandidateObjects.length > 0) {
+    const deleteResult = await deleteStorageObjects(plan.deletionCandidateObjects);
+    report.deletedObjects = deleteResult.deletedObjects;
+    report.deletedBytes = deleteResult.deletedBytes;
+    report.failedDeletes = deleteResult.failedDeletes;
+    if (deleteResult.failedDeletes.length > 0) process.exitCode = 1;
+  }
 
   mkdirSync(logDir, { recursive: true });
   writeFileSync(
-    resolve(logDir, `${report.checkedAt.replace(/[:.]/g, "-")}-dry-run.json`),
+    resolve(logDir, `${report.checkedAt.replace(/[:.]/g, "-")}-${report.mode}.json`),
     JSON.stringify({ ...report, references: references.length }, null, 2)
   );
 
@@ -50,6 +79,47 @@ try {
   process.exitCode = 1;
 } finally {
   await client.end().catch(() => undefined);
+}
+
+async function deleteStorageObjects(objects) {
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+  const byBucket = new Map();
+
+  for (const object of objects) {
+    const list = byBucket.get(object.bucket) ?? [];
+    list.push(object);
+    byBucket.set(object.bucket, list);
+  }
+
+  const failedDeletes = [];
+  let deletedObjects = 0;
+  let deletedBytes = 0;
+
+  for (const [bucket, bucketObjects] of byBucket.entries()) {
+    for (let index = 0; index < bucketObjects.length; index += 100) {
+      const batch = bucketObjects.slice(index, index + 100);
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .remove(batch.map((object) => object.name));
+
+      if (error) {
+        failedDeletes.push({ bucket, names: batch.map((object) => object.name), error: error.message });
+        continue;
+      }
+
+      const removedNames = new Set((data ?? []).map((object) => object.name));
+      const removedObjects = removedNames.size > 0
+        ? batch.filter((object) => removedNames.has(object.name))
+        : batch;
+
+      deletedObjects += removedObjects.length;
+      deletedBytes += removedObjects.reduce((sum, object) => sum + object.sizeBytes, 0);
+    }
+  }
+
+  return { deletedObjects, deletedBytes, failedDeletes };
 }
 
 async function listStorageObjects() {
