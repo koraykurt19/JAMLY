@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertCircle, ArrowUpRight, Loader2, UserRound } from "lucide-react";
+import { AlertCircle, ArrowUpRight, CheckCircle2, Loader2, ShieldCheck, UserRound } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { CreatorProfileEditor } from "@/components/creator-profile-editor";
 import { useI18n } from "@/components/language-provider";
@@ -12,6 +12,7 @@ import {
   isSupabaseRecoverableError
 } from "@/lib/supabase";
 import { ensureCurrentProfile, fetchCreator } from "@/lib/supabase-data";
+import { profileReadiness, type ProfileReadiness } from "@/lib/profile-readiness";
 import type { Creator } from "@/lib/types";
 
 type PageState =
@@ -136,6 +137,8 @@ export default function ProfileSettingsPage() {
         </Link>
       </div>
 
+      <ProfileReadinessPanel readiness={profileReadinessFromCreator(state.creator)} language={language} />
+
       <CreatorProfileEditor
         creator={state.creator}
         isDemo={state.isDemo}
@@ -143,6 +146,116 @@ export default function ProfileSettingsPage() {
       />
     </section>
   );
+}
+
+function ProfileReadinessPanel({
+  readiness,
+  language
+}: {
+  readiness: ProfileReadiness;
+  language: "tr" | "en";
+}) {
+  const tr = language === "tr";
+  const title =
+    readiness.level === "launch_ready"
+      ? tr
+        ? "Launch-ready profil"
+        : "Launch-ready profile"
+      : readiness.level === "ready"
+        ? tr
+          ? "Profil hazir"
+          : "Profile ready"
+        : readiness.level === "started"
+          ? tr
+            ? "Profil baslatildi"
+            : "Profile started"
+          : tr
+            ? "Profil bos"
+            : "Profile empty";
+
+  return (
+    <section className="mb-6 rounded-lg border border-white/10 bg-white/[0.045] p-5">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-jam-blue">
+            <ShieldCheck size={15} />
+            {tr ? "Profil hazirlik" : "Profile readiness"}
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-white">{title}</h2>
+          <p className="mt-2 text-sm leading-6 text-white/50">
+            {tr
+              ? "Beta ve marketplace kullanimi icin profil guven sinyallerini tamamla."
+              : "Complete trust signals for beta and marketplace use."}
+          </p>
+        </div>
+        <div className="w-full max-w-xs shrink-0">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-semibold text-white/58">{tr ? "Skor" : "Score"}</span>
+            <span className="font-bold tabular-nums text-jam-mint">{readiness.score}%</span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/8">
+            <div className="h-full rounded-full bg-jam-mint" style={{ width: `${readiness.score}%` }} />
+          </div>
+        </div>
+      </div>
+      <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {readiness.checks.map((check) => (
+          <div
+            key={check.key}
+            className={
+              check.passed
+                ? "flex items-center gap-2 rounded-md border border-jam-mint/18 bg-jam-mint/[0.055] px-3 py-2 text-sm font-semibold text-jam-mint"
+                : "flex items-center gap-2 rounded-md border border-white/8 bg-black/20 px-3 py-2 text-sm font-semibold text-white/50"
+            }
+          >
+            <CheckCircle2 size={15} />
+            {readinessLabel(check.key, language)}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function profileReadinessFromCreator(creator: Creator) {
+  return profileReadiness({
+    role: creator.role,
+    handle: creator.handle,
+    fullName: creator.name,
+    headline: creator.headline,
+    bio: creator.about,
+    avatarUrl: creator.avatarUrl,
+    coverUrl: creator.coverUrl,
+    location: creator.location,
+    specialties: creator.specialties,
+    socialLinkCount: creator.socialLinks.length,
+    activeListingCount: creator.completedOrders > 0 ? 1 : 0
+  });
+}
+
+function readinessLabel(key: ProfileReadiness["checks"][number]["key"], language: "tr" | "en") {
+  if (language === "en") {
+    return {
+      identity: "Identity",
+      headline: "Headline",
+      bio: "Bio depth",
+      avatar: "Avatar",
+      cover: "Cover",
+      specialties: "Specialties",
+      social: "Social proof",
+      creator_listing: "Active listing"
+    }[key];
+  }
+  return {
+    identity: "Kimlik",
+    headline: "Baslik",
+    bio: "Bio derinligi",
+    avatar: "Avatar",
+    cover: "Kapak",
+    specialties: "Uzmanlik",
+    social: "Sosyal kanit",
+    creator_listing: "Aktif ilan"
+  }[key];
 }
 
 function isMissingOrInvalidSession(error: unknown) {

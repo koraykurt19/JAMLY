@@ -92,6 +92,7 @@ try {
 
   await page.getByRole("button", { name: /users|kullan/i }).click();
   await expectVisible(page.getByText(/data plan|veri plani/i).first(), "users table shows retention plan column");
+  await expectVisible(page.getByText(/readiness|hazirlik/i).first(), "users table shows profile readiness column");
   await expectVisible(page.getByText(/jamlyadminsmoke/i).first(), "temporary admin smoke user appears in users table");
 
   await page.goto(`${baseUrl}/admin/retention`, { waitUntil: "networkidle", timeout: 45000 });
@@ -122,7 +123,9 @@ try {
       smokeUser?.isBetaAllowed === true &&
       typeof smokeUser?.isBetaDirectAllowed === "boolean" &&
       smokeUser?.retentionPlan === "standard" &&
-      Number(smokeUser?.retentionMultiplier) === 1,
+      Number(smokeUser?.retentionMultiplier) === 1 &&
+      Number.isInteger(smokeUser?.readiness?.score) &&
+      typeof smokeUser?.readiness?.level === "string",
     `HTTP ${usersResponse.status()}`
   );
 

@@ -66,6 +66,11 @@ type AdminUser = {
   isBetaAllowed: boolean;
   retentionPlan: RetentionPlan;
   retentionMultiplier: number;
+  readiness: {
+    score: number;
+    level: "empty" | "started" | "ready" | "launch_ready";
+    missing: string[];
+  };
   createdAt: string;
 };
 
@@ -562,6 +567,7 @@ function UsersPanel({
               text.user,
               text.role,
               accessLabel(text),
+              text.readiness,
               text.retention,
               text.status,
               text.joined,
@@ -609,6 +615,9 @@ function UsersPanel({
                     </span>
                   ) : null}
                 </div>
+              </Td>
+              <Td>
+                <ReadinessBadge user={user} text={text} />
               </Td>
               <Td>
                 <div className="flex flex-col gap-1.5">
@@ -825,6 +834,30 @@ function StatusPill({ status, text }: { status: AccountStatus; text: AdminCopy }
   );
 }
 
+function ReadinessBadge({ user, text }: { user: AdminUser; text: AdminCopy }) {
+  const ready = user.readiness.level === "launch_ready" || user.readiness.level === "ready";
+  const label = readinessLevelLabel(text, user.readiness.level);
+  const missing = user.readiness.missing[0];
+
+  return (
+    <div className="min-w-[8rem]">
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <span className={ready ? "font-bold text-jam-mint" : "font-bold text-white/58"}>
+          {label}
+        </span>
+        <span className="font-bold tabular-nums text-white/60">{user.readiness.score}%</span>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/8">
+        <div
+          className={ready ? "h-full rounded-full bg-jam-mint" : "h-full rounded-full bg-jam-blue"}
+          style={{ width: `${user.readiness.score}%` }}
+        />
+      </div>
+      {missing ? <p className="mt-1 text-[11px] text-white/34">{missing}</p> : null}
+    </div>
+  );
+}
+
 function accessLabel(text: AdminCopy) {
   return text.signIn === "Sign in" ? "Access" : "Erisim";
 }
@@ -846,6 +879,24 @@ function retentionActionLabel(text: AdminCopy, plan: RetentionPlan, loading: boo
   }
   if (loading) return "Isleniyor";
   return plan === "premium" ? "Premium yap" : "Standart yap";
+}
+
+function readinessLevelLabel(text: AdminCopy, level: AdminUser["readiness"]["level"]) {
+  const en = text.signIn === "Sign in";
+  if (en) {
+    return {
+      empty: "Empty",
+      started: "Started",
+      ready: "Ready",
+      launch_ready: "Launch"
+    }[level];
+  }
+  return {
+    empty: "Bos",
+    started: "Basladi",
+    ready: "Hazir",
+    launch_ready: "Launch"
+  }[level];
 }
 
 function adminActionLabel(text: AdminCopy, isAdmin: boolean, loading: boolean) {
@@ -954,6 +1005,7 @@ function getAdminCopy(language: "tr" | "en") {
       joined: "Katılım",
       actions: "Aksiyon",
       directBeta: "Panel beta",
+      readiness: "Hazirlik",
       retention: "Veri plani",
       retentionStandardHint: "30 gun",
       retentionPremiumHint: "60 gun",
@@ -1014,6 +1066,7 @@ function getAdminCopy(language: "tr" | "en") {
     joined: "Joined",
     actions: "Actions",
     directBeta: "Direct beta",
+    readiness: "Readiness",
     retention: "Data plan",
     retentionStandardHint: "30 days",
     retentionPremiumHint: "60 days",

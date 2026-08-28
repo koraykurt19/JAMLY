@@ -61,6 +61,7 @@ import {
   extractStorageReference,
   planStorageRetentionAudit
 } from "../src/lib/storage-retention";
+import { profileReadiness } from "../src/lib/profile-readiness";
 
 type TestCase = {
   name: string;
@@ -288,6 +289,40 @@ const tests: TestCase[] = [
       assert.equal(foundingTierFor(101), "first_1000");
       assert.equal(foundingTierFor(1000), "first_1000");
       assert.equal(foundingTierFor(1001), "community");
+    }
+  },
+  {
+    name: "profile readiness separates launch-ready creators from incomplete accounts",
+    run() {
+      const readyCreator = profileReadiness({
+        role: "creator",
+        handle: "neon-producer",
+        fullName: "Neon Producer",
+        headline: "Custom hooks and beat production",
+        bio: "A focused creator profile with enough context for buyers to understand sound, process, scope, and delivery expectations.",
+        avatarUrl: "https://example.com/avatar.png",
+        coverUrl: "https://example.com/cover.png",
+        specialties: ["Trap", "R&B", "Mixing"],
+        socialLinkCount: 2,
+        activeListingCount: 1
+      });
+      const incompleteCreator = profileReadiness({
+        role: "creator",
+        handle: "x",
+        fullName: "",
+        headline: "",
+        bio: "",
+        avatarUrl: "",
+        coverUrl: "",
+        specialties: [],
+        socialLinkCount: 0,
+        activeListingCount: 0
+      });
+
+      assert.equal(readyCreator.level, "launch_ready");
+      assert.equal(readyCreator.score, 100);
+      assert.ok(incompleteCreator.score < 30);
+      assert.ok(incompleteCreator.missing.includes("creator_listing"));
     }
   },
   {
@@ -756,6 +791,21 @@ const tests: TestCase[] = [
       assert.ok(api.includes("isBetaHandleAllowed"));
       assert.ok(hook.includes("/api/account/status"));
       assert.ok(!hook.includes("NEXT_PUBLIC_BETA_ALLOWED_HANDLES"));
+    }
+  },
+  {
+    name: "admin users API and panel expose profile readiness",
+    run() {
+      const route = readFileSync(resolve(process.cwd(), "src/app/api/admin/users/route.ts"), "utf8");
+      const panel = readFileSync(resolve(process.cwd(), "src/components/admin-dashboard.tsx"), "utf8");
+
+      assert.ok(route.includes("profileReadiness"));
+      assert.ok(route.includes("activeListingCount"));
+      assert.ok(route.includes("socialLinksFromRecord"));
+      assert.ok(route.includes("readiness:"));
+      assert.ok(panel.includes("ReadinessBadge"));
+      assert.ok(panel.includes("text.readiness"));
+      assert.ok(panel.includes("user.readiness.score"));
     }
   },
   {
