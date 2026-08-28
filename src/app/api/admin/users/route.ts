@@ -35,21 +35,27 @@ export async function GET(request: Request) {
     const [
       { data: users, error: usersError },
       { data: admins, error: adminsError },
-      { data: retentionSettings, error: retentionError }
+      { data: retentionSettings, error: retentionError },
+      { data: betaAccessRows, error: betaAccessError }
     ] =
       await Promise.all([
         query,
         client.from("admin_accounts").select("user_id, role, is_active"),
-        client.from("profile_retention_settings").select("profile_id, plan, retention_multiplier")
+        client.from("profile_retention_settings").select("profile_id, plan, retention_multiplier"),
+        client.from("profile_beta_access").select("profile_id, is_active")
       ]);
 
     if (usersError) throw usersError;
     if (adminsError) throw adminsError;
     if (retentionError) throw retentionError;
+    if (betaAccessError) throw betaAccessError;
 
     const adminById = new Map((admins ?? []).map((admin) => [admin.user_id, admin]));
     const retentionById = new Map(
       (retentionSettings ?? []).map((setting) => [setting.profile_id, setting])
+    );
+    const betaAccessById = new Map(
+      (betaAccessRows ?? []).map((access) => [access.profile_id, access])
     );
     const betaAllowedHandles = betaAllowedHandleSet(process.env.JAMLY_BETA_ALLOWED_HANDLES);
 
@@ -57,6 +63,10 @@ export async function GET(request: Request) {
       {
         users: (users ?? []).map((user) => {
           const retention = retentionById.get(user.id);
+          const betaAccess = betaAccessById.get(user.id);
+          const isAdmin = adminById.get(user.id)?.is_active === true;
+          const isBetaHandleAllowed = betaAllowedHandles.has(String(user.handle ?? "").toLowerCase());
+          const isBetaDirectAllowed = betaAccess?.is_active === true;
           return {
             id: user.id,
             role: user.role,
@@ -66,12 +76,12 @@ export async function GET(request: Request) {
             location: user.location,
             status: user.account_status,
             adminRole: adminById.get(user.id)?.role ?? null,
-            isAdmin: adminById.get(user.id)?.is_active === true,
-            isBetaHandleAllowed: betaAllowedHandles.has(String(user.handle ?? "").toLowerCase()),
+            isAdmin,
+            isBetaHandleAllowed,
+            isBetaDirectAllowed,
             isBetaAllowed:
               user.account_status === "active" &&
-              (adminById.get(user.id)?.is_active === true ||
-                betaAllowedHandles.has(String(user.handle ?? "").toLowerCase())),
+              (isAdmin || isBetaDirectAllowed || isBetaHandleAllowed),
             retentionPlan: retention?.plan ?? "standard",
             retentionMultiplier: Number(retention?.retention_multiplier ?? 1),
             createdAt: user.created_at

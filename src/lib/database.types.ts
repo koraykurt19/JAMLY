@@ -172,6 +172,26 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["profile_retention_settings"]["Insert"]>;
         Relationships: [];
       };
+      profile_beta_access: {
+        Row: {
+          profile_id: string;
+          is_active: boolean;
+          granted_by: string | null;
+          reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          profile_id: string;
+          is_active?: boolean;
+          granted_by?: string | null;
+          reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["profile_beta_access"]["Insert"]>;
+        Relationships: [];
+      };
       retention_policy_runs: {
         Row: {
           id: string;
@@ -883,6 +903,14 @@ export type Database = {
           p_reason?: string | null;
         };
         Returns: undefined;
+      };
+      admin_set_beta_access: {
+        Args: {
+          p_profile_id: string;
+          p_is_active: boolean;
+          p_reason?: string | null;
+        };
+        Returns: boolean;
       };
       admin_release_exclusive: {
         Args: { p_listing_id: string };

@@ -50,16 +50,22 @@ export function useCurrentAccount() {
         return;
       }
 
-      const [{ data: isAdmin }, { data: adminRole }, retention] = await Promise.all([
+      const [{ data: isAdmin }, { data: adminRole }, retention, betaAccess] = await Promise.all([
         client.rpc("is_current_user_admin"),
         client.rpc("current_admin_role"),
         client
           .from("profile_retention_settings")
           .select("plan, retention_multiplier")
           .eq("profile_id", user.id)
+          .maybeSingle(),
+        client
+          .from("profile_beta_access")
+          .select("is_active")
+          .eq("profile_id", user.id)
           .maybeSingle()
       ]);
       if (retention.error) throw new Error(retention.error.message);
+      if (betaAccess.error) throw new Error(betaAccess.error.message);
       const accountStatus = profile?.account_status ?? "active";
       const handle = profile?.handle ?? user.email?.split("@")[0] ?? user.id.slice(0, 8);
       const allowedHandles = betaAllowedHandleSet(process.env.NEXT_PUBLIC_BETA_ALLOWED_HANDLES);
@@ -79,7 +85,9 @@ export function useCurrentAccount() {
           accountStatus,
           isBetaAllowed:
             accountStatus === "active" &&
-            (Boolean(isAdmin) || allowedHandles.has(handle.toLowerCase())),
+            (Boolean(isAdmin) ||
+              betaAccess.data?.is_active === true ||
+              allowedHandles.has(handle.toLowerCase())),
           retentionPlan,
           retentionMultiplier: Number(retention.data?.retention_multiplier ?? 1)
         }

@@ -126,13 +126,21 @@ async function isBetaAllowed({ client, userId }: GateContext) {
   const { data: isAdmin } = await client.rpc("is_current_user_admin");
   if (isAdmin) return true;
 
-  const { data: profile } = await client
+  const [{ data: profile }, { data: betaAccess }] = await Promise.all([
+    client
     .from("profiles")
     .select("handle, account_status")
     .eq("id", userId)
-    .maybeSingle();
+      .maybeSingle(),
+    client
+      .from("profile_beta_access")
+      .select("is_active")
+      .eq("profile_id", userId)
+      .maybeSingle()
+  ]);
 
   if (profile?.account_status !== "active") return false;
+  if (betaAccess?.is_active === true) return true;
 
   const allowedHandles = betaAllowedHandleSet(process.env.JAMLY_BETA_ALLOWED_HANDLES);
   return allowedHandles.has(String(profile.handle ?? "").toLowerCase());

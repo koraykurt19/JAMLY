@@ -73,6 +73,11 @@ const retentionPlanActionSql = () =>
     resolve(process.cwd(), "supabase/migrations/20260828_admin_retention_plan_actions.sql"),
     "utf8"
   );
+const betaAccessSql = () =>
+  readFileSync(
+    resolve(process.cwd(), "supabase/migrations/20260828_beta_access_controls.sql"),
+    "utf8"
+  );
 const retentionSelfReadSql = () =>
   readFileSync(
     resolve(process.cwd(), "supabase/migrations/20260828_profile_retention_self_read.sql"),
@@ -645,6 +650,21 @@ const tests: TestCase[] = [
       assert.ok(sql.includes("'retention.plan_change'"));
       assert.ok(sql.includes("perform public.record_admin_action"));
       assert.ok(sql.includes("grant execute on function public.admin_set_retention_plan"));
+    }
+  },
+  {
+    name: "admin beta access changes are explicit, guarded, and audited",
+    run() {
+      const sql = betaAccessSql();
+
+      assert.ok(sql.includes("create table if not exists public.profile_beta_access"));
+      assert.ok(sql.includes("profile_id = auth.uid()"));
+      assert.ok(sql.includes("public.admin_has('admin.manage')"));
+      assert.ok(sql.includes("A reason is required to change beta access"));
+      assert.ok(sql.includes("'beta.access_change'"));
+      assert.ok(sql.includes("perform public.record_admin_action"));
+      assert.ok(sql.includes("grant execute on function public.admin_set_beta_access"));
+      assert.ok(!/waitlist_entries[\s\S]+references public\.profile_beta_access/i.test(sql));
     }
   },
   {

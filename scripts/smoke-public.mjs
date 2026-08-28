@@ -70,6 +70,7 @@ for (const path of [
   "/admin",
   "/api/admin/overview",
   "/api/admin/users/00000000-0000-4000-8000-000000000000/admin-role",
+  "/api/admin/users/00000000-0000-4000-8000-000000000000/beta-access",
   "/api/admin/users/00000000-0000-4000-8000-000000000000/retention-plan",
   "/api/admin/waitlist/00000000-0000-4000-8000-000000000000/status",
   "/api/reports",

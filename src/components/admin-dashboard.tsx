@@ -62,6 +62,7 @@ type AdminUser = {
   isAdmin: boolean;
   adminRole: AdminRole | null;
   isBetaHandleAllowed: boolean;
+  isBetaDirectAllowed: boolean;
   isBetaAllowed: boolean;
   retentionPlan: RetentionPlan;
   retentionMultiplier: number;
@@ -136,6 +137,7 @@ export function AdminDashboard() {
   const [userStatus, setUserStatus] = useState<"all" | AccountStatus>("all");
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [updatingAdminId, setUpdatingAdminId] = useState<string | null>(null);
+  const [updatingBetaId, setUpdatingBetaId] = useState<string | null>(null);
   const [updatingRetentionId, setUpdatingRetentionId] = useState<string | null>(null);
 
   const text = useMemo(() => getAdminCopy(language), [language]);
@@ -272,6 +274,53 @@ export function AdminDashboard() {
     }
   }
 
+  async function updateBetaAccess(user: AdminUser, isActive: boolean) {
+    const client = getSupabaseBrowserClient();
+    if (!client || state.status !== "ready") return;
+
+    setUpdatingBetaId(user.id);
+    try {
+      const {
+        data: { session }
+      } = await client.auth.getSession();
+      if (!session) throw new Error(text.signInRequired);
+
+      const response = await adminFetch<{ isActive: boolean }>(
+        `/api/admin/users/${user.id}/beta-access`,
+        session.access_token,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            isActive,
+            reason: isActive ? "Granted beta access from users panel." : "Revoked beta access from users panel."
+          })
+        }
+      );
+
+      setState({
+        ...state,
+        users: state.users.map((current) =>
+          current.id === user.id
+            ? {
+                ...current,
+                isBetaDirectAllowed: response.isActive,
+                isBetaAllowed:
+                  current.status === "active" &&
+                  (current.isAdmin || response.isActive || current.isBetaHandleAllowed)
+              }
+            : current
+        )
+      });
+    } catch (error) {
+      setState({
+        status: "error",
+        message: error instanceof Error ? error.message : text.error
+      });
+    } finally {
+      setUpdatingBetaId(null);
+    }
+  }
+
   async function updateRetentionPlan(user: AdminUser, plan: RetentionPlan) {
     const client = getSupabaseBrowserClient();
     if (!client || state.status !== "ready" || user.retentionPlan === plan) return;
@@ -392,12 +441,14 @@ export function AdminDashboard() {
               status={userStatus}
               updatingUserId={updatingUserId}
               updatingAdminId={updatingAdminId}
+              updatingBetaId={updatingBetaId}
               updatingRetentionId={updatingRetentionId}
               text={text}
               onQueryChange={setQuery}
               onStatusChange={setUserStatus}
               onUpdateStatus={updateUserStatus}
               onUpdateAdminRole={updateAdminRole}
+              onUpdateBetaAccess={updateBetaAccess}
               onUpdateRetentionPlan={updateRetentionPlan}
             />
           ) : null}
@@ -457,12 +508,14 @@ function UsersPanel({
   status,
   updatingUserId,
   updatingAdminId,
+  updatingBetaId,
   updatingRetentionId,
   text,
   onQueryChange,
   onStatusChange,
   onUpdateStatus,
   onUpdateAdminRole,
+  onUpdateBetaAccess,
   onUpdateRetentionPlan
 }: {
   users: AdminUser[];
@@ -470,12 +523,14 @@ function UsersPanel({
   status: "all" | AccountStatus;
   updatingUserId: string | null;
   updatingAdminId: string | null;
+  updatingBetaId: string | null;
   updatingRetentionId: string | null;
   text: AdminCopy;
   onQueryChange: (query: string) => void;
   onStatusChange: (status: "all" | AccountStatus) => void;
   onUpdateStatus: (userId: string, status: AccountStatus) => Promise<void>;
   onUpdateAdminRole: (user: AdminUser, isActive: boolean) => Promise<void>;
+  onUpdateBetaAccess: (user: AdminUser, isActive: boolean) => Promise<void>;
   onUpdateRetentionPlan: (user: AdminUser, plan: RetentionPlan) => Promise<void>;
 }) {
   return (
@@ -547,6 +602,12 @@ function UsersPanel({
                       {user.adminRole ?? "admin"}
                     </span>
                   ) : null}
+                  {user.isBetaDirectAllowed ? (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-jam-gold/30 bg-jam-gold/10 px-2 py-1 text-xs font-semibold text-jam-gold">
+                      <ShieldCheck size={12} />
+                      {text.directBeta}
+                    </span>
+                  ) : null}
                 </div>
               </Td>
               <Td>
@@ -582,6 +643,14 @@ function UsersPanel({
                     className="focus-ring rounded-md border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/62 transition hover:border-jam-mint/35 hover:bg-jam-mint/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
                   >
                     {adminActionLabel(text, user.isAdmin, updatingAdminId === user.id)}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={updatingBetaId === user.id || user.isBetaHandleAllowed || user.isAdmin}
+                    onClick={() => void onUpdateBetaAccess(user, !user.isBetaDirectAllowed)}
+                    className="focus-ring rounded-md border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/62 transition hover:border-jam-gold/35 hover:bg-jam-gold/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                  >
+                    {betaActionLabel(text, user, updatingBetaId === user.id)}
                   </button>
                   {(["standard", "premium"] as const).map((plan) => (
                     <button
@@ -788,6 +857,19 @@ function adminActionLabel(text: AdminCopy, isAdmin: boolean, loading: boolean) {
   return isAdmin ? "Admin kapat" : "Admin yap";
 }
 
+function betaActionLabel(text: AdminCopy, user: AdminUser, loading: boolean) {
+  if (text.signIn === "Sign in") {
+    if (loading) return "Updating";
+    if (user.isAdmin) return "Admin beta";
+    if (user.isBetaHandleAllowed) return "Handle beta";
+    return user.isBetaDirectAllowed ? "Close beta" : "Open beta";
+  }
+  if (loading) return "Isleniyor";
+  if (user.isAdmin) return "Admin beta";
+  if (user.isBetaHandleAllowed) return "Handle beta";
+  return user.isBetaDirectAllowed ? "Betayi kapat" : "Betayi ac";
+}
+
 function AdminNotice({
   icon,
   title,
@@ -871,6 +953,7 @@ function getAdminCopy(language: "tr" | "en") {
       status: "Durum",
       joined: "Katılım",
       actions: "Aksiyon",
+      directBeta: "Panel beta",
       retention: "Veri plani",
       retentionStandardHint: "30 gun",
       retentionPremiumHint: "60 gun",
@@ -930,6 +1013,7 @@ function getAdminCopy(language: "tr" | "en") {
     status: "Status",
     joined: "Joined",
     actions: "Actions",
+    directBeta: "Direct beta",
     retention: "Data plan",
     retentionStandardHint: "30 days",
     retentionPremiumHint: "60 days",

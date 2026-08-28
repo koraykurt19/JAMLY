@@ -31,10 +31,16 @@ const account = {
   handle: "jamlyadminsmoke",
   password: `JamlyAdmin-${randomBytes(12).toString("base64url")}!1`
 };
+const betaAccount = {
+  email: "jamly-beta-smoke@example.net",
+  handle: "jamlybetasmoke",
+  password: `JamlyBeta-${randomBytes(12).toString("base64url")}!1`
+};
 
 const results = [];
 const bad = [];
 let smokeUserId = null;
+let betaSmokeUserId = null;
 
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
@@ -56,6 +62,10 @@ try {
   smokeUserId = user.id;
   await seedProfile(user.id);
   await grantTemporaryAdmin(user.id);
+  const betaUser = await upsertBetaSmokeUser();
+  betaSmokeUserId = betaUser.id;
+  await seedBetaProfile(betaUser.id);
+  await clearBetaAccess(betaUser.id);
 
   const token = await signInForToken();
 
@@ -102,9 +112,63 @@ try {
     usersResponse.ok() &&
       smokeUser?.isAdmin === true &&
       smokeUser?.isBetaAllowed === true &&
+      typeof smokeUser?.isBetaDirectAllowed === "boolean" &&
       smokeUser?.retentionPlan === "standard" &&
       Number(smokeUser?.retentionMultiplier) === 1,
     `HTTP ${usersResponse.status()}`
+  );
+
+  const betaOpenResponse = await context.request.patch(
+    `${baseUrl}/api/admin/users/${betaSmokeUserId}/beta-access`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        isActive: true,
+        reason: "Smoke test grants direct beta access to a non-admin account."
+      },
+      timeout: 30000
+    }
+  );
+  const betaOpenBody = await betaOpenResponse.json().catch(() => ({}));
+  record(
+    "admin beta access API grants direct non-admin beta",
+    betaOpenResponse.ok() && betaOpenBody.isActive === true,
+    `HTTP ${betaOpenResponse.status()}`
+  );
+
+  const betaUsersResponse = await context.request.get(`${baseUrl}/api/admin/users?q=${betaAccount.handle}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 30000
+  });
+  const betaUsersBody = await betaUsersResponse.json().catch(() => ({}));
+  const betaSmokeUser = Array.isArray(betaUsersBody.users)
+    ? betaUsersBody.users.find((user) => user.handle === betaAccount.handle)
+    : null;
+  record(
+    "admin users API reports direct beta without admin role",
+    betaUsersResponse.ok() &&
+      betaSmokeUser?.isAdmin === false &&
+      betaSmokeUser?.isBetaDirectAllowed === true &&
+      betaSmokeUser?.isBetaAllowed === true,
+    `HTTP ${betaUsersResponse.status()}`
+  );
+
+  const betaCloseResponse = await context.request.patch(
+    `${baseUrl}/api/admin/users/${betaSmokeUserId}/beta-access`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        isActive: false,
+        reason: "Smoke test revokes direct beta access after verification."
+      },
+      timeout: 30000
+    }
+  );
+  const betaCloseBody = await betaCloseResponse.json().catch(() => ({}));
+  record(
+    "admin beta access API revokes direct beta",
+    betaCloseResponse.ok() && betaCloseBody.isActive === false,
+    `HTTP ${betaCloseResponse.status()}`
   );
 
   const retentionResponse = await context.request.get(`${baseUrl}/api/admin/retention`, {
@@ -154,6 +218,9 @@ try {
   record("browser saw no page errors or 5xx", bad.length === 0, bad.slice(0, 5).join(" | "));
 } finally {
   await browser.close();
+  if (betaSmokeUserId) await cleanupBetaSmokeUser(betaSmokeUserId).catch((error) => {
+    console.error(`Temporary beta smoke cleanup failed: ${error.message}`);
+  });
   if (smokeUserId) await revokeTemporaryAdmin(smokeUserId).catch((error) => {
     console.error(`Temporary admin cleanup failed: ${error.message}`);
   });
@@ -214,6 +281,34 @@ async function upsertAdminSmokeUser() {
   return data.user;
 }
 
+async function upsertBetaSmokeUser() {
+  const existing = await findUser(betaAccount.email);
+  if (existing) {
+    const { data, error } = await supabase.auth.admin.updateUserById(existing.id, {
+      password: betaAccount.password,
+      email_confirm: true,
+      user_metadata: {
+        handle: betaAccount.handle,
+        full_name: "Jamly Beta Smoke"
+      }
+    });
+    if (error) throw error;
+    return data.user;
+  }
+
+  const { data, error } = await supabase.auth.admin.createUser({
+    email: betaAccount.email,
+    password: betaAccount.password,
+    email_confirm: true,
+    user_metadata: {
+      handle: betaAccount.handle,
+      full_name: "Jamly Beta Smoke"
+    }
+  });
+  if (error) throw error;
+  return data.user;
+}
+
 async function seedProfile(userId) {
   const { error } = await supabase.from("profiles").upsert({
     id: userId,
@@ -226,6 +321,33 @@ async function seedProfile(userId) {
     specialties: ["admin-smoke"]
   });
   if (error) throw error;
+}
+
+async function seedBetaProfile(userId) {
+  const { error } = await supabase.from("profiles").upsert({
+    id: userId,
+    role: "buyer",
+    handle: betaAccount.handle,
+    full_name: "Jamly Beta Smoke",
+    headline: "Temporary smoke account for direct beta access verification",
+    bio: "This account is created and removed by smoke-admin-panel.",
+    account_status: "active",
+    specialties: ["beta-smoke"]
+  });
+  if (error) throw error;
+}
+
+async function clearBetaAccess(userId) {
+  const { error } = await supabase.from("profile_beta_access").delete().eq("profile_id", userId);
+  if (error) throw error;
+}
+
+async function cleanupBetaSmokeUser(userId) {
+  await clearBetaAccess(userId);
+  const { error: profileError } = await supabase.from("profiles").delete().eq("id", userId);
+  if (profileError) throw profileError;
+  const { error: userError } = await supabase.auth.admin.deleteUser(userId);
+  if (userError) throw userError;
 }
 
 async function grantTemporaryAdmin(userId) {
