@@ -579,6 +579,7 @@ npm run ops:check
 npm run retention:dry-run
 npm run smoke:admin-panel
 npm run smoke:beta-gate
+npm run smoke:public
 npm run smoke:prune-artifacts
 ```
 
