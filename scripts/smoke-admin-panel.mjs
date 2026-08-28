@@ -286,6 +286,22 @@ try {
       inviteOutbox.payload?.inviteCode === inviteBody.inviteCode,
     inviteOutboxError?.message ?? inviteOutbox?.status ?? "missing"
   );
+  const inviteVisibleResponse = await context.request.get(
+    `${baseUrl}/api/admin/waitlist?q=${encodeURIComponent(waitlistSmokeEmail)}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 30000
+    }
+  );
+  const inviteVisibleBody = await inviteVisibleResponse.json().catch(() => ({}));
+  const inviteVisibleEntry = Array.isArray(inviteVisibleBody.entries)
+    ? inviteVisibleBody.entries[0]
+    : null;
+  record(
+    "admin waitlist API surfaces active launch invite code",
+    inviteVisibleResponse.ok() && inviteVisibleEntry?.launch_invite?.inviteCode === inviteBody.inviteCode,
+    `HTTP ${inviteVisibleResponse.status()}`
+  );
 
   const preRegisterAdminResponse = await context.request.get(`${preRegisterUrl}/api/admin/overview`, {
     headers: { Authorization: `Bearer ${token}` },

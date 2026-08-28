@@ -96,6 +96,10 @@ const mailerSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/server/mailer.ts"), "utf8");
 const adminWaitlistStatusRouteSource = () =>
   readFileSync(resolve(process.cwd(), "src/app/api/admin/waitlist/[id]/status/route.ts"), "utf8");
+const adminWaitlistRouteSource = () =>
+  readFileSync(resolve(process.cwd(), "src/app/api/admin/waitlist/route.ts"), "utf8");
+const adminWaitlistPanelSource = () =>
+  readFileSync(resolve(process.cwd(), "src/components/admin/waitlist-panel.tsx"), "utf8");
 const retentionSelfReadSql = () =>
   readFileSync(
     resolve(process.cwd(), "supabase/migrations/20260828_profile_retention_self_read.sql"),
@@ -771,6 +775,21 @@ const tests: TestCase[] = [
       assert.ok(mailer.includes("Beta invite code"));
       assert.ok(mailer.includes("This email alone does not grant sign-in access"));
       assert.ok(mailer.includes("Urun erisimi ayri admin onayi ile acilir"));
+    }
+  },
+  {
+    name: "admin waitlist list surfaces active launch invite codes",
+    run() {
+      const route = adminWaitlistRouteSource();
+      const panel = adminWaitlistPanelSource();
+
+      assert.ok(route.includes("getLaunchInviteSummaries"));
+      assert.ok(route.includes("launch_invite"));
+      assert.ok(route.includes("launch_invites"));
+      assert.ok(route.includes(".is(\"redeemed_at\", null)"));
+      assert.ok(panel.includes("LaunchInvitePill"));
+      assert.ok(panel.includes("Beta code"));
+      assert.ok(panel.includes("entry.launch_invite.inviteCode"));
     }
   },
   {

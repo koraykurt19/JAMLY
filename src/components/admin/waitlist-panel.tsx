@@ -47,6 +47,12 @@ type WaitlistEntry = {
     challengeTier?: string;
     completedChallenges?: string[];
   } | null;
+  launch_invite: {
+    inviteCode: string;
+    expiresAt: string | null;
+    redeemedAt: string | null;
+    createdAt: string;
+  } | null;
   verified_at: string | null;
   invited_at: string | null;
   converted_at: string | null;
@@ -99,6 +105,7 @@ export function WaitlistPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingEntryId, setUpdatingEntryId] = useState<string | null>(null);
+  const [nowMs] = useState(() => Date.now());
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -238,6 +245,7 @@ export function WaitlistPanel() {
           tr ? "Tip" : "Persona",
           tr ? "Sinyal" : "Signal",
           "Launch",
+          tr ? "Beta kodu" : "Beta code",
           tr ? "Durum" : "Status",
           tr ? "Davet" : "Referrals",
           tr ? "Kaynak" : "Source",
@@ -273,6 +281,9 @@ export function WaitlistPanel() {
             </AdminCell>
             <AdminCell nowrap>
               <LaunchSignalPill entry={entry} language={language} />
+            </AdminCell>
+            <AdminCell nowrap>
+              <LaunchInvitePill entry={entry} language={language} nowMs={nowMs} />
             </AdminCell>
             <AdminCell nowrap>
               <StatusPill value={entry.status} label={statusLabel(entry.status, language)} />
@@ -508,6 +519,40 @@ function LaunchSignalPill({
     <Pill tone={signal.priority === "A" || signal.challengeTier === "alpha" ? "success" : "brand"} className="text-[10px]">
       {label || (language === "tr" ? "Sinyal var" : "Signal")}
     </Pill>
+  );
+}
+
+function LaunchInvitePill({
+  entry,
+  language,
+  nowMs
+}: {
+  entry: WaitlistEntry;
+  language: "tr" | "en";
+  nowMs: number;
+}) {
+  if (!entry.launch_invite) {
+    return <span className="text-xs text-white/38">-</span>;
+  }
+
+  const expired = entry.launch_invite.expiresAt ? Date.parse(entry.launch_invite.expiresAt) < nowMs : false;
+  return (
+    <span className="inline-flex flex-col gap-1">
+      <Pill tone={expired ? "warning" : "success"} className="text-[10px]">
+        {entry.launch_invite.inviteCode}
+      </Pill>
+      <span className="text-[11px] text-white/38">
+        {expired
+          ? language === "tr"
+            ? "Suresi doldu"
+            : "Expired"
+          : entry.launch_invite.expiresAt
+            ? shortDate(entry.launch_invite.expiresAt, language)
+            : language === "tr"
+              ? "Suresiz"
+              : "No expiry"}
+      </span>
+    </span>
   );
 }
 
