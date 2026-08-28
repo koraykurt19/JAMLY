@@ -41,6 +41,8 @@ const results = [];
 const bad = [];
 let smokeUserId = null;
 let betaSmokeUserId = null;
+let waitlistSmokeEntryId = null;
+let waitlistSmokeEmail = null;
 
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
@@ -66,6 +68,9 @@ try {
   betaSmokeUserId = betaUser.id;
   await seedBetaProfile(betaUser.id);
   await clearBetaAccess(betaUser.id);
+  const waitlistSmokeEntry = await seedWaitlistSmokeEntry();
+  waitlistSmokeEntryId = waitlistSmokeEntry.id;
+  waitlistSmokeEmail = waitlistSmokeEntry.email;
 
   const token = await signInForToken();
 
@@ -231,6 +236,39 @@ try {
     `HTTP ${waitlistResponse.status()}`
   );
 
+  const inviteResponse = await context.request.patch(
+    `${baseUrl}/api/admin/waitlist/${waitlistSmokeEntryId}/status`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        status: "invited",
+        reason: "Smoke test sends a suppressed waitlist invite email."
+      },
+      timeout: 30000
+    }
+  );
+  const inviteBody = await inviteResponse.json().catch(() => ({}));
+  record(
+    "admin waitlist invite action queues email",
+    inviteResponse.ok() && inviteBody.status === "invited" && inviteBody.inviteEmail === "suppressed",
+    `HTTP ${inviteResponse.status()}`
+  );
+  const { data: inviteOutbox, error: inviteOutboxError } = await supabase
+    .from("email_outbox")
+    .select("template,status,to_email")
+    .eq("to_email", waitlistSmokeEmail)
+    .eq("template", "waitlist_invite")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  record(
+    "waitlist invite email is written to outbox",
+    !inviteOutboxError &&
+      inviteOutbox?.template === "waitlist_invite" &&
+      inviteOutbox.status === "suppressed",
+    inviteOutboxError?.message ?? inviteOutbox?.status ?? "missing"
+  );
+
   const preRegisterAdminResponse = await context.request.get(`${preRegisterUrl}/api/admin/overview`, {
     headers: { Authorization: `Bearer ${token}` },
     timeout: 30000
@@ -245,6 +283,9 @@ try {
   record("browser saw no page errors or 5xx", bad.length === 0, bad.slice(0, 5).join(" | "));
 } finally {
   await browser.close();
+  if (waitlistSmokeEmail) await cleanupWaitlistSmokeEntry(waitlistSmokeEmail).catch((error) => {
+    console.error(`Temporary waitlist smoke cleanup failed: ${error.message}`);
+  });
   if (betaSmokeUserId) await cleanupBetaSmokeUser(betaSmokeUserId).catch((error) => {
     console.error(`Temporary beta smoke cleanup failed: ${error.message}`);
   });
@@ -366,6 +407,42 @@ async function seedBetaProfile(userId) {
 
 async function clearBetaAccess(userId) {
   const { error } = await supabase.from("profile_beta_access").delete().eq("profile_id", userId);
+  if (error) throw error;
+}
+
+async function seedWaitlistSmokeEntry() {
+  const email = `jamly-waitlist-invite-${Date.now()}@example.net`;
+  const referralCode = `SMK${randomBytes(4).toString("hex").toUpperCase()}`;
+  const { data, error } = await supabase
+    .from("waitlist_entries")
+    .insert({
+      email,
+      display_name: "Jamly Waitlist Invite Smoke",
+      reserved_username: `wl-smoke-${Date.now()}`.slice(0, 32),
+      persona: "both",
+      interests: ["beats", "collab"],
+      locale: "en",
+      referral_code: referralCode,
+      accepted_terms: true,
+      marketing_opt_in: false,
+      consent_recorded_at: new Date().toISOString(),
+      status: "verified",
+      verified_at: new Date().toISOString(),
+      launch_signal: {
+        priority: "A",
+        challengeTier: "alpha",
+        beatScore: 420
+      }
+    })
+    .select("id,email")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+async function cleanupWaitlistSmokeEntry(email) {
+  await supabase.from("email_outbox").delete().eq("to_email", email);
+  const { error } = await supabase.from("waitlist_entries").delete().eq("email", email);
   if (error) throw error;
 }
 

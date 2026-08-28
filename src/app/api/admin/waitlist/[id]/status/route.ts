@@ -5,6 +5,7 @@ import {
   requireCapability
 } from "@/lib/server/admin";
 import type { Database } from "@/lib/database.types";
+import { queueWaitlistInviteEmail } from "@/lib/server/mailer";
 import { isAdminMutableWaitlistStatus } from "@/lib/waitlist-admin";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,13 @@ export async function PATCH(
       );
     }
 
+    const { data: entry, error: entryError } = await client
+      .from("waitlist_entries")
+      .select("email,locale,queue_position,referral_code,reserved_username,status")
+      .eq("id", id)
+      .maybeSingle();
+    if (entryError) throw entryError;
+
     const { error } = await client.rpc("admin_set_waitlist_status", {
       p_entry_id: id,
       p_status: status as Database["public"]["Enums"]["waitlist_status"],
@@ -37,7 +45,21 @@ export async function PATCH(
 
     if (error) throw error;
 
-    return Response.json({ ok: true, status }, { headers: noStoreHeaders() });
+    let inviteEmail: Awaited<ReturnType<typeof queueWaitlistInviteEmail>> | null = null;
+    if (status === "invited" && entry && entry.status !== "invited") {
+      inviteEmail = await queueWaitlistInviteEmail({
+        email: entry.email,
+        locale: entry.locale === "en" ? "en" : "tr",
+        queuePosition: Number(entry.queue_position),
+        referralCode: entry.referral_code,
+        reservedUsername: entry.reserved_username
+      });
+    }
+
+    return Response.json(
+      { ok: true, status, inviteEmail: inviteEmail?.queued ? inviteEmail.delivery : null },
+      { headers: noStoreHeaders() }
+    );
   } catch (error) {
     return adminErrorResponse(error);
   }

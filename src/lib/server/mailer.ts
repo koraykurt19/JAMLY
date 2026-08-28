@@ -134,6 +134,30 @@ export async function queueWaitlistVerificationEmail(input: {
   });
 }
 
+export async function queueWaitlistInviteEmail(input: {
+  email: string;
+  locale: "tr" | "en";
+  queuePosition: number;
+  referralCode: string;
+  reservedUsername?: string | null;
+}) {
+  const tr = input.locale === "tr";
+  return enqueueEmail({
+    template: "waitlist_invite",
+    to: input.email,
+    locale: input.locale,
+    subject: tr ? "Jamly beta davetin hazir" : "Your Jamly beta invite is ready",
+    payload: {
+      heading: tr ? "Beta davetin hazir" : "Your beta invite is ready",
+      queuePosition: input.queuePosition,
+      referralCode: input.referralCode,
+      reservedUsername: input.reservedUsername ?? null,
+      preRegisterUrl: preRegisterOrigin(),
+      supportEmail: JAMLY_EMAILS.support
+    }
+  });
+}
+
 type RenderedEmail = {
   html: string;
   text: string;
@@ -165,6 +189,59 @@ function renderEmail(input: EnqueueInput): RenderedEmail {
           <p>${escapeHtml(lead)}</p>
           <p><strong>${escapeHtml(position)}</strong><br>${escapeHtml(referral)}</p>
           <p><a class="button" href="${escapeAttribute(verifyUrl)}">${escapeHtml(cta)}</a></p>
+          <p class="muted">${escapeHtml(footer)}</p>
+        `
+      })
+    };
+  }
+
+  if (input.template === "waitlist_invite") {
+    const tr = input.locale === "tr";
+    const title = tr ? "Jamly beta davetin hazir" : "Your Jamly beta invite is ready";
+    const lead = tr
+      ? "On kayit sinyalin incelendi ve beta dalgasina alinmaya hazirsin."
+      : "Your pre-register signal has been reviewed and you are ready for a beta wave.";
+    const queuePosition = String(input.payload.queuePosition ?? "");
+    const referralCode = String(input.payload.referralCode ?? "");
+    const reservedUsername = String(input.payload.reservedUsername ?? "");
+    const preRegisterUrl = String(input.payload.preRegisterUrl ?? preRegisterOrigin());
+    const supportEmail = String(input.payload.supportEmail ?? JAMLY_EMAILS.support);
+    const next = tr
+      ? "Urun erisimi ayri admin onayi ile acilir. Bu e-posta tek basina giris izni vermez; ayni e-posta adresini koru."
+      : "Product access opens through separate admin approval. This email alone does not grant sign-in access; keep using the same email address.";
+    const cta = tr ? "On kayit durumunu ac" : "Open pre-register status";
+    const usernameLine = reservedUsername
+      ? tr
+        ? `Rezerve kullanici adin: @${reservedUsername}`
+        : `Reserved username: @${reservedUsername}`
+      : "";
+    const footer = tr
+      ? `Sorular icin ${supportEmail} adresine yazabilirsin.`
+      : `For questions, contact ${supportEmail}.`;
+
+    return {
+      text: [
+        title,
+        lead,
+        queuePosition ? (tr ? `Sira numaran: #${queuePosition}` : `Queue position: #${queuePosition}`) : "",
+        referralCode ? (tr ? `Davet kodun: ${referralCode}` : `Invite code: ${referralCode}`) : "",
+        usernameLine,
+        next,
+        preRegisterUrl,
+        footer
+      ].filter(Boolean).join("\n\n"),
+      html: baseEmailHtml({
+        title,
+        preheader: lead,
+        body: `
+          <p>${escapeHtml(lead)}</p>
+          <p>
+            ${queuePosition ? `<strong>${escapeHtml(tr ? `Sira numaran: #${queuePosition}` : `Queue position: #${queuePosition}`)}</strong><br>` : ""}
+            ${referralCode ? `${escapeHtml(tr ? `Davet kodun: ${referralCode}` : `Invite code: ${referralCode}`)}<br>` : ""}
+            ${usernameLine ? `${escapeHtml(usernameLine)}` : ""}
+          </p>
+          <p>${escapeHtml(next)}</p>
+          <p><a class="button" href="${escapeAttribute(preRegisterUrl)}">${escapeHtml(cta)}</a></p>
           <p class="muted">${escapeHtml(footer)}</p>
         `
       })

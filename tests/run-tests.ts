@@ -92,6 +92,10 @@ const accountStatusApiSource = () =>
   readFileSync(resolve(process.cwd(), "src/app/api/account/status/route.ts"), "utf8");
 const currentAccountHookSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/use-current-account.ts"), "utf8");
+const mailerSource = () =>
+  readFileSync(resolve(process.cwd(), "src/lib/server/mailer.ts"), "utf8");
+const adminWaitlistStatusRouteSource = () =>
+  readFileSync(resolve(process.cwd(), "src/app/api/admin/waitlist/[id]/status/route.ts"), "utf8");
 const retentionSelfReadSql = () =>
   readFileSync(
     resolve(process.cwd(), "supabase/migrations/20260828_profile_retention_self_read.sql"),
@@ -746,6 +750,22 @@ const tests: TestCase[] = [
       assert.ok(api.includes("isBetaHandleAllowed"));
       assert.ok(hook.includes("/api/account/status"));
       assert.ok(!hook.includes("NEXT_PUBLIC_BETA_ALLOWED_HANDLES"));
+    }
+  },
+  {
+    name: "admin waitlist invite action queues a transactional email",
+    run() {
+      const route = adminWaitlistStatusRouteSource();
+      const mailer = mailerSource();
+
+      assert.ok(route.includes("queueWaitlistInviteEmail"));
+      assert.ok(route.includes('status === "invited"'));
+      assert.ok(route.includes('entry.status !== "invited"'));
+      assert.ok(route.includes("inviteEmail"));
+      assert.ok(mailer.includes("queueWaitlistInviteEmail"));
+      assert.ok(mailer.includes('template: "waitlist_invite"'));
+      assert.ok(mailer.includes("This email alone does not grant sign-in access"));
+      assert.ok(mailer.includes("Urun erisimi ayri admin onayi ile acilir"));
     }
   },
   {
