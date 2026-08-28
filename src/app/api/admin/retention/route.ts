@@ -5,6 +5,7 @@ import {
 } from "@/lib/server/admin";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import { opsRunHealth } from "@/lib/ops-run-health";
 
 export const dynamic = "force-dynamic";
 const RUN_LIMIT = 8;
@@ -20,8 +21,9 @@ export async function GET(request: Request) {
     if (error) throw error;
     const runs = await listRetentionRuns(client);
     const storageAudit = readLatestStorageAudit();
+    const health = opsRunHealth({ retentionRuns: runs, storageAudit });
 
-    return Response.json({ plan: data, runs, storageAudit }, { headers: noStoreHeaders() });
+    return Response.json({ plan: data, runs, storageAudit, health }, { headers: noStoreHeaders() });
   } catch (error) {
     return adminErrorResponse(error);
   }
@@ -49,8 +51,9 @@ export async function POST(request: Request) {
     if (error) throw error;
     const runs = await listRetentionRuns(client);
     const storageAudit = readLatestStorageAudit();
+    const health = opsRunHealth({ retentionRuns: runs, storageAudit });
 
-    return Response.json({ plan: data, runs, storageAudit }, { headers: noStoreHeaders() });
+    return Response.json({ plan: data, runs, storageAudit, health }, { headers: noStoreHeaders() });
   } catch (error) {
     return adminErrorResponse(error);
   }

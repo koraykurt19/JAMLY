@@ -80,7 +80,24 @@ type StorageAudit = {
   error?: string;
 };
 
-type RetentionResponse = { plan: RetentionPlan; runs: RetentionRun[]; storageAudit: StorageAudit | null };
+type OpsRunSignal = {
+  status: "ok" | "warning" | "critical";
+  ageHours: number | null;
+  message: string;
+};
+
+type OpsRunHealth = {
+  status: "ok" | "warning" | "critical";
+  retention: OpsRunSignal;
+  storage: OpsRunSignal;
+};
+
+type RetentionResponse = {
+  plan: RetentionPlan;
+  runs: RetentionRun[];
+  storageAudit: StorageAudit | null;
+  health: OpsRunHealth;
+};
 
 export function RetentionPanel() {
   const { language } = useI18n();
@@ -92,6 +109,7 @@ export function RetentionPanel() {
   const [error, setError] = useState<string | null>(null);
   const [runs, setRuns] = useState<RetentionRun[]>([]);
   const [storageAudit, setStorageAudit] = useState<StorageAudit | null>(null);
+  const [health, setHealth] = useState<OpsRunHealth | null>(null);
 
   const canExecute = confirm === "RUN_RETENTION_CLEANUP" && !executing;
 
@@ -103,6 +121,7 @@ export function RetentionPanel() {
       setPlan(response.plan);
       setRuns(response.runs ?? []);
       setStorageAudit(response.storageAudit ?? null);
+      setHealth(response.health ?? null);
     } catch (requestError) {
       setError(readError(requestError, tr));
     } finally {
@@ -128,6 +147,7 @@ export function RetentionPanel() {
       setPlan(response.plan);
       setRuns(response.runs ?? []);
       setStorageAudit(response.storageAudit ?? null);
+      setHealth(response.health ?? null);
       setConfirm("");
     } catch (requestError) {
       setError(readError(requestError, tr));
@@ -138,6 +158,8 @@ export function RetentionPanel() {
 
   return (
     <div className="flex flex-col gap-5">
+      {health ? <OpsHealthBand health={health} tr={tr} /> : null}
+
       <Card className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
         <div>
           <div className="flex items-center gap-2">
@@ -407,6 +429,59 @@ export function RetentionPanel() {
       </Card>
     </div>
   );
+}
+
+function OpsHealthBand({ health, tr }: { health: OpsRunHealth; tr: boolean }) {
+  return (
+    <Card className={healthClass(health.status)}>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-white/50">
+            {tr ? "Operasyon sagligi" : "Operational health"}
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-white">
+            {health.status === "ok"
+              ? tr
+                ? "Retention ve storage takibi taze"
+                : "Retention and storage checks are fresh"
+              : health.status === "critical"
+                ? tr
+                  ? "Acil kontrol gerekiyor"
+                  : "Immediate review required"
+                : tr
+                  ? "Takip uyarisi var"
+                  : "Monitoring warning"}
+          </h2>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:min-w-[34rem]">
+          <OpsHealthItem label={tr ? "Retention" : "Retention"} signal={health.retention} />
+          <OpsHealthItem label="Storage" signal={health.storage} />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function OpsHealthItem({ label, signal }: { label: string; signal: OpsRunSignal }) {
+  return (
+    <div className="rounded-md border border-white/10 bg-black/18 px-3 py-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-bold text-white">{label}</span>
+        <Pill tone={signal.status === "ok" ? "success" : signal.status === "critical" ? "danger" : "warning"}>
+          {signal.status}
+        </Pill>
+      </div>
+      <p className="mt-1 text-xs leading-5 text-white/50">
+        {signal.ageHours === null ? "age: -" : `age: ${signal.ageHours}h`} / {signal.message}
+      </p>
+    </div>
+  );
+}
+
+function healthClass(status: OpsRunHealth["status"]) {
+  if (status === "critical") return "border-jam-danger/26 bg-jam-danger/[0.07]";
+  if (status === "warning") return "border-jam-warning/26 bg-jam-warning/[0.06]";
+  return "border-jam-mint/20 bg-jam-mint/[0.045]";
 }
 
 function formatDate(value: string, language: "tr" | "en") {

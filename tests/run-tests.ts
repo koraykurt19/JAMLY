@@ -62,6 +62,7 @@ import {
   planStorageRetentionAudit
 } from "../src/lib/storage-retention";
 import { profileReadiness } from "../src/lib/profile-readiness";
+import { opsRunHealth } from "../src/lib/ops-run-health";
 
 type TestCase = {
   name: string;
@@ -323,6 +324,33 @@ const tests: TestCase[] = [
       assert.equal(readyCreator.score, 100);
       assert.ok(incompleteCreator.score < 30);
       assert.ok(incompleteCreator.missing.includes("creator_listing"));
+    }
+  },
+  {
+    name: "ops run health escalates stale or failed retention signals",
+    run() {
+      const now = Date.parse("2026-08-28T12:00:00Z");
+      const healthy = opsRunHealth({
+        checkedAtMs: now,
+        retentionRuns: [{ mode: "dry_run", status: "completed", created_at: "2026-08-28T10:00:00Z" }],
+        storageAudit: { checkedAt: "2026-08-28T11:00:00Z" }
+      });
+      const failed = opsRunHealth({
+        checkedAtMs: now,
+        retentionRuns: [{ mode: "execute", status: "failed", created_at: "2026-08-28T11:00:00Z", error_message: "boom" }],
+        storageAudit: { checkedAt: "2026-08-28T11:00:00Z" }
+      });
+      const stale = opsRunHealth({
+        checkedAtMs: now,
+        retentionRuns: [{ mode: "dry_run", status: "completed", created_at: "2026-08-26T00:00:00Z" }],
+        storageAudit: { checkedAt: "2026-08-26T00:00:00Z" }
+      });
+
+      assert.equal(healthy.status, "ok");
+      assert.equal(failed.status, "critical");
+      assert.equal(failed.retention.message, "boom");
+      assert.equal(stale.status, "warning");
+      assert.equal(stale.retention.status, "warning");
     }
   },
   {
@@ -868,10 +896,14 @@ const tests: TestCase[] = [
       const api = adminRetentionApiSource();
       const panel = adminRetentionPanelSource();
 
+      assert.ok(api.includes("opsRunHealth"));
+      assert.ok(api.includes("health"));
       assert.ok(api.includes("work\", \"storage-retention-runs\""));
       assert.ok(api.includes("readLatestStorageAudit"));
       assert.ok(api.includes("deletionCandidateBytes"));
       assert.ok(api.includes("storageAudit"));
+      assert.ok(panel.includes("OpsHealthBand"));
+      assert.ok(panel.includes("Operational health"));
       assert.ok(panel.includes("Storage cost signal"));
       assert.ok(panel.includes("storageAudit.deletionCandidateBytes"));
       assert.ok(panel.includes("formatBytes"));
