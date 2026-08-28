@@ -45,8 +45,11 @@ type WaitlistEntry = {
   launch_signal: {
     priority?: string;
     beatScore?: number;
+    beatAccuracy?: number;
+    beatBestStreak?: number;
     challengeTier?: string;
     completedChallenges?: string[];
+    launchReadinessScore?: number;
   } | null;
   launch_invite: {
     inviteCode: string;
@@ -541,10 +544,20 @@ function LaunchSignalPill({
     return <span className="text-xs text-white/38">-</span>;
   }
 
+  const readiness =
+    typeof signal.launchReadinessScore === "number" ? `R${signal.launchReadinessScore}` : null;
   const priority = signal.priority ? `P${signal.priority}` : null;
   const tier = signal.challengeTier ?? null;
   const beat = typeof signal.beatScore === "number" && signal.beatScore > 0 ? `${signal.beatScore} XP` : null;
-  const label = [priority, tier, beat].filter(Boolean).join(" / ");
+  const accuracy =
+    typeof signal.beatAccuracy === "number" && signal.beatAccuracy < 100
+      ? `${signal.beatAccuracy}%`
+      : null;
+  const streak =
+    typeof signal.beatBestStreak === "number" && signal.beatBestStreak > 0
+      ? `S${signal.beatBestStreak}`
+      : null;
+  const label = [readiness, priority, tier, beat, accuracy, streak].filter(Boolean).join(" / ");
 
   return (
     <Pill tone={signal.priority === "A" || signal.challengeTier === "alpha" ? "success" : "brand"} className="text-[10px]">

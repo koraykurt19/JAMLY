@@ -115,8 +115,11 @@ const apiLaunchSignal = {
   readiness: "ready",
   beatScore: 360,
   beatRounds: 2,
+  beatAccuracy: 88,
+  beatBestStreak: 2,
   challengeTier: "alpha",
-  completedChallenges: ["profile", "referral", "drop"]
+  completedChallenges: ["profile", "referral", "drop"],
+  launchReadinessScore: 96
 };
 const apiJoinPayload = {
   email: apiEmail,
@@ -163,7 +166,10 @@ if (apiJoin.response.ok) {
   await recordStoredLaunchSignal("waitlist API stores launch signal", apiEmail, {
     priority: apiLaunchSignal.priority,
     challengeTier: apiLaunchSignal.challengeTier,
-    beatScore: apiLaunchSignal.beatScore
+    beatScore: apiLaunchSignal.beatScore,
+    beatAccuracy: apiLaunchSignal.beatAccuracy,
+    beatBestStreak: apiLaunchSignal.beatBestStreak,
+    launchReadinessScore: apiLaunchSignal.launchReadinessScore
   });
 } else if (apiJoin.response.status === 429) {
   record("waitlist API rate limit protected signup endpoint", true, {
@@ -318,6 +324,12 @@ record(
   "early-access beat streak accepts a sequence",
   await page.locator("text=/Seri buyudu|Streak up/i").first().isVisible({ timeout: 12000 }).catch(() => false)
 );
+record(
+  "early-access beat streak exposes signal metrics",
+  (await page.locator("text=/Kombo|Combo/i").first().isVisible({ timeout: 12000 }).catch(() => false)) &&
+    (await page.locator("text=/Isabet|Accuracy/i").first().isVisible({ timeout: 12000 }).catch(() => false)) &&
+    (await page.locator("text=/En iyi|Best/i").first().isVisible({ timeout: 12000 }).catch(() => false))
+);
 
 const formEmail = `smoke-ui-${Date.now()}@example.net`;
 await page.locator('input[name="email"]').fill(formEmail);
@@ -346,7 +358,11 @@ record("early-access browser form submits or rate-limits safely", successVisible
 if (successVisible) {
   await recordStoredLaunchSignal("waitlist browser form stores launch signal", formEmail, {
     priority: "A",
-    challengeTier: "alpha"
+    challengeTier: "alpha",
+    beatScore: 360,
+    beatAccuracy: 100,
+    beatBestStreak: 1,
+    launchReadinessScore: 93
   });
 }
 

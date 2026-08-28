@@ -39,8 +39,11 @@ export type WaitlistLaunchSignal = {
   readiness?: "ready" | "soon" | "explore";
   beatScore?: number;
   beatRounds?: number;
+  beatAccuracy?: number;
+  beatBestStreak?: number;
   challengeTier?: "starter" | "warm" | "priority" | "alpha";
   completedChallenges?: Array<"profile" | "referral" | "drop">;
+  launchReadinessScore?: number;
 };
 
 export type WaitlistFieldError = {
@@ -117,6 +120,12 @@ export function sanitizeLaunchSignal(input: unknown): WaitlistLaunchSignal {
   if (beatScore !== null) signal.beatScore = beatScore;
   const beatRounds = boundedInteger(raw.beatRounds, 0, 50);
   if (beatRounds !== null) signal.beatRounds = beatRounds;
+  const beatAccuracy = boundedInteger(raw.beatAccuracy, 0, 100);
+  if (beatAccuracy !== null) signal.beatAccuracy = beatAccuracy;
+  const beatBestStreak = boundedInteger(raw.beatBestStreak, 0, 50);
+  if (beatBestStreak !== null) signal.beatBestStreak = beatBestStreak;
+  const launchReadinessScore = boundedInteger(raw.launchReadinessScore, 0, 100);
+  if (launchReadinessScore !== null) signal.launchReadinessScore = launchReadinessScore;
 
   if (Array.isArray(raw.completedChallenges)) {
     const completed = raw.completedChallenges

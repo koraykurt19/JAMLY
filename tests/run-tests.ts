@@ -54,6 +54,7 @@ import {
   launchChallengeBenefit,
   launchChallengeTier,
   launchBenefitForScore,
+  launchReadinessScore,
   scoreBeatAttempt
 } from "../src/lib/launch-mini-game";
 import { planArtifactPrune } from "../src/lib/artifact-retention";
@@ -399,8 +400,11 @@ const tests: TestCase[] = [
           readiness: "ready",
           beatScore: 240.8,
           beatRounds: 4,
+          beatAccuracy: 91.2,
+          beatBestStreak: 5,
           challengeTier: "alpha",
           completedChallenges: ["profile", "drop", "referral", "unknown"],
+          launchReadinessScore: 96,
           extra: "discard"
         }),
         {
@@ -411,7 +415,10 @@ const tests: TestCase[] = [
           challengeTier: "alpha",
           beatScore: 240,
           beatRounds: 4,
-          completedChallenges: ["profile", "drop", "referral"]
+          beatAccuracy: 91,
+          beatBestStreak: 5,
+          completedChallenges: ["profile", "drop", "referral"],
+          launchReadinessScore: 96
         }
       );
       assert.deepEqual(sanitizeLaunchSignal({ priority: "Z", beatScore: 999999 }), {});
@@ -456,6 +463,19 @@ const tests: TestCase[] = [
       assert.equal(launchChallengeTier(["profile", "profile", "drop"]), "priority");
       assert.equal(launchChallengeBenefit("alpha", "en"), "Alpha wave signal");
       assert.equal(launchChallengeBenefit("priority", "tr"), "Oncelikli davet sinyali");
+      assert.equal(
+        launchReadinessScore({
+          priority: "A",
+          readiness: "ready",
+          challengeTier: "alpha",
+          completedChallenges: ["profile", "referral", "drop"],
+          beatScore: 2400,
+          beatAccuracy: 92,
+          beatBestStreak: 4
+        }),
+        100
+      );
+      assert.ok(launchReadinessScore({ priority: "C", readiness: "explore" }) < 30);
     }
   },
 
@@ -724,14 +744,26 @@ const tests: TestCase[] = [
         persona: "both",
         referral_count: 4,
         risk_flags: [],
-        verified_at: "2026-08-28T00:00:00.000Z"
+        verified_at: "2026-08-28T00:00:00.000Z",
+        launch_signal: {
+          priority: "A",
+          beatAccuracy: 90,
+          beatBestStreak: 3,
+          launchReadinessScore: 96
+        }
       });
       const risky = waitlistIntentScore({
         status: "verified",
         persona: "both",
         referral_count: 4,
         risk_flags: ["disposable_email"],
-        verified_at: "2026-08-28T00:00:00.000Z"
+        verified_at: "2026-08-28T00:00:00.000Z",
+        launch_signal: {
+          priority: "A",
+          beatAccuracy: 90,
+          beatBestStreak: 3,
+          launchReadinessScore: 96
+        }
       });
       const blocked = waitlistIntentScore({
         status: "blocked",

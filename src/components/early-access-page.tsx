@@ -35,6 +35,7 @@ import {
   launchChallengeKeys,
   launchChallengeTier,
   launchBenefitForScore,
+  launchReadinessScore,
   scoreBeatAttempt,
   type BeatPad,
   type LaunchChallengeKey
@@ -62,7 +63,21 @@ export function EarlyAccessPage() {
   const [stats, setStats] = useState<WaitlistStats | null>(null);
   const [launchSignal, setLaunchSignal] = useState<WaitlistLaunchSignal>({});
   const mergeLaunchSignal = useCallback((signal: WaitlistLaunchSignal) => {
-    setLaunchSignal((current) => ({ ...current, ...signal }));
+    setLaunchSignal((current) => {
+      const next = { ...current, ...signal };
+      return {
+        ...next,
+        launchReadinessScore: launchReadinessScore({
+          priority: next.priority,
+          readiness: next.readiness,
+          beatScore: next.beatScore,
+          beatAccuracy: next.beatAccuracy,
+          beatBestStreak: next.beatBestStreak,
+          challengeTier: next.challengeTier,
+          completedChallenges: next.completedChallenges
+        })
+      };
+    });
   }, []);
 
   useEffect(() => {
@@ -302,14 +317,25 @@ function LaunchBeatGame({
   const [round, setRound] = useState(1);
   const [attempt, setAttempt] = useState<BeatPad[]>([]);
   const [score, setScore] = useState(0);
+  const [hits, setHits] = useState(0);
+  const [misses, setMisses] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
   const [status, setStatus] = useState<"idle" | "hit" | "miss">("idle");
   const sequence = useMemo(() => buildBeatSequence(round), [round]);
   const nextPad = sequence[attempt.length];
   const benefit = launchBenefitForScore(score, language);
+  const attempts = hits + misses;
+  const accuracy = attempts > 0 ? Math.round((hits / attempts) * 100) : 100;
 
   useEffect(() => {
-    onSignalChange({ beatScore: score, beatRounds: Math.max(round - 1, 0) });
-  }, [onSignalChange, round, score]);
+    onSignalChange({
+      beatScore: score,
+      beatRounds: Math.max(round - 1, 0),
+      beatAccuracy: accuracy,
+      beatBestStreak: bestStreak
+    });
+  }, [accuracy, bestStreak, onSignalChange, round, score]);
 
   function pressPad(pad: BeatPad) {
     const nextAttempt = [...attempt, pad];
@@ -319,6 +345,8 @@ function LaunchBeatGame({
       setAttempt([]);
       setStatus("miss");
       setRound(1);
+      setMisses((current) => current + 1);
+      setCurrentStreak(0);
       return;
     }
 
@@ -328,6 +356,12 @@ function LaunchBeatGame({
       setAttempt([]);
       setStatus("hit");
       setRound((currentRound) => currentRound + 1);
+      setHits((current) => current + 1);
+      setCurrentStreak((current) => {
+        const nextStreak = current + 1;
+        setBestStreak((best) => Math.max(best, nextStreak));
+        return nextStreak;
+      });
       return;
     }
 
@@ -339,6 +373,10 @@ function LaunchBeatGame({
     setRound(1);
     setAttempt([]);
     setScore(0);
+    setHits(0);
+    setMisses(0);
+    setCurrentStreak(0);
+    setBestStreak(0);
     setStatus("idle");
   }
 
@@ -354,9 +392,12 @@ function LaunchBeatGame({
             {tr ? "Acilis ritmini yakala" : "Catch the launch rhythm"}
           </h2>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-3 xl:grid-cols-6">
           <MiniGameMetric label={tr ? "Seri" : "Round"} value={String(round)} />
           <MiniGameMetric label="XP" value={score.toLocaleString(language === "tr" ? "tr-TR" : "en-US")} />
+          <MiniGameMetric label={tr ? "Kombo" : "Combo"} value={String(currentStreak)} />
+          <MiniGameMetric label={tr ? "Isabet" : "Accuracy"} value={`${accuracy}%`} />
+          <MiniGameMetric label={tr ? "En iyi" : "Best"} value={String(bestStreak)} />
           <MiniGameMetric label={tr ? "Avantaj" : "Perk"} value={benefit} compact />
         </div>
       </div>
@@ -601,7 +642,6 @@ function LaunchPass({
     (need === "collab" ? 24 : need === "services" ? 22 : 20) +
     (readiness === "ready" ? 36 : readiness === "soon" ? 28 : 18);
   const priority = score >= 88 ? "A" : score >= 72 ? "B" : "C";
-
   useEffect(() => {
     onSignalChange({
       priority,

@@ -1,6 +1,7 @@
 export type BeatPad = "kick" | "snare" | "hat" | "bass";
 export type LaunchChallengeKey = "profile" | "referral" | "drop";
 export type LaunchChallengeTier = "starter" | "warm" | "priority" | "alpha";
+export type LaunchPriority = "A" | "B" | "C";
 
 export const beatPads: BeatPad[] = ["kick", "snare", "hat", "bass"];
 export const launchChallengeKeys: LaunchChallengeKey[] = ["profile", "referral", "drop"];
@@ -53,4 +54,44 @@ export function launchChallengeBenefit(tier: LaunchChallengeTier, language: "tr"
   if (tier === "priority") return "Priority invite signal";
   if (tier === "warm") return "Founder perk signal";
   return "Pre-register start";
+}
+
+export function launchReadinessScore(input: {
+  priority?: LaunchPriority;
+  readiness?: "ready" | "soon" | "explore";
+  beatScore?: number;
+  beatAccuracy?: number;
+  beatBestStreak?: number;
+  challengeTier?: LaunchChallengeTier;
+  completedChallenges?: readonly LaunchChallengeKey[];
+}) {
+  let score = 0;
+
+  if (input.priority === "A") score += 30;
+  else if (input.priority === "B") score += 22;
+  else if (input.priority === "C") score += 14;
+
+  if (input.readiness === "ready") score += 20;
+  else if (input.readiness === "soon") score += 14;
+  else if (input.readiness === "explore") score += 8;
+
+  if (input.challengeTier === "alpha") score += 20;
+  else if (input.challengeTier === "priority") score += 14;
+  else if (input.challengeTier === "warm") score += 8;
+
+  const completed = new Set(input.completedChallenges ?? []).size;
+  score += Math.min(completed * 5, 15);
+
+  const beatScore = Math.max(Number(input.beatScore ?? 0), 0);
+  if (beatScore >= 2400) score += 8;
+  else if (beatScore >= 1200) score += 5;
+  else if (beatScore >= 120) score += 3;
+
+  const accuracy = Math.max(Number(input.beatAccuracy ?? 0), 0);
+  if (accuracy >= 90) score += 5;
+  else if (accuracy >= 75) score += 3;
+
+  if (Math.max(Number(input.beatBestStreak ?? 0), 0) >= 3) score += 2;
+
+  return Math.max(0, Math.min(100, score));
 }

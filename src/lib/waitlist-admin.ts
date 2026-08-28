@@ -54,8 +54,11 @@ export type WaitlistIntentInput = {
   launch_signal?: {
     priority?: string;
     beatScore?: number;
+    beatAccuracy?: number;
+    beatBestStreak?: number;
     challengeTier?: string;
     completedChallenges?: readonly string[];
+    launchReadinessScore?: number;
   } | null;
 };
 
@@ -73,6 +76,9 @@ export function waitlistIntentScore(entry: WaitlistIntentInput) {
   if (entry.launch_signal?.challengeTier === "priority") score += 12;
   if (entry.launch_signal?.challengeTier === "warm") score += 8;
   if (Number(entry.launch_signal?.beatScore ?? 0) >= 120) score += 10;
+  if (Number(entry.launch_signal?.beatAccuracy ?? 0) >= 80) score += 8;
+  if (Number(entry.launch_signal?.beatBestStreak ?? 0) >= 3) score += 6;
+  score += Math.min(Math.floor(Number(entry.launch_signal?.launchReadinessScore ?? 0) / 10), 10);
   if ((entry.launch_signal?.completedChallenges?.length ?? 0) >= 3) score += 8;
 
   const referrals = Math.max(Number(entry.referral_count ?? 0), 0);
