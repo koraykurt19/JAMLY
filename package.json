@@ -18,6 +18,7 @@
     "retention:dry-run": "node scripts/run-retention-cleanup.mjs",
     "retention:execute": "node scripts/run-retention-cleanup.mjs --execute --confirm RUN_RETENTION_CLEANUP",
     "smoke:beta-gate": "node scripts/smoke-beta-gate.mjs",
+    "ops:check": "node scripts/check-windows-ops.mjs",
     "smoke:prune-artifacts": "node scripts/prune-smoke-artifacts.mjs",
     "smoke:prune-artifacts:execute": "node scripts/prune-smoke-artifacts.mjs --execute --confirm PRUNE_SMOKE_ARTIFACTS",
     "brand:generate-favicon": "node scripts/generate-jamly-favicon.mjs"

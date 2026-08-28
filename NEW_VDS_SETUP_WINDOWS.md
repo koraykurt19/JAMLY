@@ -364,7 +364,7 @@ $env:SMOKE_ARTIFACT_MAX_MB = "512"
 npm run smoke:prune-artifacts
 ```
 
-To run it nightly with Windows Task Scheduler:
+To run database retention nightly with Windows Task Scheduler:
 
 ```powershell
 $action = New-ScheduledTaskAction -Execute "C:\Program Files\nodejs\npm.cmd" `
@@ -372,6 +372,17 @@ $action = New-ScheduledTaskAction -Execute "C:\Program Files\nodejs\npm.cmd" `
 $trigger = New-ScheduledTaskTrigger -Daily -At 03:35
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -RunLevel Highest
 Register-ScheduledTask -TaskName "Jamly Retention Cleanup" `
+  -Action $action -Trigger $trigger -Principal $principal
+```
+
+To prune local smoke artifacts after the database cleanup:
+
+```powershell
+$action = New-ScheduledTaskAction -Execute "C:\Program Files\nodejs\npm.cmd" `
+  -Argument "run smoke:prune-artifacts:execute" -WorkingDirectory "C:\jamly"
+$trigger = New-ScheduledTaskTrigger -Daily -At 03:50
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -RunLevel Highest
+Register-ScheduledTask -TaskName "Jamly Smoke Artifact Cleanup" `
   -Action $action -Trigger $trigger -Principal $principal
 ```
 
@@ -564,6 +575,7 @@ npm test
 npm run build
 C:\tools\nssm\nssm.exe restart Jamly
 curl.exe -s https://getjamly.com/api/health
+npm run ops:check
 npm run retention:dry-run
 npm run smoke:beta-gate
 npm run smoke:prune-artifacts
