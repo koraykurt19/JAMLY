@@ -106,7 +106,7 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
       if (active) setAvailability(hasSession ? "ready" : "missing");
     };
 
-    void establishPasswordSession(client, mode)
+    void establishPasswordSession(client)
       .then(applySession)
       .catch((error) => {
         console.error("password_recovery_session_failed", error);
@@ -242,29 +242,35 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
   );
 }
 
-async function establishPasswordSession(client: JamlyPasswordClient, mode: PasswordFormMode) {
-  return withTimeout(establishPasswordSessionUnsafe(client, mode), 8000);
+async function establishPasswordSession(client: JamlyPasswordClient) {
+  return withTimeout(establishPasswordSessionUnsafe(client), 8000);
 }
 
-async function establishPasswordSessionUnsafe(client: JamlyPasswordClient, mode: PasswordFormMode) {
-  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  const accessToken = hash.get("access_token");
-  const refreshToken = hash.get("refresh_token");
+async function establishPasswordSessionUnsafe(client: JamlyPasswordClient) {
+  const params = readPasswordRecoveryParams();
 
-  if (accessToken && refreshToken) {
-    const { error } = await client.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken
-    });
+  if (params.error) {
+    return false;
+  }
 
+  if (params.code) {
+    const { error } = await client.auth.exchangeCodeForSession(params.code);
     if (!error) {
-      window.history.replaceState(null, "", window.location.pathname);
+      clearPasswordRecoveryParams();
       return true;
     }
   }
 
-  if (mode === "recovery") {
-    return false;
+  if (params.accessToken && params.refreshToken) {
+    const { error } = await client.auth.setSession({
+      access_token: params.accessToken,
+      refresh_token: params.refreshToken
+    });
+
+    if (!error) {
+      clearPasswordRecoveryParams();
+      return true;
+    }
   }
 
   const { data } = await client.auth.getSession();
@@ -274,12 +280,31 @@ async function establishPasswordSessionUnsafe(client: JamlyPasswordClient, mode:
 type JamlyPasswordClient = NonNullable<ReturnType<typeof getSupabaseBrowserClient>>;
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
+  let timer: number | undefined;
   return Promise.race([
     promise,
     new Promise<T>((resolve) => {
-      window.setTimeout(() => resolve(false as T), timeoutMs);
+      timer = window.setTimeout(() => resolve(false as T), timeoutMs);
     })
-  ]);
+  ]).finally(() => {
+    if (timer) window.clearTimeout(timer);
+  });
+}
+
+function readPasswordRecoveryParams() {
+  const search = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+
+  return {
+    code: search.get("code") ?? hash.get("code"),
+    accessToken: hash.get("access_token") ?? search.get("access_token"),
+    refreshToken: hash.get("refresh_token") ?? search.get("refresh_token"),
+    error: search.get("error") ?? hash.get("error") ?? search.get("error_code") ?? hash.get("error_code")
+  };
+}
+
+function clearPasswordRecoveryParams() {
+  window.history.replaceState(null, "", window.location.pathname);
 }
 
 function Notice({ kind, message }: { kind: Status["kind"]; message: string }) {

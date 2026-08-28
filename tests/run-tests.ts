@@ -113,6 +113,8 @@ const applySupabaseMigrationSource = () =>
   readFileSync(resolve(process.cwd(), "scripts/apply-supabase-migration.mjs"), "utf8");
 const smokeBetaGateSource = () =>
   readFileSync(resolve(process.cwd(), "scripts/smoke-beta-gate.mjs"), "utf8");
+const passwordFormsSource = () =>
+  readFileSync(resolve(process.cwd(), "src/components/password-forms.tsx"), "utf8");
 const mailerSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/server/mailer.ts"), "utf8");
 const adminWaitlistStatusRouteSource = () =>
@@ -966,6 +968,19 @@ const tests: TestCase[] = [
       assert.ok(api.includes("isBetaHandleAllowed"));
       assert.ok(hook.includes("/api/account/status"));
       assert.ok(!hook.includes("NEXT_PUBLIC_BETA_ALLOWED_HANDLES"));
+    }
+  },
+  {
+    name: "password recovery accepts Supabase code and hash-token callbacks",
+    run() {
+      const form = passwordFormsSource();
+
+      assert.ok(form.includes("exchangeCodeForSession(params.code)"));
+      assert.ok(form.includes("client.auth.setSession"));
+      assert.ok(form.includes('hash.get("access_token")'));
+      assert.ok(form.includes('search.get("code")'));
+      assert.ok(form.includes("clearPasswordRecoveryParams"));
+      assert.ok(form.includes("window.clearTimeout(timer)"));
     }
   },
   {
