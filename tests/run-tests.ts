@@ -54,6 +54,10 @@ import {
   scoreBeatAttempt
 } from "../src/lib/launch-mini-game";
 import { planArtifactPrune } from "../src/lib/artifact-retention";
+import {
+  extractStorageReference,
+  planStorageRetentionAudit
+} from "../src/lib/storage-retention";
 
 type TestCase = {
   name: string;
@@ -658,6 +662,83 @@ const tests: TestCase[] = [
       assert.deepEqual(plan.deleteFiles.map((file) => file.path), ["middle.png"]);
       assert.equal(plan.keptBytes, 80);
       assert.equal(plan.deletedBytes, 60);
+    }
+  },
+  {
+    name: "storage retention audit protects referenced media and flags old orphans",
+    run() {
+      const now = Date.parse("2026-08-28T00:00:00Z");
+      const recent = now - 6 * 60 * 60 * 1000;
+      const old = now - 4 * 24 * 60 * 60 * 1000;
+      const plan = planStorageRetentionAudit(
+        [
+          {
+            bucket: "profile-media",
+            name: "user/avatar.png",
+            sizeBytes: 10,
+            createdAtMs: old,
+            updatedAtMs: old
+          },
+          {
+            bucket: "audio-previews",
+            name: "user/orphan.mp3",
+            sizeBytes: 20,
+            createdAtMs: old,
+            updatedAtMs: old
+          },
+          {
+            bucket: "collab-files",
+            name: "project/recent.wav",
+            sizeBytes: 30,
+            createdAtMs: recent,
+            updatedAtMs: recent
+          },
+          {
+            bucket: "unknown",
+            name: "leave-alone.bin",
+            sizeBytes: 40,
+            createdAtMs: old,
+            updatedAtMs: old
+          }
+        ],
+        [{ bucket: "profile-media", name: "user/avatar.png", reason: "profile avatar" }],
+        { nowMs: now, orphanGraceDays: 2 }
+      );
+
+      assert.equal(plan.inspectedObjects, 3);
+      assert.equal(plan.ignoredObjects, 1);
+      assert.equal(plan.protectedObjects, 1);
+      assert.equal(plan.orphanObjects, 2);
+      assert.equal(plan.deletionCandidates, 1);
+      assert.deepEqual(plan.sampleCandidates[0], {
+        bucket: "audio-previews",
+        name: "user/orphan.mp3",
+        sizeBytes: 20
+      });
+    }
+  },
+  {
+    name: "storage retention audit extracts Supabase public URLs and private paths",
+    run() {
+      assert.deepEqual(
+        extractStorageReference(
+          "https://x.supabase.co/storage/v1/object/public/listing-covers/user%201/cover.png"
+        ),
+        {
+          bucket: "listing-covers",
+          name: "user 1/cover.png",
+          reason: "public URL reference"
+        }
+      );
+      assert.deepEqual(
+        extractStorageReference("creator/listing/mp3/file.zip", "license-deliverables"),
+        {
+          bucket: "license-deliverables",
+          name: "creator/listing/mp3/file.zip",
+          reason: "database path reference"
+        }
+      );
+      assert.equal(extractStorageReference("https://example.com/image.png"), null);
     }
   }
 ];

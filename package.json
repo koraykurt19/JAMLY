@@ -17,6 +17,7 @@
     "supabase:apply-migration": "node scripts/apply-supabase-migration.mjs",
     "retention:dry-run": "node scripts/run-retention-cleanup.mjs",
     "retention:execute": "node scripts/run-retention-cleanup.mjs --execute --confirm RUN_RETENTION_CLEANUP",
+    "storage:audit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/audit-storage-retention.mjs",
     "smoke:admin-panel": "node scripts/smoke-admin-panel.mjs",
     "smoke:beta-gate": "node scripts/smoke-beta-gate.mjs",
     "smoke:public": "node scripts/smoke-public.mjs",

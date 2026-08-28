@@ -8,7 +8,8 @@ const keepDays = readPositiveNumber(process.env.SMOKE_ARTIFACT_KEEP_DAYS, 7);
 const maxMb = readPositiveNumber(process.env.SMOKE_ARTIFACT_MAX_MB, 256);
 const roots = [
   resolve(process.cwd(), "work", "live-smoke"),
-  resolve(process.cwd(), "work", "retention-runs")
+  resolve(process.cwd(), "work", "retention-runs"),
+  resolve(process.cwd(), "work", "storage-retention-runs")
 ];
 const reportDir = resolve(process.cwd(), "work", "artifact-prune-runs");
 
