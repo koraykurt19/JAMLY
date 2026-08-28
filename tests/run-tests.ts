@@ -63,6 +63,11 @@ import {
 } from "../src/lib/storage-retention";
 import { profileReadiness } from "../src/lib/profile-readiness";
 import { opsRunHealth } from "../src/lib/ops-run-health";
+import {
+  formatSandboxCardInput,
+  formatSandboxExpiryInput,
+  validateSandboxPaymentMethod
+} from "../src/lib/sandbox-card";
 
 type TestCase = {
   name: string;
@@ -100,6 +105,8 @@ const adminWaitlistStatusRouteSource = () =>
   readFileSync(resolve(process.cwd(), "src/app/api/admin/waitlist/[id]/status/route.ts"), "utf8");
 const adminWaitlistConvertRouteSource = () =>
   readFileSync(resolve(process.cwd(), "src/app/api/admin/waitlist/[id]/convert/route.ts"), "utf8");
+const sandboxPaymentRouteSource = () =>
+  readFileSync(resolve(process.cwd(), "src/app/api/payments/sandbox/complete/route.ts"), "utf8");
 const adminWaitlistRouteSource = () =>
   readFileSync(resolve(process.cwd(), "src/app/api/admin/waitlist/route.ts"), "utf8");
 const adminWaitlistPanelSource = () =>
@@ -499,6 +506,67 @@ const tests: TestCase[] = [
       // A tiny sale still pays the floor rather than rounding to zero.
       assert.equal(calculatePlatformFee(100), 100);
       assert.equal(calculatePlatformFee(2499), 250);
+    }
+  },
+  {
+    name: "sandbox cards only accept explicit Jamly test numbers",
+    run() {
+      assert.equal(formatSandboxCardInput("4242424242424242"), "4242 4242 4242 4242");
+      assert.equal(formatSandboxExpiryInput("1234"), "12/34");
+
+      const approved = validateSandboxPaymentMethod({
+        type: "card",
+        card: {
+          number: "4242 4242 4242 4242",
+          expiry: "12/34",
+          cvc: "123",
+          name: "Jamly Sandbox"
+        }
+      });
+      assert.equal(approved.ok, true);
+      if (approved.ok) {
+        assert.equal(approved.card.brand, "visa");
+        assert.equal(approved.card.last4, "4242");
+        assert.equal(approved.card.holder, "JAMLY SANDBOX");
+      }
+
+      assert.deepEqual(
+        validateSandboxPaymentMethod({
+          type: "card",
+          card: {
+            number: "4000 0000 0000 0002",
+            expiry: "12/34",
+            cvc: "123",
+            name: "Decline Case"
+          }
+        }),
+        { ok: false, error: "declined_card" }
+      );
+      assert.deepEqual(
+        validateSandboxPaymentMethod({
+          type: "card",
+          card: {
+            number: "4111 1111 1111 1111",
+            expiry: "12/34",
+            cvc: "123",
+            name: "Not Whitelisted"
+          }
+        }),
+        { ok: false, error: "unsupported_test_card" }
+      );
+    }
+  },
+  {
+    name: "sandbox payment endpoint requires validated card payload",
+    run() {
+      const source = sandboxPaymentRouteSource();
+      assert.ok(source.includes("validateSandboxPaymentMethod(body.paymentMethod)"));
+      assert.ok(source.includes("status: 422"));
+      assert.ok(source.includes("payment_method"));
+      assert.ok(
+        !source.includes("stripe"),
+        "sandbox completion route must not accidentally charge a live provider"
+      );
     }
   },
 

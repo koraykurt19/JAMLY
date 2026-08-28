@@ -148,8 +148,23 @@ PAYMENT_WEBHOOK_SECRET=<long random value>
 
 Create a beat-license order from the checkout page, then use the fixed Jamly
 Sandbox Payment panel. It never accepts personal card data and never moves
-money. The endpoint verifies the authenticated buyer owns the order before it
-records a sandbox settlement.
+money. The endpoint verifies the authenticated buyer owns the order and that
+the submitted card payload is one of the explicit Jamly sandbox test cards
+before it records a sandbox settlement.
+
+Sandbox card scenarios:
+
+| Number | Result |
+| --- | --- |
+| `4242 4242 4242 4242` | approved |
+| `5555 5555 5555 4444` | approved |
+| `4000 0566 5566 5556` | approved |
+| `4000 0000 0000 0002` | declined |
+
+Use any future expiry in `MM/YY` format, any 3-4 digit CVC, and a non-empty
+cardholder name. Other Luhn-valid card numbers are rejected as
+`unsupported_test_card`, so real card numbers are not silently accepted in the
+fake payment surface.
 
 For direct webhook testing, the sandbox provider signs webhooks with
 `PAYMENT_WEBHOOK_SECRET` (default `jamly-sandbox-webhook-secret`). Compute

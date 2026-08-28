@@ -3,6 +3,7 @@ import { toMinorUnits, type Currency } from "@/lib/money";
 import { processPaymentEvent } from "@/lib/server/payments/process-event";
 import { getPaymentProvider, type WebhookEvent } from "@/lib/server/payments/provider";
 import { createServiceRoleClient } from "@/lib/server/supabase-service";
+import { validateSandboxPaymentMethod } from "@/lib/sandbox-card";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,10 @@ export async function POST(request: Request) {
   const body = await readBody(request);
   if (!body || !isUuid(body.orderId)) {
     return Response.json({ error: "invalid_order" }, { status: 400, headers: noStore });
+  }
+  const paymentMethod = validateSandboxPaymentMethod(body.paymentMethod);
+  if (!paymentMethod.ok) {
+    return Response.json({ error: paymentMethod.error }, { status: 422, headers: noStore });
   }
 
   const { data: order, error: orderError } = await browserClient
@@ -95,7 +100,13 @@ export async function POST(request: Request) {
       payment_id: session.providerPaymentId,
       amount_minor: amountMinor,
       currency,
-      sandbox: true
+      sandbox: true,
+      payment_method: {
+        brand: paymentMethod.card.brand,
+        last4: paymentMethod.card.last4,
+        exp_month: paymentMethod.card.expMonth,
+        exp_year: paymentMethod.card.expYear
+      }
     }
   };
 
@@ -114,12 +125,16 @@ export async function POST(request: Request) {
   }
 }
 
-async function readBody(request: Request): Promise<{ orderId: string } | null> {
+async function readBody(
+  request: Request
+): Promise<{ orderId: string; paymentMethod: unknown } | null> {
   try {
     const value = (await request.json()) as unknown;
     if (!value || typeof value !== "object" || !("orderId" in value)) return null;
-    const orderId = (value as { orderId?: unknown }).orderId;
-    return typeof orderId === "string" ? { orderId } : null;
+    const body = value as { orderId?: unknown; paymentMethod?: unknown };
+    return typeof body.orderId === "string"
+      ? { orderId: body.orderId, paymentMethod: body.paymentMethod }
+      : null;
   } catch {
     return null;
   }
