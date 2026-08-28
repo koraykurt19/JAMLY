@@ -876,6 +876,14 @@ export type Database = {
         };
         Returns: undefined;
       };
+      admin_set_retention_plan: {
+        Args: {
+          p_profile_id: string;
+          p_plan: string;
+          p_reason?: string | null;
+        };
+        Returns: undefined;
+      };
       admin_release_exclusive: {
         Args: { p_listing_id: string };
         Returns: undefined;

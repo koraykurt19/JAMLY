@@ -24,6 +24,7 @@ import {
 } from "@/lib/supabase";
 
 type AccountStatus = "active" | "suspended" | "banned";
+type RetentionPlan = "standard" | "premium";
 type AdminRole =
   | "super_admin"
   | "admin"
@@ -62,6 +63,8 @@ type AdminUser = {
   adminRole: AdminRole | null;
   isBetaHandleAllowed: boolean;
   isBetaAllowed: boolean;
+  retentionPlan: RetentionPlan;
+  retentionMultiplier: number;
   createdAt: string;
 };
 
@@ -133,6 +136,7 @@ export function AdminDashboard() {
   const [userStatus, setUserStatus] = useState<"all" | AccountStatus>("all");
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [updatingAdminId, setUpdatingAdminId] = useState<string | null>(null);
+  const [updatingRetentionId, setUpdatingRetentionId] = useState<string | null>(null);
 
   const text = useMemo(() => getAdminCopy(language), [language]);
 
@@ -268,6 +272,51 @@ export function AdminDashboard() {
     }
   }
 
+  async function updateRetentionPlan(user: AdminUser, plan: RetentionPlan) {
+    const client = getSupabaseBrowserClient();
+    if (!client || state.status !== "ready" || user.retentionPlan === plan) return;
+
+    setUpdatingRetentionId(user.id);
+    try {
+      const {
+        data: { session }
+      } = await client.auth.getSession();
+      if (!session) throw new Error(text.signInRequired);
+
+      const response = await adminFetch<{ plan: RetentionPlan; retentionMultiplier: number }>(
+        `/api/admin/users/${user.id}/retention-plan`,
+        session.access_token,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            plan,
+            reason: `Set retention plan to ${plan} from users panel.`
+          })
+        }
+      );
+
+      setState({
+        ...state,
+        users: state.users.map((current) =>
+          current.id === user.id
+            ? {
+                ...current,
+                retentionPlan: response.plan,
+                retentionMultiplier: response.retentionMultiplier
+              }
+            : current
+        )
+      });
+    } catch (error) {
+      setState({
+        status: "error",
+        message: error instanceof Error ? error.message : text.error
+      });
+    } finally {
+      setUpdatingRetentionId(null);
+    }
+  }
+
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-5 border-b border-white/10 pb-7 lg:flex-row lg:items-end lg:justify-between">
@@ -343,11 +392,13 @@ export function AdminDashboard() {
               status={userStatus}
               updatingUserId={updatingUserId}
               updatingAdminId={updatingAdminId}
+              updatingRetentionId={updatingRetentionId}
               text={text}
               onQueryChange={setQuery}
               onStatusChange={setUserStatus}
               onUpdateStatus={updateUserStatus}
               onUpdateAdminRole={updateAdminRole}
+              onUpdateRetentionPlan={updateRetentionPlan}
             />
           ) : null}
           {activeTab === "listings" ? (
@@ -406,22 +457,26 @@ function UsersPanel({
   status,
   updatingUserId,
   updatingAdminId,
+  updatingRetentionId,
   text,
   onQueryChange,
   onStatusChange,
   onUpdateStatus,
-  onUpdateAdminRole
+  onUpdateAdminRole,
+  onUpdateRetentionPlan
 }: {
   users: AdminUser[];
   query: string;
   status: "all" | AccountStatus;
   updatingUserId: string | null;
   updatingAdminId: string | null;
+  updatingRetentionId: string | null;
   text: AdminCopy;
   onQueryChange: (query: string) => void;
   onStatusChange: (status: "all" | AccountStatus) => void;
   onUpdateStatus: (userId: string, status: AccountStatus) => Promise<void>;
   onUpdateAdminRole: (user: AdminUser, isActive: boolean) => Promise<void>;
+  onUpdateRetentionPlan: (user: AdminUser, plan: RetentionPlan) => Promise<void>;
 }) {
   return (
     <div className="mt-7">
@@ -448,7 +503,15 @@ function UsersPanel({
       <TableShell>
         <thead>
           <tr>
-            {[text.user, text.role, accessLabel(text), text.status, text.joined, text.actions].map((label) => (
+            {[
+              text.user,
+              text.role,
+              accessLabel(text),
+              text.retention,
+              text.status,
+              text.joined,
+              text.actions
+            ].map((label) => (
               <Th key={label}>{label}</Th>
             ))}
           </tr>
@@ -486,6 +549,17 @@ function UsersPanel({
                   ) : null}
                 </div>
               </Td>
+              <Td>
+                <div className="flex flex-col gap-1.5">
+                  <span className="inline-flex w-fit rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-xs font-semibold text-white/66">
+                    {retentionPlanLabel(text, user.retentionPlan)}
+                    <span className="ml-1 text-white/34">x{user.retentionMultiplier}</span>
+                  </span>
+                  <span className="text-[11px] text-white/36">
+                    {user.retentionPlan === "premium" ? text.retentionPremiumHint : text.retentionStandardHint}
+                  </span>
+                </div>
+              </Td>
               <Td><StatusPill status={user.status} text={text} /></Td>
               <Td>{shortDate(user.createdAt)}</Td>
               <Td>
@@ -509,6 +583,17 @@ function UsersPanel({
                   >
                     {adminActionLabel(text, user.isAdmin, updatingAdminId === user.id)}
                   </button>
+                  {(["standard", "premium"] as const).map((plan) => (
+                    <button
+                      key={plan}
+                      type="button"
+                      disabled={updatingRetentionId === user.id || user.retentionPlan === plan}
+                      onClick={() => void onUpdateRetentionPlan(user, plan)}
+                      className="focus-ring rounded-md border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/62 transition hover:border-jam-blue/35 hover:bg-jam-blue/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                    >
+                      {retentionActionLabel(text, plan, updatingRetentionId === user.id)}
+                    </button>
+                  ))}
                 </div>
               </Td>
             </tr>
@@ -680,6 +765,20 @@ function accessStateLabel(text: AdminCopy, allowed: boolean) {
   return allowed ? "Beta" : "Kapali";
 }
 
+function retentionPlanLabel(text: AdminCopy, plan: RetentionPlan) {
+  if (text.signIn === "Sign in") return plan === "premium" ? "Premium" : "Standard";
+  return plan === "premium" ? "Premium" : "Standart";
+}
+
+function retentionActionLabel(text: AdminCopy, plan: RetentionPlan, loading: boolean) {
+  if (text.signIn === "Sign in") {
+    if (loading) return "Updating";
+    return plan === "premium" ? "Set premium" : "Set standard";
+  }
+  if (loading) return "Isleniyor";
+  return plan === "premium" ? "Premium yap" : "Standart yap";
+}
+
 function adminActionLabel(text: AdminCopy, isAdmin: boolean, loading: boolean) {
   if (text.signIn === "Sign in") {
     if (loading) return "Updating";
@@ -772,6 +871,9 @@ function getAdminCopy(language: "tr" | "en") {
       status: "Durum",
       joined: "Katılım",
       actions: "Aksiyon",
+      retention: "Veri plani",
+      retentionStandardHint: "30 gun",
+      retentionPremiumHint: "60 gun",
       listing: "İlan",
       creator: "Üretici",
       buyer: "Alıcı",
@@ -828,6 +930,9 @@ function getAdminCopy(language: "tr" | "en") {
     status: "Status",
     joined: "Joined",
     actions: "Actions",
+    retention: "Data plan",
+    retentionStandardHint: "30 days",
+    retentionPremiumHint: "60 days",
     listing: "Listing",
     creator: "Creator",
     buyer: "Buyer",

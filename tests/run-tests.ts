@@ -59,6 +59,11 @@ type TestCase = {
 
 const retentionMigrationSql = () =>
   readFileSync(resolve(process.cwd(), "supabase/migrations/20260828_retention_controls.sql"), "utf8");
+const retentionPlanActionSql = () =>
+  readFileSync(
+    resolve(process.cwd(), "supabase/migrations/20260828_admin_retention_plan_actions.sql"),
+    "utf8"
+  );
 
 const tests: TestCase[] = [
   {
@@ -543,6 +548,20 @@ const tests: TestCase[] = [
       assert.ok(sql.includes("'premiumRetentionDays', unread_notification_base_days * 2"));
       assert.ok(sql.includes("'premiumRetentionDays', message_base_days * 2"));
       assert.ok(sql.includes("'premiumRetentionDays', 60"));
+    }
+  },
+  {
+    name: "admin retention plan changes are guarded and audited",
+    run() {
+      const sql = retentionPlanActionSql();
+
+      assert.ok(sql.includes("public.admin_has('admin.manage')"));
+      assert.ok(sql.includes("p_plan not in ('standard', 'premium')"));
+      assert.ok(sql.includes("A reason is required to change retention plans"));
+      assert.ok(sql.includes("when p_plan = 'premium' then 2 else 1"));
+      assert.ok(sql.includes("'retention.plan_change'"));
+      assert.ok(sql.includes("perform public.record_admin_action"));
+      assert.ok(sql.includes("grant execute on function public.admin_set_retention_plan"));
     }
   }
 ];
