@@ -422,7 +422,8 @@ Register-ScheduledTask -TaskName "Jamly Smoke Artifact Cleanup" `
 ```
 
 Use `npm run retention:dry-run` manually after schema changes or before a
-launch window. The runner never deletes `profiles`, `auth.users`,
+launch window. Use `npm run retention:dry-run:recorded` when the dry-run should
+also refresh the admin ops-health run history. The runner never deletes `profiles`, `auth.users`,
 `admin_accounts`, `admin_audit_log`, `order_requests`, `payments`,
 `ledger_entries`, `revenue_splits`, `reports`, or paid license snapshots.
 

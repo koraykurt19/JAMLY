@@ -77,6 +77,11 @@ type TestCase = {
 
 const retentionMigrationSql = () =>
   readFileSync(resolve(process.cwd(), "supabase/migrations/20260828_retention_controls.sql"), "utf8");
+const retentionRunLogControlsSql = () =>
+  readFileSync(
+    resolve(process.cwd(), "supabase/migrations/20260828_retention_run_log_controls.sql"),
+    "utf8"
+  );
 const retentionPlanActionSql = () =>
   readFileSync(
     resolve(process.cwd(), "supabase/migrations/20260828_admin_retention_plan_actions.sql"),
@@ -104,6 +109,8 @@ const currentAccountHookSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/use-current-account.ts"), "utf8");
 const supabaseMiddlewareSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/supabase-middleware.ts"), "utf8");
+const applySupabaseMigrationSource = () =>
+  readFileSync(resolve(process.cwd(), "scripts/apply-supabase-migration.mjs"), "utf8");
 const mailerSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/server/mailer.ts"), "utf8");
 const adminWaitlistStatusRouteSource = () =>
@@ -843,6 +850,40 @@ const tests: TestCase[] = [
         sql.includes("c.order_request_id is null"),
         "non-order conversation guard must stay in message/conversation pruning"
       );
+    }
+  },
+  {
+    name: "retention run log controls keep dry-run previews from bloating DB",
+    run() {
+      const sql = retentionRunLogControlsSql().toLowerCase();
+      const api = adminRetentionApiSource();
+      const runner = readFileSync(resolve(process.cwd(), "scripts/run-retention-cleanup.mjs"), "utf8");
+      const pkg = readFileSync(resolve(process.cwd(), "package.json"), "utf8");
+
+      assert.ok(sql.includes("p_record_run boolean default true"));
+      assert.ok(sql.includes("'recorded', p_record_run"));
+      assert.ok(sql.includes("mode = 'dry_run'"));
+      assert.ok(sql.includes("status = 'completed'"));
+      assert.ok(sql.includes("created_at < retention_run_cutoff"));
+      assert.ok(sql.includes("'retention_dry_run_logs'"));
+      assert.ok(sql.includes("'execute runs'"));
+      assert.ok(sql.includes("'failed runs'"));
+      assert.ok(api.includes("p_record_run: false"));
+      assert.ok(api.includes("p_record_run: true"));
+      assert.ok(runner.includes("--record-run"));
+      assert.ok(runner.includes("execute || recordRun"));
+      assert.ok(pkg.includes("retention:dry-run:recorded"));
+    }
+  },
+  {
+    name: "Supabase migration runner loads local env files",
+    run() {
+      const runner = applySupabaseMigrationSource();
+
+      assert.ok(runner.includes('loadEnv(resolve(process.cwd(), ".env.local"))'));
+      assert.ok(runner.includes('loadEnv(resolve(process.cwd(), ".env.production.local"))'));
+      assert.ok(runner.includes("SUPABASE_DATABASE_URL || process.env.DATABASE_URL"));
+      assert.ok(runner.includes("if (!process.env[key]) process.env[key] = value"));
     }
   },
   {

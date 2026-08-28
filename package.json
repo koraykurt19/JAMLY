@@ -16,6 +16,7 @@
     "supabase:apply-schema": "node scripts/apply-supabase-schema.mjs",
     "supabase:apply-migration": "node scripts/apply-supabase-migration.mjs",
     "retention:dry-run": "node scripts/run-retention-cleanup.mjs",
+    "retention:dry-run:recorded": "node scripts/run-retention-cleanup.mjs --record-run",
     "retention:execute": "node scripts/run-retention-cleanup.mjs --execute --confirm RUN_RETENTION_CLEANUP",
     "storage:audit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/audit-storage-retention.mjs",
     "storage:prune": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/audit-storage-retention.mjs --execute --confirm PRUNE_STORAGE_ORPHANS",

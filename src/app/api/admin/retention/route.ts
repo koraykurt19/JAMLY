@@ -15,7 +15,8 @@ export async function GET(request: Request) {
   try {
     const { client } = await requireCapability(request, "admin.manage");
     const { data, error } = await client.rpc("admin_retention_plan", {
-      p_execute: false
+      p_execute: false,
+      p_record_run: false
     });
 
     if (error) throw error;
@@ -45,7 +46,8 @@ export async function POST(request: Request) {
     }
 
     const { data, error } = await client.rpc("admin_retention_plan", {
-      p_execute: true
+      p_execute: true,
+      p_record_run: true
     });
 
     if (error) throw error;

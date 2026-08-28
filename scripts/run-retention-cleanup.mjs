@@ -6,6 +6,7 @@ loadEnv(resolve(process.cwd(), ".env.local"));
 loadEnv(resolve(process.cwd(), ".env.production.local"));
 
 const execute = process.argv.includes("--execute");
+const recordRun = execute || process.argv.includes("--record-run");
 const confirmIndex = process.argv.indexOf("--confirm");
 const confirm = confirmIndex >= 0 ? process.argv[confirmIndex + 1] : "";
 const databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
@@ -34,12 +35,13 @@ try {
   await client.query("select set_config('request.jwt.claim.sub', $1, true)", [actorId]);
   await client.query("select set_config('role', 'authenticated', true)");
 
-  const { rows } = await client.query("select public.admin_retention_plan($1) as plan", [
-    execute
+  const { rows } = await client.query("select public.admin_retention_plan($1, $2) as plan", [
+    execute,
+    recordRun
   ]);
   const plan = rows[0]?.plan;
 
-  if (execute) {
+  if (execute || recordRun) {
     await client.query("commit");
   } else {
     await client.query("rollback");
@@ -49,6 +51,7 @@ try {
   const report = {
     checkedAt: new Date().toISOString(),
     mode: execute ? "execute" : "dry_run",
+    recorded: recordRun,
     eligibleRows: Number(plan?.totals?.eligibleRows ?? 0),
     deletedRows: Number(plan?.totals?.deletedRows ?? 0),
     policies: plan?.policies?.length ?? 0,

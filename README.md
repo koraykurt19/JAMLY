@@ -335,7 +335,8 @@ NEW_VDS_SETUP_WINDOWS.md   Windows Server 2022 + IIS + Supabase runbook
 | `npm run test` | Run focused Node-based regression tests for matching, config, and sanitization |
 | `npm run build` | Create and validate the optimized production build |
 | `npm run start` | Run the previously built production server |
-| `npm run retention:dry-run` | Inspect Supabase retention cleanup counts without deleting rows |
+| `npm run retention:dry-run` | Inspect Supabase retention cleanup counts without deleting rows or writing a DB run log |
+| `npm run retention:dry-run:recorded` | Inspect retention cleanup counts and write a dry-run DB run log for ops health |
 | `npm run retention:execute` | Execute the guarded retention cleanup and write a local JSON report |
 | `npm run storage:audit` | Inspect Supabase Storage references and old orphan candidates without deleting files |
 | `npm run storage:prune` | Delete only old orphan Supabase Storage objects after the same reference audit, guarded by confirmation |

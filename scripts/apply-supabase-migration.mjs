@@ -3,6 +3,10 @@ import { resolve, sep } from "node:path";
 import pg from "pg";
 
 const migrationName = process.argv[2];
+
+loadEnv(resolve(process.cwd(), ".env.local"));
+loadEnv(resolve(process.cwd(), ".env.production.local"));
+
 const databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
 
 if (!migrationName || !/^[a-zA-Z0-9_-]+\.sql$/.test(migrationName)) {
@@ -40,4 +44,22 @@ try {
   process.exitCode = 1;
 } finally {
   await client.end().catch(() => undefined);
+}
+
+function loadEnv(path) {
+  if (!existsSync(path)) return;
+  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const separator = trimmed.indexOf("=");
+    if (separator === -1) continue;
+    const key = trimmed.slice(0, separator).trim();
+    const rawValue = trimmed.slice(separator + 1).trim();
+    const value =
+      (rawValue.startsWith('"') && rawValue.endsWith('"')) ||
+      (rawValue.startsWith("'") && rawValue.endsWith("'"))
+        ? rawValue.slice(1, -1)
+        : rawValue;
+    if (!process.env[key]) process.env[key] = value;
+  }
 }
