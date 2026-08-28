@@ -1,7 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, DatabaseZap, Loader2, Play, RefreshCw, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  ArchiveX,
+  DatabaseZap,
+  HardDrive,
+  Loader2,
+  Play,
+  RefreshCw,
+  ShieldCheck
+} from "lucide-react";
 import { useI18n } from "@/components/language-provider";
 import { AdminCell, AdminRow, AdminTable, StatusPill } from "@/components/admin/admin-table";
 import { Card, Pill } from "@/components/ui/surface";
@@ -43,7 +52,35 @@ type RetentionRun = {
   created_at: string;
 };
 
-type RetentionResponse = { plan: RetentionPlan; runs: RetentionRun[] };
+type StorageAuditBucket = {
+  bucket?: string;
+  objects?: number;
+  protectedObjects?: number;
+  orphanObjects?: number;
+  deletionCandidates?: number;
+  totalBytes?: number;
+  orphanBytes?: number;
+  deletionCandidateBytes?: number;
+};
+
+type StorageAudit = {
+  fileName: string;
+  checkedAt: string;
+  mode: "dry_run" | "execute";
+  orphanGraceDays: number;
+  inspectedObjects: number;
+  protectedObjects: number;
+  orphanObjects: number;
+  deletionCandidates: number;
+  orphanBytes: number;
+  deletionCandidateBytes: number;
+  deletedObjects: number;
+  deletedBytes: number;
+  buckets: StorageAuditBucket[];
+  error?: string;
+};
+
+type RetentionResponse = { plan: RetentionPlan; runs: RetentionRun[]; storageAudit: StorageAudit | null };
 
 export function RetentionPanel() {
   const { language } = useI18n();
@@ -54,6 +91,7 @@ export function RetentionPanel() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [runs, setRuns] = useState<RetentionRun[]>([]);
+  const [storageAudit, setStorageAudit] = useState<StorageAudit | null>(null);
 
   const canExecute = confirm === "RUN_RETENTION_CLEANUP" && !executing;
 
@@ -64,6 +102,7 @@ export function RetentionPanel() {
       const response = await adminFetch<RetentionResponse>("/api/admin/retention");
       setPlan(response.plan);
       setRuns(response.runs ?? []);
+      setStorageAudit(response.storageAudit ?? null);
     } catch (requestError) {
       setError(readError(requestError, tr));
     } finally {
@@ -88,6 +127,7 @@ export function RetentionPanel() {
       });
       setPlan(response.plan);
       setRuns(response.runs ?? []);
+      setStorageAudit(response.storageAudit ?? null);
       setConfirm("");
     } catch (requestError) {
       setError(readError(requestError, tr));
@@ -192,6 +232,91 @@ export function RetentionPanel() {
       <Card>
         <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
+            <div className="flex items-center gap-2">
+              <span className="flex size-9 items-center justify-center rounded-md bg-white/[0.06] text-jam-mint">
+                <HardDrive size={17} />
+              </span>
+              <h2 className="text-lg font-semibold text-white">
+                {tr ? "Storage maliyet sinyali" : "Storage cost signal"}
+              </h2>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-white/50">
+              {tr
+                ? "Son storage audit raporu; referansli dosyalari korur, yalnizca eski orphan adaylari isaretler."
+                : "Latest storage audit report; referenced files stay protected, only old orphan candidates are flagged."}
+            </p>
+          </div>
+          <Pill tone={storageAudit?.deletionCandidates ? "warning" : "success"}>
+            {storageAudit ? formatDate(storageAudit.checkedAt, language) : tr ? "Rapor yok" : "No report"}
+          </Pill>
+        </div>
+
+        {storageAudit ? (
+          <>
+            <div className="grid gap-3 md:grid-cols-4">
+              <Metric label={tr ? "Incelenen nesne" : "Inspected objects"} value={String(storageAudit.inspectedObjects)} />
+              <Metric label={tr ? "Korunan nesne" : "Protected objects"} value={String(storageAudit.protectedObjects)} />
+              <Metric label={tr ? "Orphan nesne" : "Orphan objects"} value={String(storageAudit.orphanObjects)} />
+              <Metric
+                label={tr ? "Silinebilir alan" : "Prunable bytes"}
+                value={formatBytes(storageAudit.deletionCandidateBytes)}
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/48">
+              <Pill tone={storageAudit.mode === "execute" ? "warning" : "brand"}>
+                {storageAudit.mode === "execute" ? (tr ? "Temizlik" : "Execute") : "Dry-run"}
+              </Pill>
+              <span>{tr ? "Grace:" : "Grace:"} {storageAudit.orphanGraceDays} gün</span>
+              <span>{storageAudit.fileName}</span>
+              {storageAudit.error ? <span className="text-jam-danger">{storageAudit.error}</span> : null}
+            </div>
+
+            <AdminTable
+              columns={[
+                "Bucket",
+                tr ? "Nesne" : "Objects",
+                tr ? "Korunan" : "Protected",
+                "Orphan",
+                tr ? "Aday" : "Candidates",
+                tr ? "Toplam" : "Total",
+                tr ? "Silinebilir" : "Prunable"
+              ]}
+              loading={false}
+              error={null}
+              empty={storageAudit.buckets.length === 0}
+              minWidth={860}
+            >
+              {storageAudit.buckets.map((bucket) => (
+                <AdminRow key={bucket.bucket ?? "unknown"}>
+                  <AdminCell className="font-semibold text-white/82">{bucket.bucket ?? "-"}</AdminCell>
+                  <AdminCell nowrap className="tabular-nums">{Number(bucket.objects ?? 0)}</AdminCell>
+                  <AdminCell nowrap className="tabular-nums text-jam-mint">
+                    {Number(bucket.protectedObjects ?? 0)}
+                  </AdminCell>
+                  <AdminCell nowrap className="tabular-nums">{Number(bucket.orphanObjects ?? 0)}</AdminCell>
+                  <AdminCell nowrap className="font-bold tabular-nums text-jam-warning">
+                    {Number(bucket.deletionCandidates ?? 0)}
+                  </AdminCell>
+                  <AdminCell nowrap>{formatBytes(Number(bucket.totalBytes ?? 0))}</AdminCell>
+                  <AdminCell nowrap>{formatBytes(Number(bucket.deletionCandidateBytes ?? 0))}</AdminCell>
+                </AdminRow>
+              ))}
+            </AdminTable>
+          </>
+        ) : (
+          <div className="flex items-center gap-3 rounded-lg border border-dashed border-white/12 p-5 text-sm text-white/56">
+            <ArchiveX size={18} className="text-white/36" />
+            {tr
+              ? "Henuz storage audit raporu yok. Zamanlanmis Jamly Storage Audit gorevi veya npm run storage:audit olusturur."
+              : "No storage audit report yet. The scheduled Jamly Storage Audit task or npm run storage:audit creates it."}
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
             <h2 className="text-lg font-semibold text-white">
               {tr ? "Son temizlik calismalari" : "Recent retention runs"}
             </h2>
@@ -285,10 +410,23 @@ export function RetentionPanel() {
 }
 
 function formatDate(value: string, language: "tr" | "en") {
+  if (!value) return "-";
   return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : "en-US", {
     dateStyle: "short",
     timeStyle: "short"
   }).format(new Date(value));
+}
+
+function formatBytes(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  let amount = value;
+  let unitIndex = 0;
+  while (amount >= 1024 && unitIndex < units.length - 1) {
+    amount /= 1024;
+    unitIndex += 1;
+  }
+  return `${amount >= 10 || unitIndex === 0 ? amount.toFixed(0) : amount.toFixed(1)} ${units[unitIndex]}`;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

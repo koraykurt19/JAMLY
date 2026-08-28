@@ -84,6 +84,10 @@ const waitlistLaunchSignalSql = () =>
     resolve(process.cwd(), "supabase/migrations/20260828_waitlist_launch_signal.sql"),
     "utf8"
   );
+const adminRetentionApiSource = () =>
+  readFileSync(resolve(process.cwd(), "src/app/api/admin/retention/route.ts"), "utf8");
+const adminRetentionPanelSource = () =>
+  readFileSync(resolve(process.cwd(), "src/components/admin/retention-panel.tsx"), "utf8");
 const retentionSelfReadSql = () =>
   readFileSync(
     resolve(process.cwd(), "supabase/migrations/20260828_profile_retention_self_read.sql"),
@@ -724,6 +728,22 @@ const tests: TestCase[] = [
       assert.ok(sql.includes("profile_id = auth.uid()"));
       assert.ok(sql.includes("public.admin_has('admin.manage')"));
       assert.ok(!/for\s+(insert|update|delete|all)/i.test(sql));
+    }
+  },
+  {
+    name: "admin retention panel surfaces storage cost audit reports",
+    run() {
+      const api = adminRetentionApiSource();
+      const panel = adminRetentionPanelSource();
+
+      assert.ok(api.includes("work\", \"storage-retention-runs\""));
+      assert.ok(api.includes("readLatestStorageAudit"));
+      assert.ok(api.includes("deletionCandidateBytes"));
+      assert.ok(api.includes("storageAudit"));
+      assert.ok(panel.includes("Storage cost signal"));
+      assert.ok(panel.includes("storageAudit.deletionCandidateBytes"));
+      assert.ok(panel.includes("formatBytes"));
+      assert.ok(panel.includes("npm run storage:audit"));
     }
   },
 

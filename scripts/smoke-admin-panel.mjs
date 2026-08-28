@@ -92,6 +92,7 @@ try {
   await expectVisible(page.getByRole("heading", { name: /data retention cleanup|veri koruma/i }).first(), "retention panel renders");
   await expectVisible(page.getByText(/recent retention runs|son temizlik/i).first(), "retention run history renders");
   await expectVisible(page.getByText(/never deleted|asla silinmeyen/i).first(), "retention protected-data copy renders");
+  await expectVisible(page.getByText(/storage cost signal|storage maliyet sinyali/i).first(), "retention storage audit panel renders");
 
   await page.goto(`${baseUrl}/admin/waitlist`, { waitUntil: "networkidle", timeout: 45000 });
   await expectVisible(page.getByText(/pre-register pipeline|on kayit hatti/i).first(), "waitlist summary renders");
@@ -183,7 +184,9 @@ try {
       retentionBody.plan?.mode === "dry_run" &&
       Array.isArray(retentionBody.plan?.policies) &&
       Array.isArray(retentionBody.plan?.neverDelete) &&
-      retentionBody.plan.neverDelete.includes("profiles"),
+      retentionBody.plan.neverDelete.includes("profiles") &&
+      (retentionBody.storageAudit === null ||
+        Number.isFinite(Number(retentionBody.storageAudit?.deletionCandidateBytes))),
     `HTTP ${retentionResponse.status()}`
   );
 

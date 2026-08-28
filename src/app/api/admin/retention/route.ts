@@ -3,9 +3,12 @@ import {
   noStoreHeaders,
   requireCapability
 } from "@/lib/server/admin";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { resolve } from "node:path";
 
 export const dynamic = "force-dynamic";
 const RUN_LIMIT = 8;
+const storageReportDir = resolve(process.cwd(), "work", "storage-retention-runs");
 
 export async function GET(request: Request) {
   try {
@@ -16,8 +19,9 @@ export async function GET(request: Request) {
 
     if (error) throw error;
     const runs = await listRetentionRuns(client);
+    const storageAudit = readLatestStorageAudit();
 
-    return Response.json({ plan: data, runs }, { headers: noStoreHeaders() });
+    return Response.json({ plan: data, runs, storageAudit }, { headers: noStoreHeaders() });
   } catch (error) {
     return adminErrorResponse(error);
   }
@@ -44,8 +48,9 @@ export async function POST(request: Request) {
 
     if (error) throw error;
     const runs = await listRetentionRuns(client);
+    const storageAudit = readLatestStorageAudit();
 
-    return Response.json({ plan: data, runs }, { headers: noStoreHeaders() });
+    return Response.json({ plan: data, runs, storageAudit }, { headers: noStoreHeaders() });
   } catch (error) {
     return adminErrorResponse(error);
   }
@@ -60,4 +65,58 @@ async function listRetentionRuns(client: Awaited<ReturnType<typeof requireCapabi
 
   if (error) throw error;
   return data ?? [];
+}
+
+function readLatestStorageAudit() {
+  if (!existsSync(storageReportDir)) return null;
+
+  const latest = readdirSync(storageReportDir)
+    .filter((name) => name.endsWith(".json"))
+    .map((name) => {
+      const path = resolve(storageReportDir, name);
+      return {
+        name,
+        path,
+        mtimeMs: statSync(path).mtimeMs
+      };
+    })
+    .sort((left, right) => right.mtimeMs - left.mtimeMs)[0];
+
+  if (!latest) return null;
+
+  try {
+    const report = JSON.parse(readFileSync(latest.path, "utf8")) as Record<string, unknown>;
+    return {
+      fileName: latest.name,
+      checkedAt: String(report.checkedAt ?? ""),
+      mode: report.mode === "execute" ? "execute" : "dry_run",
+      orphanGraceDays: Number(report.orphanGraceDays ?? 0),
+      inspectedObjects: Number(report.inspectedObjects ?? 0),
+      protectedObjects: Number(report.protectedObjects ?? 0),
+      orphanObjects: Number(report.orphanObjects ?? 0),
+      deletionCandidates: Number(report.deletionCandidates ?? 0),
+      orphanBytes: Number(report.orphanBytes ?? 0),
+      deletionCandidateBytes: Number(report.deletionCandidateBytes ?? 0),
+      deletedObjects: Number(report.deletedObjects ?? 0),
+      deletedBytes: Number(report.deletedBytes ?? 0),
+      buckets: Array.isArray(report.buckets) ? report.buckets.slice(0, 8) : []
+    };
+  } catch (error) {
+    return {
+      fileName: latest.name,
+      checkedAt: "",
+      mode: "dry_run",
+      orphanGraceDays: 0,
+      inspectedObjects: 0,
+      protectedObjects: 0,
+      orphanObjects: 0,
+      deletionCandidates: 0,
+      orphanBytes: 0,
+      deletionCandidateBytes: 0,
+      deletedObjects: 0,
+      deletedBytes: 0,
+      buckets: [],
+      error: error instanceof Error ? error.message : "Storage audit report could not be parsed."
+    };
+  }
 }
