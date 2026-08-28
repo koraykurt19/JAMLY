@@ -55,10 +55,10 @@ Never auto-delete:
 
 Implementation queue:
 
-1. Ship retention dry-run/execute as an admin-only console.
+1. Ship retention dry-run/execute as an admin-only console. Done.
 2. Add `account_plan` / `retention_multiplier` support to profiles or a
    dedicated subscription table.
-3. Add `retention_policy_runs` table with run status, counts, and errors.
+3. Add `retention_policy_runs` table with run status, counts, and errors. Done.
 4. Add SQL functions:
    - `get_retention_cutoff(p_user_id, p_data_type)`
    - `prune_rate_limit_counters()`
@@ -70,14 +70,18 @@ Implementation queue:
    - returns rows/files that would be deleted
    - groups by table, bucket, plan, and cutoff
    - never reveals private message body in summary responses
-6. Add an admin UI page for retention:
+6. Add an admin UI page for retention. Done:
    - dry run
    - execute
    - last run status
    - deleted row/file counts
+7. Add VDS-safe scheduled runner. Done:
+   - `npm run retention:dry-run`
+   - `npm run retention:execute`
+   - writes JSON reports under ignored `work/retention-runs/`
    - estimated storage reclaimed
-7. Schedule the real job daily after smoke checks pass.
-8. Add tests proving profiles, paid orders, admin audit rows, and unique handles
+8. Schedule the real job daily after smoke checks pass.
+9. Add tests proving profiles, paid orders, admin audit rows, and unique handles
    survive pruning.
 
 Important rule: profile identity must remain. A user can lose old ephemeral

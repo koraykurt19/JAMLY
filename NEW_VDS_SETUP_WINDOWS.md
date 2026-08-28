@@ -310,7 +310,55 @@ At this point the health JSON should include:
 If `build.status` is `stale`, the repo was updated after the last build. Run
 `npm run build` and restart the service.
 
-## 8. IIS Reverse Proxy
+## 8. Retention Cleanup
+
+Jamly keeps durable identity and financial records, but prunes operational rows
+that do not need to live forever. The cleanup is implemented in Supabase as
+`admin_retention_plan` and can be run from the admin console or from the VDS.
+
+Dry-run first:
+
+```powershell
+Set-Location C:\jamly
+npm run retention:dry-run
+```
+
+The JSON output must include:
+
+```json
+{
+  "mode": "dry_run",
+  "protectsProfiles": true
+}
+```
+
+Execute only when the dry-run counts look sane:
+
+```powershell
+Set-Location C:\jamly
+npm run retention:execute
+```
+
+Reports are written under `C:\jamly\work\retention-runs\`. That folder is
+ignored by Git and may be rotated separately.
+
+To run it nightly with Windows Task Scheduler:
+
+```powershell
+$action = New-ScheduledTaskAction -Execute "C:\Program Files\nodejs\npm.cmd" `
+  -Argument "run retention:execute" -WorkingDirectory "C:\jamly"
+$trigger = New-ScheduledTaskTrigger -Daily -At 03:35
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -RunLevel Highest
+Register-ScheduledTask -TaskName "Jamly Retention Cleanup" `
+  -Action $action -Trigger $trigger -Principal $principal
+```
+
+Use `npm run retention:dry-run` manually after schema changes or before a
+launch window. The runner never deletes `profiles`, `auth.users`,
+`admin_accounts`, `admin_audit_log`, `order_requests`, `payments`,
+`ledger_entries`, `revenue_splits`, `reports`, or paid license snapshots.
+
+## 9. IIS Reverse Proxy
 
 Enable ARR proxying and allow the forwarded headers used by the rewrite rule:
 
@@ -400,7 +448,7 @@ Common results:
 - `500` or `500.50`: forwarded server variables are not allowed.
 - `502`: the Jamly service is not listening on `127.0.0.1:3000`.
 
-## 9. Certificate
+## 10. Certificate
 
 Use win-acme after DNS and the HTTP proxy test are correct.
 
@@ -444,7 +492,7 @@ Run win-acme's renewal test from its menu before calling the launch complete.
 If the renewal test does not update or validate the IIS bindings, fix it now;
 certificate renewal failures usually show up weeks later.
 
-## 10. Final Smoke Test
+## 11. Final Smoke Test
 
 Run from the VDS:
 
@@ -480,7 +528,7 @@ Manual browser checks:
 | `/admin` as non-admin | Redirect away |
 | `curl.exe -I https://getjamly.com/` | CSP header exists and has no `unsafe-eval` |
 
-## 11. Update Flow
+## 12. Update Flow
 
 For future deploys:
 
@@ -494,12 +542,13 @@ npm test
 npm run build
 C:\tools\nssm\nssm.exe restart Jamly
 curl.exe -s https://getjamly.com/api/health
+npm run retention:dry-run
 ```
 
 If `.env.local`, `NEXT_PUBLIC_SUPABASE_URL`, or `NEXT_PUBLIC_SITE_URL` changes,
 always rebuild before restarting.
 
-## 12. Rollback
+## 13. Rollback
 
 App rollback:
 
