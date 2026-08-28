@@ -38,6 +38,11 @@ import { sortBadgesForProfile, type ProfileBadge } from "../src/lib/badges";
 import { assertUuid, sanitizeSearch } from "../src/lib/server/admin";
 import { roleHas } from "../src/lib/admin-client";
 import { createMailto, JAMLY_EMAILS } from "../src/lib/jamly-contacts";
+import {
+  allowedWaitlistTransitions,
+  canTransitionWaitlistStatus,
+  isAdminMutableWaitlistStatus
+} from "../src/lib/waitlist-admin";
 
 type TestCase = {
   name: string;
@@ -407,6 +412,21 @@ const tests: TestCase[] = [
       assert.ok(!roleHas("analyst", "user.moderate"));
       assert.ok(roleHas("moderator", "report.resolve"));
       assert.ok(!roleHas(null, "user.view"));
+    }
+  },
+  {
+    name: "admin waitlist actions preserve the pre-register gate",
+    run() {
+      assert.deepEqual(allowedWaitlistTransitions("pending"), [
+        "verified",
+        "suppressed",
+        "blocked"
+      ]);
+      assert.ok(canTransitionWaitlistStatus("verified", "invited"));
+      assert.ok(canTransitionWaitlistStatus("blocked", "verified"));
+      assert.ok(!canTransitionWaitlistStatus("converted", "verified"));
+      assert.ok(!isAdminMutableWaitlistStatus("converted"));
+      assert.ok(isAdminMutableWaitlistStatus("invited"));
     }
   }
 ];

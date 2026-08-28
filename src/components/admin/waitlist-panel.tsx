@@ -1,13 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Loader2,
+  MailCheck,
+  RotateCcw,
+  Search,
+  ShieldX
+} from "lucide-react";
 import { useI18n } from "@/components/language-provider";
 import { AdminCell, AdminRow, AdminTable, Pagination, StatusPill } from "@/components/admin/admin-table";
 import { TextInput } from "@/components/ui/field";
 import { Card, Pill } from "@/components/ui/surface";
 import { adminFetch, AdminRequestError } from "@/lib/admin-client";
 import { shortDate } from "@/lib/format";
+import {
+  allowedWaitlistTransitions,
+  canTransitionWaitlistStatus,
+  type WaitlistStatus
+} from "@/lib/waitlist-admin";
 
 type WaitlistEntry = {
   id: string;
@@ -16,7 +29,7 @@ type WaitlistEntry = {
   reserved_username: string | null;
   persona: string;
   locale: string;
-  status: string;
+  status: WaitlistStatus;
   queue_position: number;
   referral_code: string;
   referral_count: number;
@@ -24,6 +37,8 @@ type WaitlistEntry = {
   utm_source: string | null;
   utm_campaign: string | null;
   verified_at: string | null;
+  invited_at: string | null;
+  converted_at: string | null;
   created_at: string;
 };
 
@@ -46,8 +61,8 @@ export function WaitlistPanel() {
   const [data, setData] = useState<Response | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingEntryId, setUpdatingEntryId] = useState<string | null>(null);
 
-  // Debounce so typing does not fire a request per keystroke.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setDebouncedQuery(query);
@@ -71,7 +86,7 @@ export function WaitlistPanel() {
         requestError instanceof AdminRequestError
           ? requestError.message
           : language === "tr"
-            ? "Liste yüklenemedi."
+            ? "Liste yuklenemedi."
             : "The list could not be loaded."
       );
     } finally {
@@ -84,6 +99,36 @@ export function WaitlistPanel() {
   }, [load]);
 
   const tr = language === "tr";
+
+  async function updateStatus(entry: WaitlistEntry, nextStatus: WaitlistStatus) {
+    if (!canTransitionWaitlistStatus(entry.status, nextStatus)) return;
+
+    setUpdatingEntryId(entry.id);
+    setError(null);
+    try {
+      await adminFetch<{ ok: true; status: WaitlistStatus }>(
+        `/api/admin/waitlist/${entry.id}/status`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            status: nextStatus,
+            reason: `Admin changed pre-register status from ${entry.status} to ${nextStatus}.`
+          })
+        }
+      );
+      await load();
+    } catch (requestError) {
+      setError(
+        requestError instanceof AdminRequestError
+          ? requestError.message
+          : tr
+            ? "Durum guncellenemedi."
+            : "Status could not be updated."
+      );
+    } finally {
+      setUpdatingEntryId(null);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -101,7 +146,7 @@ export function WaitlistPanel() {
             <TextInput
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={tr ? "E-posta, ad veya kullanıcı adı" : "Email, name or username"}
+              placeholder={tr ? "E-posta, ad veya kullanici adi" : "Email, name or username"}
               className="pl-9"
             />
           </span>
@@ -123,7 +168,7 @@ export function WaitlistPanel() {
                   : "focus-ring min-h-control-sm rounded-md border border-white/10 px-3 text-[13px] font-semibold text-white/58 transition hover:text-white"
               }
             >
-              {value ? value : tr ? "Tümü" : "All"}
+              {value ? statusLabel(value, language) : tr ? "Tumu" : "All"}
             </button>
           ))}
           <button
@@ -150,12 +195,13 @@ export function WaitlistPanel() {
           "#",
           tr ? "E-posta" : "Email",
           tr ? "Ad" : "Name",
-          tr ? "Kullanıcı adı" : "Username",
+          tr ? "Kullanici adi" : "Username",
           tr ? "Tip" : "Persona",
           tr ? "Durum" : "Status",
           tr ? "Davet" : "Referrals",
           tr ? "Kaynak" : "Source",
-          tr ? "Kayıt" : "Joined"
+          tr ? "Kayit" : "Joined",
+          tr ? "Aksiyon" : "Action"
         ]}
         loading={loading}
         error={error}
@@ -176,19 +222,27 @@ export function WaitlistPanel() {
                 ) : null}
               </span>
             </AdminCell>
-            <AdminCell>{entry.display_name ?? "—"}</AdminCell>
+            <AdminCell>{entry.display_name ?? "-"}</AdminCell>
             <AdminCell nowrap>
-              {entry.reserved_username ? `@${entry.reserved_username}` : "—"}
+              {entry.reserved_username ? `@${entry.reserved_username}` : "-"}
             </AdminCell>
             <AdminCell nowrap>{entry.persona}</AdminCell>
             <AdminCell nowrap>
-              <StatusPill value={entry.status} />
+              <StatusPill value={entry.status} label={statusLabel(entry.status, language)} />
             </AdminCell>
             <AdminCell nowrap className="tabular-nums">
               {entry.referral_count}
             </AdminCell>
-            <AdminCell nowrap>{entry.utm_source ?? "—"}</AdminCell>
+            <AdminCell nowrap>{entry.utm_source ?? "-"}</AdminCell>
             <AdminCell nowrap>{shortDate(entry.created_at, language)}</AdminCell>
+            <AdminCell>
+              <WaitlistActions
+                entry={entry}
+                loading={updatingEntryId === entry.id}
+                language={language}
+                onUpdateStatus={updateStatus}
+              />
+            </AdminCell>
           </AdminRow>
         ))}
       </AdminTable>
@@ -203,4 +257,103 @@ export function WaitlistPanel() {
       ) : null}
     </div>
   );
+}
+
+function WaitlistActions({
+  entry,
+  loading,
+  language,
+  onUpdateStatus
+}: {
+  entry: WaitlistEntry;
+  loading: boolean;
+  language: "tr" | "en";
+  onUpdateStatus: (entry: WaitlistEntry, status: WaitlistStatus) => Promise<void>;
+}) {
+  const transitions = allowedWaitlistTransitions(entry.status);
+
+  if (entry.status === "converted") {
+    return (
+      <Pill tone="success" className="text-[10px]">
+        {language === "tr" ? "Hesaba donustu" : "Converted"}
+      </Pill>
+    );
+  }
+
+  if (transitions.length === 0) {
+    return <span className="text-xs text-white/38">-</span>;
+  }
+
+  return (
+    <div className="flex min-w-[13rem] flex-wrap gap-1.5">
+      {transitions.map((nextStatus) => {
+        const Icon = actionIcon(nextStatus);
+        return (
+          <button
+            key={nextStatus}
+            type="button"
+            disabled={loading}
+            onClick={() => void onUpdateStatus(entry, nextStatus)}
+            className="focus-ring inline-flex min-h-8 items-center gap-1.5 rounded-md border border-white/10 px-2.5 text-xs font-semibold text-white/62 transition hover:border-jam-blue/35 hover:bg-jam-blue/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            title={actionLabel(nextStatus, language)}
+          >
+            {loading ? <Loader2 size={13} className="animate-spin" /> : <Icon size={13} />}
+            {actionLabel(nextStatus, language)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function actionIcon(status: WaitlistStatus) {
+  switch (status) {
+    case "invited":
+      return MailCheck;
+    case "blocked":
+    case "suppressed":
+      return ShieldX;
+    case "verified":
+      return RotateCcw;
+    default:
+      return CheckCircle2;
+  }
+}
+
+function actionLabel(status: WaitlistStatus, language: "tr" | "en") {
+  const tr = language === "tr";
+  switch (status) {
+    case "verified":
+      return tr ? "Aktiflestir" : "Reopen";
+    case "invited":
+      return tr ? "Davet et" : "Invite";
+    case "suppressed":
+      return tr ? "Bastir" : "Suppress";
+    case "blocked":
+      return tr ? "Blokla" : "Block";
+    default:
+      return statusLabel(status, language);
+  }
+}
+
+function statusLabel(status: WaitlistStatus | "", language: "tr" | "en") {
+  if (language === "en") {
+    return status || "All";
+  }
+  switch (status) {
+    case "pending":
+      return "Beklemede";
+    case "verified":
+      return "Dogrulandi";
+    case "invited":
+      return "Davet edildi";
+    case "converted":
+      return "Donustu";
+    case "suppressed":
+      return "Bastirildi";
+    case "blocked":
+      return "Bloklandi";
+    default:
+      return "Tumu";
+  }
 }

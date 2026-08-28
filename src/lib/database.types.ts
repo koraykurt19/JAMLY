@@ -862,6 +862,14 @@ export type Database = {
         };
         Returns: undefined;
       };
+      admin_set_waitlist_status: {
+        Args: {
+          p_entry_id: string;
+          p_status: Database["public"]["Enums"]["waitlist_status"];
+          p_reason?: string | null;
+        };
+        Returns: undefined;
+      };
       admin_release_exclusive: {
         Args: { p_listing_id: string };
         Returns: undefined;

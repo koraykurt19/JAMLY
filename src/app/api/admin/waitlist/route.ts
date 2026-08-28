@@ -4,19 +4,11 @@ import {
   requireCapability,
   sanitizeSearch
 } from "@/lib/server/admin";
+import { waitlistStatuses } from "@/lib/waitlist-admin";
 
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
-const allowedStatuses = [
-  "pending",
-  "verified",
-  "invited",
-  "converted",
-  "suppressed",
-  "blocked"
-] as const;
-
 export async function GET(request: Request) {
   try {
     const { client } = await requireCapability(request, "waitlist.manage");
@@ -45,7 +37,7 @@ export async function GET(request: Request) {
       );
     }
     // Narrow through the literal union so the filter value is validated, not cast.
-    const validStatus = allowedStatuses.find((value) => value === status);
+    const validStatus = waitlistStatuses.find((value) => value === status);
     if (validStatus) query = query.eq("status", validStatus);
     if (flagged) {
       query = query.not("risk_flags", "eq", "{}");
