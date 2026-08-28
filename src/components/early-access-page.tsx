@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   BadgeCheck,
   ChevronDown,
+  Flame,
+  Gamepad2,
   ListChecks,
   Music4,
+  RotateCcw,
   Rocket,
   Shield,
   SlidersHorizontal,
@@ -22,6 +25,13 @@ import { JamlyWordmark } from "@/components/jamly-logo";
 import { Card, Pill } from "@/components/ui/surface";
 import { getEarlyAccessCopy } from "@/lib/early-access-copy";
 import { cn } from "@/lib/format";
+import {
+  beatPads,
+  buildBeatSequence,
+  launchBenefitForScore,
+  scoreBeatAttempt,
+  type BeatPad
+} from "@/lib/launch-mini-game";
 
 const featureIcons = {
   music: Music4,
@@ -85,6 +95,7 @@ export function EarlyAccessPage() {
             <WaitlistCounter stats={stats} copy={copy} locale={locale} />
 
             <LaunchPass language={language} />
+            <LaunchBeatGame language={language} />
 
             <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <a
@@ -249,6 +260,173 @@ export function EarlyAccessPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+const beatPadLabels: Record<BeatPad, string> = {
+  kick: "Kick",
+  snare: "Snare",
+  hat: "Hat",
+  bass: "Bass"
+};
+
+function LaunchBeatGame({ language }: { language: "tr" | "en" }) {
+  const tr = language === "tr";
+  const [round, setRound] = useState(1);
+  const [attempt, setAttempt] = useState<BeatPad[]>([]);
+  const [score, setScore] = useState(0);
+  const [status, setStatus] = useState<"idle" | "hit" | "miss">("idle");
+  const sequence = useMemo(() => buildBeatSequence(round), [round]);
+  const nextPad = sequence[attempt.length];
+  const benefit = launchBenefitForScore(score, language);
+
+  function pressPad(pad: BeatPad) {
+    const nextAttempt = [...attempt, pad];
+    const result = scoreBeatAttempt(sequence.slice(0, nextAttempt.length), nextAttempt);
+
+    if (!result.correct) {
+      setAttempt([]);
+      setStatus("miss");
+      setRound(1);
+      return;
+    }
+
+    if (nextAttempt.length === sequence.length) {
+      const completed = scoreBeatAttempt(sequence, nextAttempt);
+      setScore((currentScore) => currentScore + completed.points);
+      setAttempt([]);
+      setStatus("hit");
+      setRound((currentRound) => currentRound + 1);
+      return;
+    }
+
+    setAttempt(nextAttempt);
+    setStatus("idle");
+  }
+
+  function reset() {
+    setRound(1);
+    setAttempt([]);
+    setScore(0);
+    setStatus("idle");
+  }
+
+  return (
+    <div className="mt-4 w-full max-w-3xl rounded-lg border border-white/10 bg-white/[0.045] p-4 text-left shadow-soft">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-jam-blue">
+            <Gamepad2 size={15} />
+            Beat Streak
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-white">
+            {tr ? "Acilis ritmini yakala" : "Catch the launch rhythm"}
+          </h2>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <MiniGameMetric label={tr ? "Seri" : "Round"} value={String(round)} />
+          <MiniGameMetric label="XP" value={score.toLocaleString(language === "tr" ? "tr-TR" : "en-US")} />
+          <MiniGameMetric label={tr ? "Avantaj" : "Perk"} value={benefit} compact />
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_13rem]">
+        <div className="grid grid-cols-4 gap-2">
+          {sequence.map((pad, index) => {
+            const done = index < attempt.length;
+            const active = index === attempt.length;
+            return (
+              <span
+                key={`${pad}-${index}`}
+                className={cn(
+                  "flex min-h-12 items-center justify-center rounded-md border text-xs font-bold uppercase tracking-[0.12em]",
+                  done
+                    ? "border-jam-mint/38 bg-jam-mint/14 text-jam-mint"
+                    : active
+                      ? "border-jam-blue/44 bg-jam-blue/14 text-white"
+                      : "border-white/10 bg-black/20 text-white/34"
+                )}
+              >
+                {beatPadLabels[pad]}
+              </span>
+            );
+          })}
+        </div>
+
+        <div
+          className={cn(
+            "flex min-h-12 items-center justify-center rounded-md border px-3 text-center text-sm font-semibold",
+            status === "hit"
+              ? "border-jam-mint/34 bg-jam-mint/12 text-jam-mint"
+              : status === "miss"
+                ? "border-jam-warning/32 bg-jam-warning/10 text-jam-warning"
+                : "border-white/10 bg-black/18 text-white/58"
+          )}
+        >
+          {status === "hit"
+            ? tr
+              ? "Seri buyudu"
+              : "Streak up"
+            : status === "miss"
+              ? tr
+                ? "Ritim dustu"
+                : "Beat dropped"
+              : nextPad
+                ? `${tr ? "Sira" : "Cue"}: ${beatPadLabels[nextPad]}`
+                : "Ready"}
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {beatPads.map((pad) => (
+          <button
+            key={pad}
+            type="button"
+            onClick={() => pressPad(pad)}
+            className="focus-ring inline-flex min-h-11 items-center justify-center rounded-md border border-white/10 bg-black/24 px-3 text-sm font-bold text-white transition hover:border-jam-blue/44 hover:bg-jam-blue/12"
+          >
+            {beatPadLabels[pad]}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={reset}
+          aria-label={tr ? "Sifirla" : "Reset"}
+          className="focus-ring inline-flex min-h-11 items-center justify-center rounded-md border border-white/10 bg-black/24 text-white/68 transition hover:border-white/22 hover:text-white"
+        >
+          <RotateCcw size={17} />
+        </button>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-white/42">
+        <Flame size={14} className="text-jam-warning" />
+        {tr ? "On kayit sinyali oyun icinde kalir." : "The signal stays inside the pre-register moment."}
+      </div>
+    </div>
+  );
+}
+
+function MiniGameMetric({
+  label,
+  value,
+  compact = false
+}: {
+  label: string;
+  value: string;
+  compact?: boolean;
+}) {
+  return (
+    <div className="min-w-0 rounded-md border border-white/8 bg-black/22 px-2 py-1.5">
+      <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/34">{label}</p>
+      <p
+        className={cn(
+          "mt-0.5 truncate font-bold text-white",
+          compact ? "text-[11px]" : "text-sm tabular-nums"
+        )}
+      >
+        {value}
+      </p>
+    </div>
   );
 }
 

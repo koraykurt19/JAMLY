@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { creators, listings } from "../src/lib/data";
 import {
   categoryLabels,
@@ -44,11 +46,19 @@ import {
   isAdminMutableWaitlistStatus
 } from "../src/lib/waitlist-admin";
 import { betaAllowedHandleSet, isHandleBetaAllowed } from "../src/lib/beta-access";
+import {
+  buildBeatSequence,
+  launchBenefitForScore,
+  scoreBeatAttempt
+} from "../src/lib/launch-mini-game";
 
 type TestCase = {
   name: string;
   run: () => void;
 };
+
+const retentionMigrationSql = () =>
+  readFileSync(resolve(process.cwd(), "supabase/migrations/20260828_retention_controls.sql"), "utf8");
 
 const tests: TestCase[] = [
   {
@@ -231,6 +241,35 @@ const tests: TestCase[] = [
         buildReferralUrl("https://pre-register.getjamly.com", "ABC123"),
         "https://pre-register.getjamly.com/?ref=ABC123"
       );
+    }
+  },
+  {
+    name: "pre-register beat streak mini-game scores only exact sequences",
+    run() {
+      const first = buildBeatSequence(1);
+      assert.deepEqual(first, ["snare", "bass", "snare"]);
+
+      const partial = scoreBeatAttempt(first.slice(0, 2), ["snare", "bass"]);
+      assert.equal(partial.correct, true);
+      assert.equal(partial.completed, true);
+
+      const miss = scoreBeatAttempt(first, ["snare", "kick", "snare"]);
+      assert.equal(miss.correct, false);
+      assert.equal(miss.points, 0);
+
+      const hit = scoreBeatAttempt(first, first);
+      assert.equal(hit.correct, true);
+      assert.equal(hit.completed, true);
+      assert.equal(hit.points, 360);
+    }
+  },
+  {
+    name: "pre-register beat streak benefit tiers remain stable",
+    run() {
+      assert.equal(launchBenefitForScore(0, "en"), "Founding list signal");
+      assert.equal(launchBenefitForScore(1200, "en"), "Early wave priority");
+      assert.equal(launchBenefitForScore(2400, "en"), "Studio Alpha badge");
+      assert.equal(launchBenefitForScore(1200, "tr"), "Erken dalga onceligi");
     }
   },
 
@@ -440,6 +479,70 @@ const tests: TestCase[] = [
       assert.equal(handles.size, 3);
       assert.ok(isHandleBetaAllowed(" KORAYKURT "));
       assert.ok(!isHandleBetaAllowed("randomuser"));
+    }
+  },
+
+  // --- Retention ----------------------------------------------------------
+  {
+    name: "retention cleanup never targets durable identity or money tables",
+    run() {
+      const sql = retentionMigrationSql().toLowerCase();
+      const forbiddenDeleteTargets = [
+        "profiles",
+        "auth.users",
+        "admin_accounts",
+        "admin_audit_log",
+        "order_requests",
+        "payments",
+        "ledger_entries",
+        "revenue_splits",
+        "reports"
+      ];
+
+      for (const table of forbiddenDeleteTargets) {
+        const deletePattern = new RegExp(`delete\\s+from\\s+(?:public\\.)?${table.replace(".", "\\.")}\\b`);
+        assert.ok(!deletePattern.test(sql), `retention must not delete from ${table}`);
+        assert.ok(sql.includes(`'${table}'`), `retention summary must name ${table} as protected`);
+      }
+    }
+  },
+  {
+    name: "retention cleanup only deletes approved ephemeral data",
+    run() {
+      const sql = retentionMigrationSql().toLowerCase();
+      const allowedDeleteTargets = [
+        "rate_limit_counters",
+        "waitlist_events",
+        "notifications",
+        "messages",
+        "conversations"
+      ];
+      const deleteTargets = [...sql.matchAll(/delete\s+from\s+(?:public\.)?([a-z_]+)/g)].map(
+        (match) => match[1]
+      );
+
+      assert.ok(deleteTargets.length > 0, "retention migration should include execute-mode deletes");
+      assert.deepEqual(
+        [...new Set(deleteTargets)].sort(),
+        allowedDeleteTargets.sort()
+      );
+      assert.ok(
+        sql.includes("c.order_request_id is null"),
+        "non-order conversation guard must stay in message/conversation pruning"
+      );
+    }
+  },
+  {
+    name: "premium retention doubles user-facing ephemeral windows",
+    run() {
+      const sql = retentionMigrationSql();
+
+      assert.ok(sql.includes("retention_multiplier >= 1"));
+      assert.ok(sql.includes("retention_multiplier <= 4"));
+      assert.ok(sql.includes("'premiumRetentionDays', read_notification_base_days * 2"));
+      assert.ok(sql.includes("'premiumRetentionDays', unread_notification_base_days * 2"));
+      assert.ok(sql.includes("'premiumRetentionDays', message_base_days * 2"));
+      assert.ok(sql.includes("'premiumRetentionDays', 60"));
     }
   }
 ];
