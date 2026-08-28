@@ -145,6 +145,22 @@ try {
     `HTTP ${accountStatusResponse.status()}`
   );
 
+  const sandboxMissingCardResponse = await context.request.post(
+    `${baseUrl}/api/payments/sandbox/complete`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { orderId: "00000000-0000-4000-8000-000000000000" },
+      timeout: 30000
+    }
+  );
+  const sandboxMissingCardBody = await sandboxMissingCardResponse.json().catch(() => ({}));
+  record(
+    "sandbox payment API rejects missing card payload",
+    sandboxMissingCardResponse.status() === 422 &&
+      sandboxMissingCardBody.error === "missing_payment_method",
+    `HTTP ${sandboxMissingCardResponse.status()}`
+  );
+
   const betaOpenResponse = await context.request.patch(
     `${baseUrl}/api/admin/users/${betaSmokeUserId}/beta-access`,
     {
