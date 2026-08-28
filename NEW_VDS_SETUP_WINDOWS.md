@@ -342,6 +342,28 @@ npm run retention:execute
 Reports are written under `C:\jamly\work\retention-runs\`. That folder is
 ignored by Git and may be rotated separately.
 
+Live smoke tests also write screenshots and JSON reports under
+`C:\jamly\work\live-smoke\`. Inspect local artifact cleanup with:
+
+```powershell
+npm run smoke:prune-artifacts
+```
+
+Execute when the dry-run looks sane:
+
+```powershell
+npm run smoke:prune-artifacts:execute
+```
+
+Defaults keep the last 7 days and cap retained artifacts at 256 MB. Override
+per shell when needed:
+
+```powershell
+$env:SMOKE_ARTIFACT_KEEP_DAYS = "14"
+$env:SMOKE_ARTIFACT_MAX_MB = "512"
+npm run smoke:prune-artifacts
+```
+
 To run it nightly with Windows Task Scheduler:
 
 ```powershell
@@ -543,6 +565,8 @@ npm run build
 C:\tools\nssm\nssm.exe restart Jamly
 curl.exe -s https://getjamly.com/api/health
 npm run retention:dry-run
+npm run smoke:beta-gate
+npm run smoke:prune-artifacts
 ```
 
 If `.env.local`, `NEXT_PUBLIC_SUPABASE_URL`, or `NEXT_PUBLIC_SITE_URL` changes,

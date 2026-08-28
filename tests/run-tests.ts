@@ -51,6 +51,7 @@ import {
   launchBenefitForScore,
   scoreBeatAttempt
 } from "../src/lib/launch-mini-game";
+import { planArtifactPrune } from "../src/lib/artifact-retention";
 
 type TestCase = {
   name: string;
@@ -578,6 +579,44 @@ const tests: TestCase[] = [
       assert.ok(sql.includes("profile_id = auth.uid()"));
       assert.ok(sql.includes("public.admin_has('admin.manage')"));
       assert.ok(!/for\s+(insert|update|delete|all)/i.test(sql));
+    }
+  },
+
+  // --- VDS artifact retention --------------------------------------------
+  {
+    name: "smoke artifact pruning removes expired files first",
+    run() {
+      const day = 24 * 60 * 60 * 1000;
+      const nowMs = Date.UTC(2026, 7, 28);
+      const plan = planArtifactPrune(
+        [
+          { path: "fresh.png", sizeBytes: 10, modifiedAtMs: nowMs - day },
+          { path: "old.png", sizeBytes: 10, modifiedAtMs: nowMs - 10 * day }
+        ],
+        { nowMs, keepDays: 7, maxBytes: 100 }
+      );
+
+      assert.deepEqual(plan.keepFiles.map((file) => file.path), ["fresh.png"]);
+      assert.deepEqual(plan.deleteFiles.map((file) => file.path), ["old.png"]);
+    }
+  },
+  {
+    name: "smoke artifact pruning respects the total size budget",
+    run() {
+      const nowMs = Date.UTC(2026, 7, 28);
+      const plan = planArtifactPrune(
+        [
+          { path: "newest.png", sizeBytes: 60, modifiedAtMs: nowMs },
+          { path: "middle.png", sizeBytes: 60, modifiedAtMs: nowMs - 1 },
+          { path: "oldest.png", sizeBytes: 20, modifiedAtMs: nowMs - 2 }
+        ],
+        { nowMs, keepDays: 7, maxBytes: 100 }
+      );
+
+      assert.deepEqual(plan.keepFiles.map((file) => file.path), ["newest.png", "oldest.png"]);
+      assert.deepEqual(plan.deleteFiles.map((file) => file.path), ["middle.png"]);
+      assert.equal(plan.keptBytes, 80);
+      assert.equal(plan.deletedBytes, 60);
     }
   }
 ];

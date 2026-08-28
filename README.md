@@ -335,6 +335,8 @@ NEW_VDS_SETUP_WINDOWS.md   Windows Server 2022 + IIS + Supabase runbook
 | `npm run retention:dry-run` | Inspect Supabase retention cleanup counts without deleting rows |
 | `npm run retention:execute` | Execute the guarded retention cleanup and write a local JSON report |
 | `npm run smoke:beta-gate` | Verify a non-admin, non-allowlisted auth account is redirected back to pre-register |
+| `npm run smoke:prune-artifacts` | Inspect local smoke/report artifacts that would be pruned from `work/` |
+| `npm run smoke:prune-artifacts:execute` | Delete old or over-budget local smoke/report artifacts |
 
 Recommended quality gate before every merge:
 
