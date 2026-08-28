@@ -333,15 +333,21 @@ export type Database = {
       admin_accounts: {
         Row: {
           user_id: string;
+          role: Database["public"]["Enums"]["admin_role"];
+          is_active: boolean;
           created_by: string | null;
           notes: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           user_id: string;
+          role?: Database["public"]["Enums"]["admin_role"];
+          is_active?: boolean;
           created_by?: string | null;
           notes?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["admin_accounts"]["Insert"]>;
         Relationships: [];

@@ -5,6 +5,7 @@ import {
   AlertCircle,
   Ban,
   Gauge,
+  KeyRound,
   Loader2,
   RefreshCw,
   ShieldCheck,
@@ -23,6 +24,14 @@ import {
 } from "@/lib/supabase";
 
 type AccountStatus = "active" | "suspended" | "banned";
+type AdminRole =
+  | "super_admin"
+  | "admin"
+  | "moderator"
+  | "support"
+  | "finance"
+  | "content_reviewer"
+  | "analyst";
 type AdminTab = "overview" | "users" | "listings" | "orders" | "skills";
 
 type Overview = {
@@ -50,6 +59,9 @@ type AdminUser = {
   location: string | null;
   status: AccountStatus;
   isAdmin: boolean;
+  adminRole: AdminRole | null;
+  isBetaHandleAllowed: boolean;
+  isBetaAllowed: boolean;
   createdAt: string;
 };
 
@@ -120,6 +132,7 @@ export function AdminDashboard() {
   const [query, setQuery] = useState("");
   const [userStatus, setUserStatus] = useState<"all" | AccountStatus>("all");
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [updatingAdminId, setUpdatingAdminId] = useState<string | null>(null);
 
   const text = useMemo(() => getAdminCopy(language), [language]);
 
@@ -212,6 +225,49 @@ export function AdminDashboard() {
     }
   }
 
+  async function updateAdminRole(user: AdminUser, isActive: boolean) {
+    const client = getSupabaseBrowserClient();
+    if (!client || state.status !== "ready") return;
+
+    setUpdatingAdminId(user.id);
+    try {
+      const {
+        data: { session }
+      } = await client.auth.getSession();
+      if (!session) throw new Error(text.signInRequired);
+
+      await adminFetch(`/api/admin/users/${user.id}/admin-role`, session.access_token, {
+        method: "PATCH",
+        body: JSON.stringify({
+          role: user.adminRole ?? "admin",
+          isActive,
+          reason: isActive ? "Granted beta/admin access from users panel." : "Disabled admin beta access from users panel."
+        })
+      });
+
+      setState({
+        ...state,
+        users: state.users.map((current) =>
+          current.id === user.id
+            ? {
+                ...current,
+                isAdmin: isActive,
+                adminRole: current.adminRole ?? "admin",
+                isBetaAllowed: current.status === "active" && (isActive || current.isBetaHandleAllowed)
+              }
+            : current
+        )
+      });
+    } catch (error) {
+      setState({
+        status: "error",
+        message: error instanceof Error ? error.message : text.error
+      });
+    } finally {
+      setUpdatingAdminId(null);
+    }
+  }
+
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-5 border-b border-white/10 pb-7 lg:flex-row lg:items-end lg:justify-between">
@@ -286,10 +342,12 @@ export function AdminDashboard() {
               query={query}
               status={userStatus}
               updatingUserId={updatingUserId}
+              updatingAdminId={updatingAdminId}
               text={text}
               onQueryChange={setQuery}
               onStatusChange={setUserStatus}
               onUpdateStatus={updateUserStatus}
+              onUpdateAdminRole={updateAdminRole}
             />
           ) : null}
           {activeTab === "listings" ? (
@@ -347,19 +405,23 @@ function UsersPanel({
   query,
   status,
   updatingUserId,
+  updatingAdminId,
   text,
   onQueryChange,
   onStatusChange,
-  onUpdateStatus
+  onUpdateStatus,
+  onUpdateAdminRole
 }: {
   users: AdminUser[];
   query: string;
   status: "all" | AccountStatus;
   updatingUserId: string | null;
+  updatingAdminId: string | null;
   text: AdminCopy;
   onQueryChange: (query: string) => void;
   onStatusChange: (status: "all" | AccountStatus) => void;
   onUpdateStatus: (userId: string, status: AccountStatus) => Promise<void>;
+  onUpdateAdminRole: (user: AdminUser, isActive: boolean) => Promise<void>;
 }) {
   return (
     <div className="mt-7">
@@ -386,7 +448,7 @@ function UsersPanel({
       <TableShell>
         <thead>
           <tr>
-            {[text.user, text.role, text.status, text.joined, text.actions].map((label) => (
+            {[text.user, text.role, accessLabel(text), text.status, text.joined, text.actions].map((label) => (
               <Th key={label}>{label}</Th>
             ))}
           </tr>
@@ -397,12 +459,33 @@ function UsersPanel({
               <Td>
                 <div className="min-w-0">
                   <p className="font-semibold text-white">
-                    {user.fullName} {user.isAdmin ? <span className="text-jam-mint">Admin</span> : null}
+                    {user.fullName}
                   </p>
                   <p className="mt-1 text-xs text-white/42">@{user.handle}</p>
                 </div>
               </Td>
               <Td>{user.role}</Td>
+              <Td>
+                <div className="flex flex-wrap gap-1.5">
+                  {user.isBetaAllowed ? (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-jam-mint/30 bg-jam-mint/10 px-2 py-1 text-xs font-semibold text-jam-mint">
+                      <ShieldCheck size={12} />
+                      {accessStateLabel(text, true)}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-xs font-semibold text-white/42">
+                      <Ban size={12} />
+                      {accessStateLabel(text, false)}
+                    </span>
+                  )}
+                  {user.isAdmin ? (
+                    <span className="inline-flex items-center gap-1 rounded-md border border-jam-blue/30 bg-jam-blue/10 px-2 py-1 text-xs font-semibold text-jam-blue">
+                      <KeyRound size={12} />
+                      {user.adminRole ?? "admin"}
+                    </span>
+                  ) : null}
+                </div>
+              </Td>
               <Td><StatusPill status={user.status} text={text} /></Td>
               <Td>{shortDate(user.createdAt)}</Td>
               <Td>
@@ -418,6 +501,14 @@ function UsersPanel({
                       {text.statusLabels[nextStatus]}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    disabled={updatingAdminId === user.id}
+                    onClick={() => void onUpdateAdminRole(user, !user.isAdmin)}
+                    className="focus-ring rounded-md border border-white/10 px-2.5 py-1.5 text-xs font-semibold text-white/62 transition hover:border-jam-mint/35 hover:bg-jam-mint/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                  >
+                    {adminActionLabel(text, user.isAdmin, updatingAdminId === user.id)}
+                  </button>
                 </div>
               </Td>
             </tr>
@@ -578,6 +669,24 @@ function StatusPill({ status, text }: { status: AccountStatus; text: AdminCopy }
       {text.statusLabels[status]}
     </span>
   );
+}
+
+function accessLabel(text: AdminCopy) {
+  return text.signIn === "Sign in" ? "Access" : "Erisim";
+}
+
+function accessStateLabel(text: AdminCopy, allowed: boolean) {
+  if (text.signIn === "Sign in") return allowed ? "Beta" : "Closed";
+  return allowed ? "Beta" : "Kapali";
+}
+
+function adminActionLabel(text: AdminCopy, isAdmin: boolean, loading: boolean) {
+  if (text.signIn === "Sign in") {
+    if (loading) return "Updating";
+    return isAdmin ? "Disable admin" : "Grant admin";
+  }
+  if (loading) return "Isleniyor";
+  return isAdmin ? "Admin kapat" : "Admin yap";
 }
 
 function AdminNotice({

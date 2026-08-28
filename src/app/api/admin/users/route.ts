@@ -34,13 +34,17 @@ export async function GET(request: Request) {
     const [{ data: users, error: usersError }, { data: admins, error: adminsError }] =
       await Promise.all([
         query,
-        client.from("admin_accounts").select("user_id")
+        client.from("admin_accounts").select("user_id, role, is_active")
       ]);
 
     if (usersError) throw usersError;
     if (adminsError) throw adminsError;
 
-    const adminIds = new Set((admins ?? []).map((admin) => admin.user_id));
+    const adminById = new Map((admins ?? []).map((admin) => [admin.user_id, admin]));
+    const betaAllowedHandles = hostList(process.env.JAMLY_BETA_ALLOWED_HANDLES, [
+      "koraykurt",
+      "hakanefe"
+    ]);
 
     return Response.json(
       {
@@ -52,7 +56,13 @@ export async function GET(request: Request) {
           headline: user.headline,
           location: user.location,
           status: user.account_status,
-          isAdmin: adminIds.has(user.id),
+          adminRole: adminById.get(user.id)?.role ?? null,
+          isAdmin: adminById.get(user.id)?.is_active === true,
+          isBetaHandleAllowed: betaAllowedHandles.has(String(user.handle ?? "").toLowerCase()),
+          isBetaAllowed:
+            user.account_status === "active" &&
+            (adminById.get(user.id)?.is_active === true ||
+              betaAllowedHandles.has(String(user.handle ?? "").toLowerCase())),
           createdAt: user.created_at
         }))
       },
@@ -65,4 +75,12 @@ export async function GET(request: Request) {
 
 function isAccountStatus(value: string): value is AccountStatus {
   return (accountStatuses as readonly string[]).includes(value);
+}
+
+function hostList(value: string | undefined, fallback: string[]) {
+  return new Set(
+    (value?.split(",") ?? fallback)
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean)
+  );
 }
