@@ -231,8 +231,12 @@ export function EarlyAccessPage() {
             {copy.heroCta}
           </a>
           <p className="mt-8 text-[13px] text-white/40">
-            <Link href="/" className="focus-ring rounded underline-offset-4 hover:underline">
-              {language === "tr" ? "Jamly'yi keşfet" : "Explore Jamly"}
+            <Link
+              href="https://getjamly.com/auth/sign-in"
+              prefetch={false}
+              className="focus-ring rounded underline-offset-4 hover:underline"
+            >
+              {language === "tr" ? "Admin / beta girişi" : "Admin / beta sign-in"}
             </Link>
           </p>
         </div>

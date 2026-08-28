@@ -13,6 +13,9 @@ Supabase data layer, tiered beat licensing, private delivery packages, order
 requests, Realtime messaging, and participant-only collaboration workspaces are implemented. Payments, escrow, payouts,
 and service-order file delivery are intentionally outside the current release.
 
+Post-beta hardening and product expansion are tracked in
+[ROADMAP.md](./ROADMAP.md).
+
 ## Product Highlights
 
 | Area | Capability |
