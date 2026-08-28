@@ -5,6 +5,7 @@ import {
 } from "@/lib/server/admin";
 
 export const dynamic = "force-dynamic";
+const RUN_LIMIT = 8;
 
 export async function GET(request: Request) {
   try {
@@ -14,8 +15,9 @@ export async function GET(request: Request) {
     });
 
     if (error) throw error;
+    const runs = await listRetentionRuns(client);
 
-    return Response.json({ plan: data }, { headers: noStoreHeaders() });
+    return Response.json({ plan: data, runs }, { headers: noStoreHeaders() });
   } catch (error) {
     return adminErrorResponse(error);
   }
@@ -41,9 +43,21 @@ export async function POST(request: Request) {
     });
 
     if (error) throw error;
+    const runs = await listRetentionRuns(client);
 
-    return Response.json({ plan: data }, { headers: noStoreHeaders() });
+    return Response.json({ plan: data, runs }, { headers: noStoreHeaders() });
   } catch (error) {
     return adminErrorResponse(error);
   }
+}
+
+async function listRetentionRuns(client: Awaited<ReturnType<typeof requireCapability>>["client"]) {
+  const { data, error } = await client
+    .from("retention_policy_runs")
+    .select("id,mode,status,summary,error_message,created_at")
+    .order("created_at", { ascending: false })
+    .limit(RUN_LIMIT);
+
+  if (error) throw error;
+  return data ?? [];
 }

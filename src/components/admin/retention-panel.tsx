@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, DatabaseZap, Loader2, Play, RefreshCw, ShieldCheck } from "lucide-react";
 import { useI18n } from "@/components/language-provider";
-import { AdminCell, AdminRow, AdminTable } from "@/components/admin/admin-table";
+import { AdminCell, AdminRow, AdminTable, StatusPill } from "@/components/admin/admin-table";
 import { Card, Pill } from "@/components/ui/surface";
 import { adminFetch, AdminRequestError } from "@/lib/admin-client";
 
@@ -29,7 +29,21 @@ type RetentionPlan = {
   neverDelete: string[];
 };
 
-type RetentionResponse = { plan: RetentionPlan };
+type RetentionRun = {
+  id: string;
+  mode: "dry_run" | "execute";
+  status: "completed" | "failed";
+  summary: {
+    totals?: {
+      eligibleRows?: number;
+      deletedRows?: number;
+    };
+  } | null;
+  error_message: string | null;
+  created_at: string;
+};
+
+type RetentionResponse = { plan: RetentionPlan; runs: RetentionRun[] };
 
 export function RetentionPanel() {
   const { language } = useI18n();
@@ -39,6 +53,7 @@ export function RetentionPanel() {
   const [executing, setExecuting] = useState(false);
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [runs, setRuns] = useState<RetentionRun[]>([]);
 
   const canExecute = confirm === "RUN_RETENTION_CLEANUP" && !executing;
 
@@ -48,6 +63,7 @@ export function RetentionPanel() {
     try {
       const response = await adminFetch<RetentionResponse>("/api/admin/retention");
       setPlan(response.plan);
+      setRuns(response.runs ?? []);
     } catch (requestError) {
       setError(readError(requestError, tr));
     } finally {
@@ -71,6 +87,7 @@ export function RetentionPanel() {
         body: JSON.stringify({ confirm })
       });
       setPlan(response.plan);
+      setRuns(response.runs ?? []);
       setConfirm("");
     } catch (requestError) {
       setError(readError(requestError, tr));
@@ -172,6 +189,58 @@ export function RetentionPanel() {
         ))}
       </AdminTable>
 
+      <Card>
+        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-white">
+              {tr ? "Son temizlik calismalari" : "Recent retention runs"}
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-white/50">
+              {tr
+                ? "Dry-run ve gercek temizlik kayitlari burada izlenir."
+                : "Dry-run and execute records are tracked here."}
+            </p>
+          </div>
+          <Pill tone="brand">{runs.length}</Pill>
+        </div>
+
+        <AdminTable
+          columns={[
+            tr ? "Zaman" : "Time",
+            "Mode",
+            tr ? "Durum" : "Status",
+            tr ? "Silinebilir" : "Eligible",
+            tr ? "Silinen" : "Deleted",
+            tr ? "Hata" : "Error"
+          ]}
+          loading={loading}
+          error={null}
+          empty={!loading && runs.length === 0}
+          minWidth={820}
+        >
+          {runs.map((run) => (
+            <AdminRow key={run.id}>
+              <AdminCell nowrap>{formatDate(run.created_at, language)}</AdminCell>
+              <AdminCell nowrap>
+                {run.mode === "execute" ? (tr ? "Temizlik" : "Execute") : "Dry-run"}
+              </AdminCell>
+              <AdminCell nowrap>
+                <StatusPill value={run.status} />
+              </AdminCell>
+              <AdminCell nowrap className="tabular-nums">
+                {Number(run.summary?.totals?.eligibleRows ?? 0)}
+              </AdminCell>
+              <AdminCell nowrap className="font-bold tabular-nums text-jam-mint">
+                {Number(run.summary?.totals?.deletedRows ?? 0)}
+              </AdminCell>
+              <AdminCell className="max-w-[18rem] truncate text-white/54">
+                {run.error_message ?? "-"}
+              </AdminCell>
+            </AdminRow>
+          ))}
+        </AdminTable>
+      </Card>
+
       <Card className="border-jam-warning/24 bg-jam-warning/[0.055]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
@@ -213,6 +282,13 @@ export function RetentionPanel() {
       </Card>
     </div>
   );
+}
+
+function formatDate(value: string, language: "tr" | "en") {
+  return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : "en-US", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(new Date(value));
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
