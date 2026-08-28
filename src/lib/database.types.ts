@@ -154,6 +154,46 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["profile_follows"]["Insert"]>;
         Relationships: [];
       };
+      profile_retention_settings: {
+        Row: {
+          profile_id: string;
+          plan: "standard" | "premium";
+          retention_multiplier: number;
+          updated_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          profile_id: string;
+          plan?: "standard" | "premium";
+          retention_multiplier?: number;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["profile_retention_settings"]["Insert"]>;
+        Relationships: [];
+      };
+      retention_policy_runs: {
+        Row: {
+          id: string;
+          mode: "dry_run" | "execute";
+          status: "completed" | "failed";
+          summary: Json;
+          executed_by: string | null;
+          error_message: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          mode: "dry_run" | "execute";
+          status: "completed" | "failed";
+          summary?: Json;
+          executed_by?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["retention_policy_runs"]["Insert"]>;
+        Relationships: [];
+      };
       collab_projects: {
         Row: {
           id: string;
@@ -851,6 +891,14 @@ export type Database = {
       get_admin_overview_v2: {
         Args: Record<PropertyKey, never>;
         Returns: AdminOverviewV2;
+      };
+      admin_retention_plan: {
+        Args: { p_execute?: boolean };
+        Returns: Json;
+      };
+      retention_multiplier_for_profile: {
+        Args: { p_profile_id: string };
+        Returns: number;
       };
       consume_rate_limit: {
         Args: {

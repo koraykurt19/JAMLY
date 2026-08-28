@@ -24,12 +24,13 @@ const navItems: NavItem[] = [
   { href: "/admin/waitlist", labelTr: "Erken kayıt", labelEn: "Waitlist", capability: "waitlist.manage" },
   { href: "/admin/reports", labelTr: "Raporlar", labelEn: "Reports", capability: "report.resolve" },
   { href: "/admin/badges", labelTr: "Rozetler", labelEn: "Badges", capability: "badge.manage" },
+  { href: "/admin/retention", labelTr: "Veri koruma", labelEn: "Retention", capability: "admin.manage" },
   { href: "/admin/audit", labelTr: "Denetim kaydı", labelEn: "Audit log", capability: "audit.view" }
 ];
 
 /**
  * Navigation reflects the caller's role, but hiding a link is not access
- * control — every destination re-checks the capability server-side.
+ * control; every destination re-checks the capability server-side.
  */
 export function AdminNav({ role }: { role: AdminRole | null }) {
   const pathname = usePathname();

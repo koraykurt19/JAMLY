@@ -55,28 +55,29 @@ Never auto-delete:
 
 Implementation queue:
 
-1. Add `account_plan` / `retention_multiplier` support to profiles or a
+1. Ship retention dry-run/execute as an admin-only console.
+2. Add `account_plan` / `retention_multiplier` support to profiles or a
    dedicated subscription table.
-2. Add `retention_policy_runs` table with run status, counts, and errors.
-3. Add SQL functions:
+3. Add `retention_policy_runs` table with run status, counts, and errors.
+4. Add SQL functions:
    - `get_retention_cutoff(p_user_id, p_data_type)`
    - `prune_rate_limit_counters()`
    - `prune_waitlist_tokens()`
    - `prune_notifications()`
    - `prune_ephemeral_events()`
    - `prune_orphaned_storage_objects()`
-4. Add an admin-only dry-run endpoint:
+5. Add an admin-only dry-run endpoint:
    - returns rows/files that would be deleted
    - groups by table, bucket, plan, and cutoff
    - never reveals private message body in summary responses
-5. Add an admin UI page for retention:
+6. Add an admin UI page for retention:
    - dry run
    - execute
    - last run status
    - deleted row/file counts
    - estimated storage reclaimed
-6. Schedule the real job daily after smoke checks pass.
-7. Add tests proving profiles, paid orders, admin audit rows, and unique handles
+7. Schedule the real job daily after smoke checks pass.
+8. Add tests proving profiles, paid orders, admin audit rows, and unique handles
    survive pruning.
 
 Important rule: profile identity must remain. A user can lose old ephemeral
@@ -146,11 +147,13 @@ history, and purchase entitlements must remain intact.
 
 ## P2 - Mini Games / Engagement
 
-- Add small pre-register engagement loops that create useful intent data:
-  - choose-your-role onboarding quiz
+- Add small pre-register engagement loops that create useful intent data without
+  making the page feel like a toy:
+  - role picker: buyer, creator, both
   - beat/license knowledge mini quiz
   - creator readiness checklist
   - referral milestone unlocks
+  - launch-priority score based on verified email, useful interests, and referrals
 - Rewards must map to real pre-register benefits:
   - early badge
   - beta priority
@@ -158,6 +161,14 @@ history, and purchase entitlements must remain intact.
   - launch email segment
 - Avoid adding games that store noisy data forever. Mini-game events should be
   retention-managed unless they grant a permanent badge or benefit.
+
+First experiment:
+
+1. Add a 3-step "launch pass" module below the hero.
+2. Store only normalized answers already supported by waitlist fields where
+   possible.
+3. Persist any extra event as retention-managed `waitlist_events.metadata`.
+4. Show benefits as launch priority, not fake points or fake scarcity.
 
 ## P2 - Supabase Ops Tooling
 
