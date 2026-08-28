@@ -17,6 +17,7 @@
     "supabase:apply-migration": "node scripts/apply-supabase-migration.mjs",
     "retention:dry-run": "node scripts/run-retention-cleanup.mjs",
     "retention:execute": "node scripts/run-retention-cleanup.mjs --execute --confirm RUN_RETENTION_CLEANUP",
+    "smoke:beta-gate": "node scripts/smoke-beta-gate.mjs",
     "brand:generate-favicon": "node scripts/generate-jamly-favicon.mjs"
   },
   "dependencies": {
