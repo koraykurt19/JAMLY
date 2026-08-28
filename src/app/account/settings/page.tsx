@@ -46,6 +46,11 @@ export default function AccountSettingsPage() {
             value={profile?.isAdmin ? profile.adminRole ?? "admin" : tr ? "Yok" : "None"}
             good={profile?.isAdmin === true}
           />
+          <AccessRow
+            label={tr ? "Veri plani" : "Data plan"}
+            value={profile ? retentionLabel(profile.retentionPlan, profile.retentionMultiplier, language) : "-"}
+            good={profile?.retentionPlan === "premium"}
+          />
         </div>
       </div>
 
@@ -95,4 +100,9 @@ function statusFallback(status: string, language: "tr" | "en") {
   if (status === "signed-out") return language === "tr" ? "Giris yok" : "Signed out";
   if (status === "demo") return "Demo";
   return language === "tr" ? "Bilinmiyor" : "Unknown";
+}
+
+function retentionLabel(plan: "standard" | "premium", multiplier: number, language: "tr" | "en") {
+  const label = language === "tr" ? (plan === "premium" ? "Premium" : "Standart") : plan;
+  return `${label} x${multiplier}`;
 }

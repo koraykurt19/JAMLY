@@ -17,6 +17,8 @@ type AccountProfile = {
   adminRole: string | null;
   accountStatus: "active" | "suspended" | "banned";
   isBetaAllowed: boolean;
+  retentionPlan: "standard" | "premium";
+  retentionMultiplier: number;
 };
 
 type AccountState =
@@ -48,13 +50,23 @@ export function useCurrentAccount() {
         return;
       }
 
-      const [{ data: isAdmin }, { data: adminRole }] = await Promise.all([
+      const [{ data: isAdmin }, { data: adminRole }, retention] = await Promise.all([
         client.rpc("is_current_user_admin"),
-        client.rpc("current_admin_role")
+        client.rpc("current_admin_role"),
+        client
+          .from("profile_retention_settings")
+          .select("plan, retention_multiplier")
+          .eq("profile_id", user.id)
+          .maybeSingle()
       ]);
+      if (retention.error) throw new Error(retention.error.message);
       const accountStatus = profile?.account_status ?? "active";
       const handle = profile?.handle ?? user.email?.split("@")[0] ?? user.id.slice(0, 8);
       const allowedHandles = betaAllowedHandleSet(process.env.NEXT_PUBLIC_BETA_ALLOWED_HANDLES);
+      const retentionPlan =
+        retention.data?.plan === "premium" || retention.data?.plan === "standard"
+          ? retention.data.plan
+          : "standard";
 
       setState({
         status: "signed-in",
@@ -67,7 +79,9 @@ export function useCurrentAccount() {
           accountStatus,
           isBetaAllowed:
             accountStatus === "active" &&
-            (Boolean(isAdmin) || allowedHandles.has(handle.toLowerCase()))
+            (Boolean(isAdmin) || allowedHandles.has(handle.toLowerCase())),
+          retentionPlan,
+          retentionMultiplier: Number(retention.data?.retention_multiplier ?? 1)
         }
       });
     } catch (error) {

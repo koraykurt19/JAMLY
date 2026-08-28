@@ -64,6 +64,11 @@ const retentionPlanActionSql = () =>
     resolve(process.cwd(), "supabase/migrations/20260828_admin_retention_plan_actions.sql"),
     "utf8"
   );
+const retentionSelfReadSql = () =>
+  readFileSync(
+    resolve(process.cwd(), "supabase/migrations/20260828_profile_retention_self_read.sql"),
+    "utf8"
+  );
 
 const tests: TestCase[] = [
   {
@@ -562,6 +567,17 @@ const tests: TestCase[] = [
       assert.ok(sql.includes("'retention.plan_change'"));
       assert.ok(sql.includes("perform public.record_admin_action"));
       assert.ok(sql.includes("grant execute on function public.admin_set_retention_plan"));
+    }
+  },
+  {
+    name: "members can only read their own retention settings",
+    run() {
+      const sql = retentionSelfReadSql();
+
+      assert.ok(sql.includes("for select"));
+      assert.ok(sql.includes("profile_id = auth.uid()"));
+      assert.ok(sql.includes("public.admin_has('admin.manage')"));
+      assert.ok(!/for\s+(insert|update|delete|all)/i.test(sql));
     }
   }
 ];
