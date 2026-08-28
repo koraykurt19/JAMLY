@@ -44,9 +44,7 @@ export function useCurrentAccount() {
         return;
       }
 
-      const { data: isAdmin } = await client.rpc("is_admin", {
-        p_user_id: user.id
-      });
+      const { data: isAdmin } = await client.rpc("is_current_user_admin");
 
       setState({
         status: "signed-in",

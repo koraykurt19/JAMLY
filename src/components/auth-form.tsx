@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useState } from "react";
@@ -18,7 +17,6 @@ type AuthFormProps = {
 };
 
 export function AuthForm({ mode }: AuthFormProps) {
-  const router = useRouter();
   const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -105,8 +103,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         throw new Error(t("profileMissing"));
       }
 
-      router.replace(getSafePostAuthPath());
-      router.refresh();
+      window.location.assign(getSafePostAuthPath());
     } catch (error) {
       setLoading(false);
       setMessage(
@@ -197,6 +194,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         {mode === "sign-in" ? t("newToJamly") : t("alreadyAccount")}{" "}
         <Link
           href={mode === "sign-in" ? "/auth/sign-up" : "/auth/sign-in"}
+          prefetch={mode === "sign-in" ? false : undefined}
           className="font-semibold text-white transition hover:text-jam-mint"
         >
           {mode === "sign-in" ? t("createAccount") : t("navSignIn")}

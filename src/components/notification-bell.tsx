@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { Bell, CheckCheck } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Database, Json } from "@/lib/database.types";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 type NotificationRow = Database["public"]["Tables"]["notifications"]["Row"];
 
 export function NotificationBell({ userId }: { userId: string }) {
+  const instanceId = useId();
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -39,7 +40,7 @@ export function NotificationBell({ userId }: { userId: string }) {
     void loadNotifications();
 
     const channel = supabase
-      .channel(`notifications:user_id=eq.${userId}`)
+      .channel(`notifications:${userId}:${instanceId}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
@@ -63,7 +64,7 @@ export function NotificationBell({ userId }: { userId: string }) {
       active = false;
       void supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [instanceId, userId]);
 
   useEffect(() => {
     if (!open) return;

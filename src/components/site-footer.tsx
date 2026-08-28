@@ -113,6 +113,7 @@ export function SiteFooter() {
                     <Link
                       key={link.href}
                       href={link.href}
+                      prefetch={link.href === "/auth/sign-up" ? false : undefined}
                       className="focus-ring w-fit rounded-sm text-sm text-white/58 transition hover:text-white"
                     >
                       {link.label}
