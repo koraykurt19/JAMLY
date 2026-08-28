@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { creators, listings } from "../src/lib/data";
 import {
@@ -70,6 +70,14 @@ const retentionSelfReadSql = () =>
     resolve(process.cwd(), "supabase/migrations/20260828_profile_retention_self_read.sql"),
     "utf8"
   );
+
+const uiSourceFiles = (dir: string): string[] =>
+  readdirSync(dir).flatMap((entry) => {
+    const path = resolve(dir, entry);
+    const stats = statSync(path);
+    if (stats.isDirectory()) return uiSourceFiles(path);
+    return /\.(ts|tsx|mjs|md)$/.test(path) ? [path] : [];
+  });
 
 const tests: TestCase[] = [
   {
@@ -243,6 +251,25 @@ const tests: TestCase[] = [
       assert.equal(foundingTierFor(101), "first_1000");
       assert.equal(foundingTierFor(1000), "first_1000");
       assert.equal(foundingTierFor(1001), "community");
+    }
+  },
+  {
+    name: "admin and pre-register UI sources do not contain UTF-8 mojibake",
+    run() {
+      const files = [
+        ...uiSourceFiles(resolve(process.cwd(), "src", "components", "admin")),
+        ...uiSourceFiles(resolve(process.cwd(), "src", "app", "admin")),
+        ...uiSourceFiles(resolve(process.cwd(), "src", "app", "early-access"))
+      ];
+
+      for (const file of files) {
+        const source = readFileSync(file, "utf8");
+        assert.equal(
+          /Ã|Ä|Å|�/.test(source),
+          false,
+          `${file} contains likely mojibake`
+        );
+      }
     }
   },
   {

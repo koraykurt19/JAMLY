@@ -225,6 +225,9 @@ Successful sign-ins redirect to `/dashboard`.
 The admin dashboard lives at `/admin`. It is visible in the account menu only
 after `is_admin` confirms membership in `admin_accounts`, and every `/api/admin/*`
 route repeats the same server-side check with the current bearer token.
+The waitlist console includes a pre-register pipeline snapshot for total demand,
+recent joins, creator/buyer intent, referrals, invites, conversions, and flagged
+entries.
 
 For a fresh database, `supabase/schema.sql` includes the base admin tables,
 reports, platform skills, account status controls, and initial skill seeds.

@@ -83,6 +83,11 @@ try {
   await expectVisible(page.getByText(/recent retention runs|son temizlik/i).first(), "retention run history renders");
   await expectVisible(page.getByText(/never deleted|asla silinmeyen/i).first(), "retention protected-data copy renders");
 
+  await page.goto(`${baseUrl}/admin/waitlist`, { waitUntil: "networkidle", timeout: 45000 });
+  await expectVisible(page.getByText(/pre-register pipeline|ön kayıt hattı/i).first(), "waitlist summary renders");
+  await expectVisible(page.getByText(/total pre-registers|toplam ön kayıt/i).first(), "waitlist total metric renders");
+  await expectVisible(page.getByText(/creator intent|üretici ilgisi/i).first(), "waitlist persona metric renders");
+
   const usersResponse = await context.request.get(`${baseUrl}/api/admin/users?q=jamlyadminsmoke`, {
     headers: { Authorization: `Bearer ${token}` },
     timeout: 30000
@@ -114,6 +119,21 @@ try {
       Array.isArray(retentionBody.plan?.neverDelete) &&
       retentionBody.plan.neverDelete.includes("profiles"),
     `HTTP ${retentionResponse.status()}`
+  );
+
+  const waitlistResponse = await context.request.get(`${baseUrl}/api/admin/waitlist?page=0`, {
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 30000
+  });
+  const waitlistBody = await waitlistResponse.json().catch(() => ({}));
+  record(
+    "admin waitlist API returns pipeline summary",
+    waitlistResponse.ok() &&
+      Number.isInteger(waitlistBody.summary?.total) &&
+      Number.isInteger(waitlistBody.summary?.joinedLast24h) &&
+      Number.isInteger(waitlistBody.summary?.personas?.creator) &&
+      Number.isInteger(waitlistBody.summary?.statuses?.invited),
+    `HTTP ${waitlistResponse.status()}`
   );
 
   const preRegisterAdminResponse = await context.request.get(`${preRegisterUrl}/api/admin/overview`, {

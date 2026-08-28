@@ -4,11 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
+  Clock3,
   Loader2,
   MailCheck,
   RotateCcw,
   Search,
-  ShieldX
+  ShieldX,
+  Sparkles,
+  UsersRound
 } from "lucide-react";
 import { useI18n } from "@/components/language-provider";
 import { AdminCell, AdminRow, AdminTable, Pagination, StatusPill } from "@/components/admin/admin-table";
@@ -47,9 +50,29 @@ type Response = {
   total: number;
   page: number;
   pageSize: number;
+  summary: WaitlistSummary;
 };
 
 const statusFilters = ["", "pending", "verified", "invited", "converted", "blocked"] as const;
+
+type WaitlistSummary = {
+  total: number;
+  statuses: {
+    pending: number;
+    verified: number;
+    invited: number;
+    converted: number;
+    blocked: number;
+  };
+  personas: {
+    creator: number;
+    buyer: number;
+    both: number;
+  };
+  flagged: number;
+  joinedLast24h: number;
+  withReferrals: number;
+};
 
 export function WaitlistPanel() {
   const { language } = useI18n();
@@ -132,6 +155,8 @@ export function WaitlistPanel() {
 
   return (
     <div className="flex flex-col gap-4">
+      {data?.summary ? <WaitlistSummaryBand summary={data.summary} language={language} /> : null}
+
       <Card className="flex flex-wrap items-end gap-3">
         <label className="flex min-w-[16rem] flex-1 flex-col gap-1.5">
           <span className="text-[13px] font-semibold text-white/72">
@@ -256,6 +281,112 @@ export function WaitlistPanel() {
         />
       ) : null}
     </div>
+  );
+}
+
+function WaitlistSummaryBand({
+  summary,
+  language
+}: {
+  summary: WaitlistSummary;
+  language: "tr" | "en";
+}) {
+  const tr = language === "tr";
+  const metrics = [
+    {
+      label: tr ? "Toplam ön kayıt" : "Total pre-registers",
+      value: summary.total,
+      detail: tr
+        ? `${summary.statuses.pending} beklemede`
+        : `${summary.statuses.pending} pending`,
+      icon: UsersRound
+    },
+    {
+      label: tr ? "Son 24 saat" : "Last 24 hours",
+      value: summary.joinedLast24h,
+      detail: tr ? "Yeni talep" : "New joins",
+      icon: Clock3
+    },
+    {
+      label: tr ? "Üretici ilgisi" : "Creator intent",
+      value: summary.personas.creator + summary.personas.both,
+      detail: tr
+        ? `${summary.personas.buyer + summary.personas.both} alıcı ilgisi`
+        : `${summary.personas.buyer + summary.personas.both} buyer intent`,
+      icon: Sparkles
+    },
+    {
+      label: tr ? "Davet edilen" : "Invited",
+      value: summary.statuses.invited,
+      detail: tr
+        ? `${summary.statuses.converted} hesaba dönüştü`
+        : `${summary.statuses.converted} converted`,
+      icon: MailCheck
+    },
+    {
+      label: tr ? "Referral taşıyan" : "With referrals",
+      value: summary.withReferrals,
+      detail: tr ? "Ağı büyüten kayıt" : "Growth-bearing entries",
+      icon: CheckCircle2
+    },
+    {
+      label: tr ? "Riskli kayıt" : "Flagged",
+      value: summary.flagged,
+      detail: tr
+        ? `${summary.statuses.blocked} bloklandı`
+        : `${summary.statuses.blocked} blocked`,
+      icon: AlertTriangle,
+      tone: summary.flagged > 0 ? "warning" : "default"
+    }
+  ];
+
+  return (
+    <Card>
+      <div className="flex flex-col gap-2 border-b border-white/8 pb-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-jam-blue">
+            {tr ? "Ön kayıt hattı" : "Pre-register pipeline"}
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-white">
+            {tr ? "Talep, niyet ve risk özeti" : "Demand, intent, and risk snapshot"}
+          </h2>
+        </div>
+        <Pill tone="brand">
+          {summary.statuses.verified} {tr ? "doğrulanmış" : "verified"}
+        </Pill>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {metrics.map((metric) => {
+          const Icon = metric.icon;
+          return (
+            <div
+              key={metric.label}
+              className={
+                metric.tone === "warning"
+                  ? "border-l-2 border-jam-warning bg-jam-warning/[0.045] px-4 py-3"
+                  : "border-l border-white/10 bg-white/[0.025] px-4 py-3"
+              }
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/38">
+                    {metric.label}
+                  </p>
+                  <p className="mt-2 text-2xl font-bold tabular-nums text-white">
+                    {metric.value}
+                  </p>
+                </div>
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-white/8 bg-white/[0.04] text-jam-mint">
+                  <Icon size={17} />
+                </span>
+              </div>
+              <p className="mt-2 text-[13px] text-white/48">{metric.detail}</p>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
 

@@ -43,7 +43,8 @@ export async function GET(request: Request) {
       query = query.not("risk_flags", "eq", "{}");
     }
 
-    const { data, count, error } = await query;
+    const [entriesResult, summary] = await Promise.all([query, getWaitlistSummary(client)]);
+    const { data, count, error } = entriesResult;
     if (error) throw new Error(error.message);
 
     return Response.json(
@@ -52,7 +53,8 @@ export async function GET(request: Request) {
         total: count ?? 0,
         page,
         pageSize: PAGE_SIZE,
-        hasMore: (count ?? 0) > from + PAGE_SIZE
+        hasMore: (count ?? 0) > from + PAGE_SIZE,
+        summary
       },
       { headers: noStoreHeaders() }
     );
@@ -60,3 +62,64 @@ export async function GET(request: Request) {
     return adminErrorResponse(error);
   }
 }
+
+async function getWaitlistSummary(client: Awaited<ReturnType<typeof requireCapability>>["client"]) {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const count = async (filters: CountFilter[] = []) => {
+    let query = client.from("waitlist_entries").select("id", { count: "exact", head: true });
+
+    for (const filter of filters) {
+      if (filter.type === "eq") query = query.eq(filter.column, filter.value);
+      if (filter.type === "gt") query = query.gt(filter.column, filter.value);
+      if (filter.type === "gte") query = query.gte(filter.column, filter.value);
+      if (filter.type === "notEq") query = query.not(filter.column, "eq", filter.value);
+    }
+
+    const result = await query;
+    if (result.error) throw new Error(result.error.message);
+    return result.count ?? 0;
+  };
+
+  const [
+    total,
+    pending,
+    verified,
+    invited,
+    converted,
+    blocked,
+    flagged,
+    creator,
+    buyer,
+    both,
+    joinedLast24h,
+    referrals
+  ] = await Promise.all([
+    count(),
+    count([{ type: "eq", column: "status", value: "pending" }]),
+    count([{ type: "eq", column: "status", value: "verified" }]),
+    count([{ type: "eq", column: "status", value: "invited" }]),
+    count([{ type: "eq", column: "status", value: "converted" }]),
+    count([{ type: "eq", column: "status", value: "blocked" }]),
+    count([{ type: "notEq", column: "risk_flags", value: "{}" }]),
+    count([{ type: "eq", column: "persona", value: "creator" }]),
+    count([{ type: "eq", column: "persona", value: "buyer" }]),
+    count([{ type: "eq", column: "persona", value: "both" }]),
+    count([{ type: "gte", column: "created_at", value: since }]),
+    count([{ type: "gt", column: "referral_count", value: "0" }])
+  ]);
+
+  return {
+    total,
+    statuses: { pending, verified, invited, converted, blocked },
+    personas: { creator, buyer, both },
+    flagged,
+    joinedLast24h,
+    withReferrals: referrals
+  };
+}
+
+type CountFilter =
+  | { type: "eq"; column: string; value: string }
+  | { type: "gt"; column: string; value: string }
+  | { type: "gte"; column: string; value: string }
+  | { type: "notEq"; column: string; value: string };
