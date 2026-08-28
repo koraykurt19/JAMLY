@@ -577,6 +577,7 @@ C:\tools\nssm\nssm.exe restart Jamly
 curl.exe -s https://getjamly.com/api/health
 npm run ops:check
 npm run retention:dry-run
+npm run smoke:admin-panel
 npm run smoke:beta-gate
 npm run smoke:prune-artifacts
 ```
