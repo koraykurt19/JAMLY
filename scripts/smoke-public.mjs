@@ -84,6 +84,7 @@ for (const path of [
   "/dashboard",
   "/marketplace",
   "/admin",
+  "/api/account/status",
   "/api/admin/overview",
   "/api/admin/users/00000000-0000-4000-8000-000000000000/admin-role",
   "/api/admin/users/00000000-0000-4000-8000-000000000000/beta-access",

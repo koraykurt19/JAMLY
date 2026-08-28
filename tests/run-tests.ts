@@ -88,6 +88,10 @@ const adminRetentionApiSource = () =>
   readFileSync(resolve(process.cwd(), "src/app/api/admin/retention/route.ts"), "utf8");
 const adminRetentionPanelSource = () =>
   readFileSync(resolve(process.cwd(), "src/components/admin/retention-panel.tsx"), "utf8");
+const accountStatusApiSource = () =>
+  readFileSync(resolve(process.cwd(), "src/app/api/account/status/route.ts"), "utf8");
+const currentAccountHookSource = () =>
+  readFileSync(resolve(process.cwd(), "src/lib/use-current-account.ts"), "utf8");
 const retentionSelfReadSql = () =>
   readFileSync(
     resolve(process.cwd(), "supabase/migrations/20260828_profile_retention_self_read.sql"),
@@ -728,6 +732,20 @@ const tests: TestCase[] = [
       assert.ok(sql.includes("profile_id = auth.uid()"));
       assert.ok(sql.includes("public.admin_has('admin.manage')"));
       assert.ok(!/for\s+(insert|update|delete|all)/i.test(sql));
+    }
+  },
+  {
+    name: "account status uses server-side beta access truth",
+    run() {
+      const api = accountStatusApiSource();
+      const hook = currentAccountHookSource();
+
+      assert.ok(api.includes("process.env.JAMLY_BETA_ALLOWED_HANDLES"));
+      assert.ok(api.includes("resolveBetaAccess"));
+      assert.ok(api.includes("isBetaDirectAllowed"));
+      assert.ok(api.includes("isBetaHandleAllowed"));
+      assert.ok(hook.includes("/api/account/status"));
+      assert.ok(!hook.includes("NEXT_PUBLIC_BETA_ALLOWED_HANDLES"));
     }
   },
   {

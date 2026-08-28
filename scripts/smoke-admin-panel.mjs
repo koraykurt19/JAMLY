@@ -120,6 +120,21 @@ try {
     `HTTP ${usersResponse.status()}`
   );
 
+  const accountStatusResponse = await context.request.get(`${baseUrl}/api/account/status`, {
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 30000
+  });
+  const accountStatusBody = await accountStatusResponse.json().catch(() => ({}));
+  record(
+    "account status API matches admin beta truth",
+    accountStatusResponse.ok() &&
+      accountStatusBody.account?.handle === account.handle &&
+      accountStatusBody.account?.isAdmin === true &&
+      accountStatusBody.account?.isBetaAllowed === true &&
+      accountStatusBody.account?.retentionPlan === "standard",
+    `HTTP ${accountStatusResponse.status()}`
+  );
+
   const betaOpenResponse = await context.request.patch(
     `${baseUrl}/api/admin/users/${betaSmokeUserId}/beta-access`,
     {

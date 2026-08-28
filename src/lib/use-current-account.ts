@@ -6,26 +6,14 @@ import {
   isSupabaseConfigured,
   isSupabaseRecoverableError
 } from "@/lib/supabase";
-import { betaAllowedHandleSet } from "@/lib/beta-access";
 import { ensureCurrentProfile } from "@/lib/supabase-data";
-
-type AccountProfile = {
-  id: string;
-  handle: string;
-  fullName: string;
-  isAdmin: boolean;
-  adminRole: string | null;
-  accountStatus: "active" | "suspended" | "banned";
-  isBetaAllowed: boolean;
-  retentionPlan: "standard" | "premium";
-  retentionMultiplier: number;
-};
+import type { AccountAccessProfile } from "@/lib/account-access";
 
 type AccountState =
   | { status: "demo"; profile: null }
   | { status: "loading"; profile: null }
   | { status: "signed-out"; profile: null }
-  | { status: "signed-in"; profile: AccountProfile }
+  | { status: "signed-in"; profile: AccountAccessProfile }
   | { status: "error"; profile: null; message: string };
 
 export function useCurrentAccount() {
@@ -44,53 +32,36 @@ export function useCurrentAccount() {
 
     refreshInFlightRef.current = true;
     try {
-      const { user, profile } = await ensureCurrentProfile(client);
+      const { user } = await ensureCurrentProfile(client);
       if (!user) {
         setState({ status: "signed-out", profile: null });
         return;
       }
 
-      const [{ data: isAdmin }, { data: adminRole }, retention, betaAccess] = await Promise.all([
-        client.rpc("is_current_user_admin"),
-        client.rpc("current_admin_role"),
-        client
-          .from("profile_retention_settings")
-          .select("plan, retention_multiplier")
-          .eq("profile_id", user.id)
-          .maybeSingle(),
-        client
-          .from("profile_beta_access")
-          .select("is_active")
-          .eq("profile_id", user.id)
-          .maybeSingle()
-      ]);
-      if (retention.error) throw new Error(retention.error.message);
-      if (betaAccess.error) throw new Error(betaAccess.error.message);
-      const accountStatus = profile?.account_status ?? "active";
-      const handle = profile?.handle ?? user.email?.split("@")[0] ?? user.id.slice(0, 8);
-      const allowedHandles = betaAllowedHandleSet(process.env.NEXT_PUBLIC_BETA_ALLOWED_HANDLES);
-      const retentionPlan =
-        retention.data?.plan === "premium" || retention.data?.plan === "standard"
-          ? retention.data.plan
-          : "standard";
+      const { data: sessionData } = await client.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        setState({ status: "signed-out", profile: null });
+        return;
+      }
+
+      const response = await fetch("/api/account/status", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store"
+      });
+      if (response.status === 401) {
+        await client.auth.signOut({ scope: "local" }).catch(() => undefined);
+        setState({ status: "signed-out", profile: null });
+        return;
+      }
+      if (!response.ok) throw new Error("Account status could not be loaded.");
+
+      const body = (await response.json()) as { account?: AccountAccessProfile };
+      if (!body.account) throw new Error("Account status could not be loaded.");
 
       setState({
         status: "signed-in",
-        profile: {
-          id: user.id,
-          handle,
-          fullName: profile?.full_name ?? user.email ?? "Jamly",
-          isAdmin: Boolean(isAdmin),
-          adminRole: adminRole ?? null,
-          accountStatus,
-          isBetaAllowed:
-            accountStatus === "active" &&
-            (Boolean(isAdmin) ||
-              betaAccess.data?.is_active === true ||
-              allowedHandles.has(handle.toLowerCase())),
-          retentionPlan,
-          retentionMultiplier: Number(retention.data?.retention_multiplier ?? 1)
-        }
+        profile: body.account
       });
     } catch (error) {
       if (isInvalidSession(error)) {
