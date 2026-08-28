@@ -139,6 +139,7 @@ export async function queueWaitlistInviteEmail(input: {
   locale: "tr" | "en";
   queuePosition: number;
   referralCode: string;
+  inviteCode?: string | null;
   reservedUsername?: string | null;
 }) {
   const tr = input.locale === "tr";
@@ -151,6 +152,7 @@ export async function queueWaitlistInviteEmail(input: {
       heading: tr ? "Beta davetin hazir" : "Your beta invite is ready",
       queuePosition: input.queuePosition,
       referralCode: input.referralCode,
+      inviteCode: input.inviteCode ?? null,
       reservedUsername: input.reservedUsername ?? null,
       preRegisterUrl: preRegisterOrigin(),
       supportEmail: JAMLY_EMAILS.support
@@ -203,6 +205,7 @@ function renderEmail(input: EnqueueInput): RenderedEmail {
       : "Your pre-register signal has been reviewed and you are ready for a beta wave.";
     const queuePosition = String(input.payload.queuePosition ?? "");
     const referralCode = String(input.payload.referralCode ?? "");
+    const inviteCode = String(input.payload.inviteCode ?? "");
     const reservedUsername = String(input.payload.reservedUsername ?? "");
     const preRegisterUrl = String(input.payload.preRegisterUrl ?? preRegisterOrigin());
     const supportEmail = String(input.payload.supportEmail ?? JAMLY_EMAILS.support);
@@ -215,6 +218,11 @@ function renderEmail(input: EnqueueInput): RenderedEmail {
         ? `Rezerve kullanici adin: @${reservedUsername}`
         : `Reserved username: @${reservedUsername}`
       : "";
+    const inviteCodeLine = inviteCode
+      ? tr
+        ? `Beta davet kodun: ${inviteCode}`
+        : `Beta invite code: ${inviteCode}`
+      : "";
     const footer = tr
       ? `Sorular icin ${supportEmail} adresine yazabilirsin.`
       : `For questions, contact ${supportEmail}.`;
@@ -225,6 +233,7 @@ function renderEmail(input: EnqueueInput): RenderedEmail {
         lead,
         queuePosition ? (tr ? `Sira numaran: #${queuePosition}` : `Queue position: #${queuePosition}`) : "",
         referralCode ? (tr ? `Davet kodun: ${referralCode}` : `Invite code: ${referralCode}`) : "",
+        inviteCodeLine,
         usernameLine,
         next,
         preRegisterUrl,
@@ -238,6 +247,7 @@ function renderEmail(input: EnqueueInput): RenderedEmail {
           <p>
             ${queuePosition ? `<strong>${escapeHtml(tr ? `Sira numaran: #${queuePosition}` : `Queue position: #${queuePosition}`)}</strong><br>` : ""}
             ${referralCode ? `${escapeHtml(tr ? `Davet kodun: ${referralCode}` : `Invite code: ${referralCode}`)}<br>` : ""}
+            ${inviteCodeLine ? `${escapeHtml(inviteCodeLine)}<br>` : ""}
             ${usernameLine ? `${escapeHtml(usernameLine)}` : ""}
           </p>
           <p>${escapeHtml(next)}</p>

@@ -250,12 +250,29 @@ try {
   const inviteBody = await inviteResponse.json().catch(() => ({}));
   record(
     "admin waitlist invite action queues email",
-    inviteResponse.ok() && inviteBody.status === "invited" && inviteBody.inviteEmail === "suppressed",
+    inviteResponse.ok() &&
+      inviteBody.status === "invited" &&
+      /^BETA-[A-F0-9]{10}$/.test(String(inviteBody.inviteCode ?? "")) &&
+      inviteBody.inviteEmail === "suppressed",
     `HTTP ${inviteResponse.status()}`
+  );
+  const { data: launchInvite, error: launchInviteError } = await supabase
+    .from("launch_invites")
+    .select("entry_id,invite_code,batch_label,redeemed_at")
+    .eq("entry_id", waitlistSmokeEntryId)
+    .eq("invite_code", inviteBody.inviteCode)
+    .maybeSingle();
+  record(
+    "admin waitlist invite action creates launch invite code",
+    !launchInviteError &&
+      launchInvite?.entry_id === waitlistSmokeEntryId &&
+      launchInvite?.batch_label === "manual-admin-invite" &&
+      launchInvite?.redeemed_at === null,
+    launchInviteError?.message ?? launchInvite?.invite_code ?? "missing"
   );
   const { data: inviteOutbox, error: inviteOutboxError } = await supabase
     .from("email_outbox")
-    .select("template,status,to_email")
+    .select("template,status,to_email,payload")
     .eq("to_email", waitlistSmokeEmail)
     .eq("template", "waitlist_invite")
     .order("created_at", { ascending: false })
@@ -265,7 +282,8 @@ try {
     "waitlist invite email is written to outbox",
     !inviteOutboxError &&
       inviteOutbox?.template === "waitlist_invite" &&
-      inviteOutbox.status === "suppressed",
+      inviteOutbox.status === "suppressed" &&
+      inviteOutbox.payload?.inviteCode === inviteBody.inviteCode,
     inviteOutboxError?.message ?? inviteOutbox?.status ?? "missing"
   );
 

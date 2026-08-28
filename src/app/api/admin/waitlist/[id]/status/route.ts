@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import {
   adminErrorResponse,
   assertUuid,
@@ -46,21 +47,51 @@ export async function PATCH(
     if (error) throw error;
 
     let inviteEmail: Awaited<ReturnType<typeof queueWaitlistInviteEmail>> | null = null;
+    let inviteCode: string | null = null;
     if (status === "invited" && entry && entry.status !== "invited") {
+      inviteCode = await ensureLaunchInvite(client, id);
       inviteEmail = await queueWaitlistInviteEmail({
         email: entry.email,
         locale: entry.locale === "en" ? "en" : "tr",
         queuePosition: Number(entry.queue_position),
         referralCode: entry.referral_code,
+        inviteCode,
         reservedUsername: entry.reserved_username
       });
     }
 
     return Response.json(
-      { ok: true, status, inviteEmail: inviteEmail?.queued ? inviteEmail.delivery : null },
+      { ok: true, status, inviteCode, inviteEmail: inviteEmail?.queued ? inviteEmail.delivery : null },
       { headers: noStoreHeaders() }
     );
   } catch (error) {
     return adminErrorResponse(error);
   }
+}
+
+async function ensureLaunchInvite(
+  client: Awaited<ReturnType<typeof requireCapability>>["client"],
+  entryId: string
+) {
+  const { data: existing, error: existingError } = await client
+    .from("launch_invites")
+    .select("invite_code")
+    .eq("entry_id", entryId)
+    .is("redeemed_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existingError) throw existingError;
+  if (existing?.invite_code) return existing.invite_code;
+
+  const inviteCode = `BETA-${randomBytes(5).toString("hex").toUpperCase()}`;
+  const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+  const { error } = await client.from("launch_invites").insert({
+    entry_id: entryId,
+    invite_code: inviteCode,
+    batch_label: "manual-admin-invite",
+    expires_at: expiresAt
+  });
+  if (error) throw error;
+  return inviteCode;
 }

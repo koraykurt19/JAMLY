@@ -641,6 +641,25 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["waitlist_entries"]["Row"]>;
         Relationships: [];
       };
+      launch_invites: {
+        Row: {
+          id: string;
+          entry_id: string;
+          invite_code: string;
+          batch_label: string | null;
+          expires_at: string | null;
+          redeemed_at: string | null;
+          redeemed_by: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["launch_invites"]["Row"]> & {
+          entry_id: string;
+          invite_code: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["launch_invites"]["Row"]>;
+        Relationships: [];
+      };
       admin_audit_log: {
         Row: {
           id: number;

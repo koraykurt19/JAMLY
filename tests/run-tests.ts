@@ -761,9 +761,14 @@ const tests: TestCase[] = [
       assert.ok(route.includes("queueWaitlistInviteEmail"));
       assert.ok(route.includes('status === "invited"'));
       assert.ok(route.includes('entry.status !== "invited"'));
+      assert.ok(route.includes("ensureLaunchInvite"));
+      assert.ok(route.includes("BETA-"));
+      assert.ok(route.includes("launch_invites"));
       assert.ok(route.includes("inviteEmail"));
       assert.ok(mailer.includes("queueWaitlistInviteEmail"));
       assert.ok(mailer.includes('template: "waitlist_invite"'));
+      assert.ok(mailer.includes("inviteCode"));
+      assert.ok(mailer.includes("Beta invite code"));
       assert.ok(mailer.includes("This email alone does not grant sign-in access"));
       assert.ok(mailer.includes("Urun erisimi ayri admin onayi ile acilir"));
     }
