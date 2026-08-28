@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
+  BadgeCheck,
   ChevronDown,
+  ListChecks,
   Music4,
+  Rocket,
   Shield,
   SlidersHorizontal,
   Sparkles,
+  Target,
   Users,
   Wallet
 } from "lucide-react";
@@ -78,6 +83,8 @@ export function EarlyAccessPage() {
             </p>
 
             <WaitlistCounter stats={stats} copy={copy} locale={locale} />
+
+            <LaunchPass language={language} />
 
             <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <a
@@ -242,6 +249,148 @@ export function EarlyAccessPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function LaunchPass({ language }: { language: "tr" | "en" }) {
+  const tr = language === "tr";
+  const [role, setRole] = useState("both");
+  const [need, setNeed] = useState("beats");
+  const [readiness, setReadiness] = useState("ready");
+
+  const score =
+    (role === "both" ? 35 : 28) +
+    (need === "collab" ? 24 : need === "services" ? 22 : 20) +
+    (readiness === "ready" ? 36 : readiness === "soon" ? 28 : 18);
+  const priority = score >= 88 ? "A" : score >= 72 ? "B" : "C";
+
+  return (
+    <div className="mt-8 w-full max-w-3xl rounded-lg border border-white/10 bg-black/24 p-4 text-left shadow-soft">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-jam-mint">
+            <Rocket size={15} />
+            Launch Pass
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-white">
+            {tr ? "Ön kayıt avantajını netleştir" : "Tune your pre-register edge"}
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-white/58">
+            {tr
+              ? "Üç seçimle beta önceliğini ve sana uygun açılış avantajını gör."
+              : "Pick three signals and see the launch benefit that fits you."}
+          </p>
+        </div>
+        <div className="rounded-md border border-jam-blue/28 bg-jam-blue/12 px-3 py-2 text-center">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/42">
+            {tr ? "Öncelik" : "Priority"}
+          </p>
+          <p className="text-2xl font-bold text-jam-mint">{priority}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <LaunchPassGroup
+          icon={<Users size={15} />}
+          label={tr ? "Rol" : "Role"}
+          value={role}
+          onChange={setRole}
+          options={[
+            ["creator", tr ? "Üretici" : "Creator"],
+            ["buyer", tr ? "Alıcı" : "Buyer"],
+            ["both", tr ? "İkisi" : "Both"]
+          ]}
+        />
+        <LaunchPassGroup
+          icon={<Target size={15} />}
+          label={tr ? "İhtiyaç" : "Need"}
+          value={need}
+          onChange={setNeed}
+          options={[
+            ["beats", tr ? "Beat" : "Beats"],
+            ["services", tr ? "Hizmet" : "Services"],
+            ["collab", "Collab"]
+          ]}
+        />
+        <LaunchPassGroup
+          icon={<ListChecks size={15} />}
+          label={tr ? "Hazırlık" : "Readiness"}
+          value={readiness}
+          onChange={setReadiness}
+          options={[
+            ["ready", tr ? "Hazırım" : "Ready"],
+            ["soon", tr ? "Yakında" : "Soon"],
+            ["explore", tr ? "Bakıyorum" : "Exploring"]
+          ]}
+        />
+      </div>
+
+      <div className="mt-4 flex flex-col gap-3 rounded-md border border-white/8 bg-white/[0.035] p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-2">
+          <BadgeCheck size={17} className="mt-0.5 shrink-0 text-jam-mint" />
+          <p className="text-sm leading-6 text-white/68">
+            {tr
+              ? priority === "A"
+                ? "Açılışta hızlı beta değerlendirmesi ve kurucu rozet avantajı için güçlü adaysın."
+                : priority === "B"
+                  ? "Ön kayıt tamamlanınca doğru beta dalgasına alınman kolaylaşır."
+                  : "Ön kayıtla ilgini bırak; Jamly uygun açılış segmentini sana e-postayla bildirir."
+              : priority === "A"
+                ? "You are a strong fit for fast beta review and founding badge benefits."
+                : priority === "B"
+                  ? "Pre-registering helps place you in the right beta wave."
+                  : "Leave your intent and Jamly will email the right launch segment."}
+          </p>
+        </div>
+        <a
+          href="#join"
+          className="focus-ring inline-flex min-h-10 shrink-0 items-center justify-center rounded-md bg-jam-mint px-4 text-sm font-bold text-black transition hover:bg-white"
+        >
+          {tr ? "Ön kayda geç" : "Continue"}
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function LaunchPassGroup({
+  icon,
+  label,
+  value,
+  options,
+  onChange
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  options: Array<[string, string]>;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/40">
+        {icon}
+        {label}
+      </p>
+      <div className="grid gap-1.5">
+        {options.map(([optionValue, optionLabel]) => (
+          <button
+            key={optionValue}
+            type="button"
+            onClick={() => onChange(optionValue)}
+            aria-pressed={value === optionValue}
+            className={cn(
+              "focus-ring min-h-9 rounded-md border px-3 text-left text-xs font-semibold transition",
+              value === optionValue
+                ? "border-jam-blue/44 bg-jam-blue/14 text-white"
+                : "border-white/10 bg-black/20 text-white/58 hover:border-white/20 hover:text-white"
+            )}
+          >
+            {optionLabel}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
