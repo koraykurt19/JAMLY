@@ -6,6 +6,7 @@ import {
   isSupabaseConfigured,
   isSupabaseRecoverableError
 } from "@/lib/supabase";
+import { betaAllowedHandleSet } from "@/lib/beta-access";
 import { ensureCurrentProfile } from "@/lib/supabase-data";
 
 type AccountProfile = {
@@ -13,6 +14,9 @@ type AccountProfile = {
   handle: string;
   fullName: string;
   isAdmin: boolean;
+  adminRole: string | null;
+  accountStatus: "active" | "suspended" | "banned";
+  isBetaAllowed: boolean;
 };
 
 type AccountState =
@@ -44,15 +48,26 @@ export function useCurrentAccount() {
         return;
       }
 
-      const { data: isAdmin } = await client.rpc("is_current_user_admin");
+      const [{ data: isAdmin }, { data: adminRole }] = await Promise.all([
+        client.rpc("is_current_user_admin"),
+        client.rpc("current_admin_role")
+      ]);
+      const accountStatus = profile?.account_status ?? "active";
+      const handle = profile?.handle ?? user.email?.split("@")[0] ?? user.id.slice(0, 8);
+      const allowedHandles = betaAllowedHandleSet(process.env.NEXT_PUBLIC_BETA_ALLOWED_HANDLES);
 
       setState({
         status: "signed-in",
         profile: {
           id: user.id,
-          handle: profile?.handle ?? user.email?.split("@")[0] ?? user.id.slice(0, 8),
+          handle,
           fullName: profile?.full_name ?? user.email ?? "Jamly",
-          isAdmin: Boolean(isAdmin)
+          isAdmin: Boolean(isAdmin),
+          adminRole: adminRole ?? null,
+          accountStatus,
+          isBetaAllowed:
+            accountStatus === "active" &&
+            (Boolean(isAdmin) || allowedHandles.has(handle.toLowerCase()))
         }
       });
     } catch (error) {

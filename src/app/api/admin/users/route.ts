@@ -4,6 +4,7 @@ import {
   requireAdmin,
   sanitizeSearch
 } from "@/lib/server/admin";
+import { betaAllowedHandleSet } from "@/lib/beta-access";
 
 export const dynamic = "force-dynamic";
 
@@ -41,10 +42,7 @@ export async function GET(request: Request) {
     if (adminsError) throw adminsError;
 
     const adminById = new Map((admins ?? []).map((admin) => [admin.user_id, admin]));
-    const betaAllowedHandles = hostList(process.env.JAMLY_BETA_ALLOWED_HANDLES, [
-      "koraykurt",
-      "hakanefe"
-    ]);
+    const betaAllowedHandles = betaAllowedHandleSet(process.env.JAMLY_BETA_ALLOWED_HANDLES);
 
     return Response.json(
       {
@@ -75,12 +73,4 @@ export async function GET(request: Request) {
 
 function isAccountStatus(value: string): value is AccountStatus {
   return (accountStatuses as readonly string[]).includes(value);
-}
-
-function hostList(value: string | undefined, fallback: string[]) {
-  return new Set(
-    (value?.split(",") ?? fallback)
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean)
-  );
 }

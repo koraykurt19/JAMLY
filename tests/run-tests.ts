@@ -43,6 +43,7 @@ import {
   canTransitionWaitlistStatus,
   isAdminMutableWaitlistStatus
 } from "../src/lib/waitlist-admin";
+import { betaAllowedHandleSet, isHandleBetaAllowed } from "../src/lib/beta-access";
 
 type TestCase = {
   name: string;
@@ -427,6 +428,18 @@ const tests: TestCase[] = [
       assert.ok(!canTransitionWaitlistStatus("converted", "verified"));
       assert.ok(!isAdminMutableWaitlistStatus("converted"));
       assert.ok(isAdminMutableWaitlistStatus("invited"));
+    }
+  },
+  {
+    name: "beta allowlist handles normalize consistently",
+    run() {
+      const handles = betaAllowedHandleSet(" KorayKurt, hakanefe ,, JamlyBuyer ");
+      assert.ok(handles.has("koraykurt"));
+      assert.ok(handles.has("hakanefe"));
+      assert.ok(handles.has("jamlybuyer"));
+      assert.equal(handles.size, 3);
+      assert.ok(isHandleBetaAllowed(" KORAYKURT "));
+      assert.ok(!isHandleBetaAllowed("randomuser"));
     }
   }
 ];

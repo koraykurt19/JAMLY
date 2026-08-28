@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { betaAllowedHandleSet } from "@/lib/beta-access";
 import type { Database } from "@/lib/database.types";
 
 export async function updateSupabaseSession(request: NextRequest) {
@@ -133,10 +134,7 @@ async function isBetaAllowed({ client, userId }: GateContext) {
 
   if (profile?.account_status !== "active") return false;
 
-  const allowedHandles = hostList(process.env.JAMLY_BETA_ALLOWED_HANDLES, [
-    "koraykurt",
-    "hakanefe"
-  ]);
+  const allowedHandles = betaAllowedHandleSet(process.env.JAMLY_BETA_ALLOWED_HANDLES);
   return allowedHandles.has(String(profile.handle ?? "").toLowerCase());
 }
 
