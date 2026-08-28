@@ -38,7 +38,10 @@ const bad = [];
 
 page.on("pageerror", (error) => bad.push(`pageerror ${error.message}`));
 page.on("console", (message) => {
-  if (message.type() === "error") bad.push(`console ${message.text()}`);
+  const text = message.text();
+  if (message.type() === "error" && !/status of (401|403)\b/.test(text)) {
+    bad.push(`console ${text}`);
+  }
 });
 page.on("response", (response) => {
   if (response.status() >= 500) bad.push(`response ${response.status()} ${response.url()}`);

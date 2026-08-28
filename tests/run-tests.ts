@@ -111,6 +111,8 @@ const supabaseMiddlewareSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/supabase-middleware.ts"), "utf8");
 const applySupabaseMigrationSource = () =>
   readFileSync(resolve(process.cwd(), "scripts/apply-supabase-migration.mjs"), "utf8");
+const smokeBetaGateSource = () =>
+  readFileSync(resolve(process.cwd(), "scripts/smoke-beta-gate.mjs"), "utf8");
 const mailerSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/server/mailer.ts"), "utf8");
 const adminWaitlistStatusRouteSource = () =>
@@ -970,6 +972,7 @@ const tests: TestCase[] = [
     name: "beta gate returns API errors instead of cross-origin redirects",
     run() {
       const source = supabaseMiddlewareSource();
+      const smoke = smokeBetaGateSource();
 
       assert.ok(source.includes('path.startsWith("/api/")'));
       assert.ok(source.includes("beta_access_required"));
@@ -979,6 +982,7 @@ const tests: TestCase[] = [
           source
         )
       );
+      assert.ok(smoke.includes("status of (401|403)"));
     }
   },
   {
