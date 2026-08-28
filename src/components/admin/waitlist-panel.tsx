@@ -11,6 +11,7 @@ import {
   Search,
   ShieldX,
   Sparkles,
+  UserCheck,
   UsersRound
 } from "lucide-react";
 import { useI18n } from "@/components/language-provider";
@@ -174,6 +175,35 @@ export function WaitlistPanel() {
     }
   }
 
+  async function convertEntry(entry: WaitlistEntry) {
+    if (entry.status !== "invited") return;
+
+    setUpdatingEntryId(entry.id);
+    setError(null);
+    try {
+      await adminFetch<{ ok: true; status: "converted"; profileId: string }>(
+        `/api/admin/waitlist/${entry.id}/convert`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            reason: "Admin converted invited pre-register entry to beta access."
+          })
+        }
+      );
+      await load();
+    } catch (requestError) {
+      setError(
+        requestError instanceof AdminRequestError
+          ? requestError.message
+          : tr
+            ? "Kayit hesaba donusturulemedi."
+            : "Entry could not be converted."
+      );
+    } finally {
+      setUpdatingEntryId(null);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {data?.summary ? <WaitlistSummaryBand summary={data.summary} language={language} /> : null}
@@ -299,6 +329,7 @@ export function WaitlistPanel() {
                 loading={updatingEntryId === entry.id}
                 language={language}
                 onUpdateStatus={updateStatus}
+                onConvert={convertEntry}
               />
             </AdminCell>
           </AdminRow>
@@ -560,12 +591,14 @@ function WaitlistActions({
   entry,
   loading,
   language,
-  onUpdateStatus
+  onUpdateStatus,
+  onConvert
 }: {
   entry: WaitlistEntry;
   loading: boolean;
   language: "tr" | "en";
   onUpdateStatus: (entry: WaitlistEntry, status: WaitlistStatus) => Promise<void>;
+  onConvert: (entry: WaitlistEntry) => Promise<void>;
 }) {
   const transitions = allowedWaitlistTransitions(entry.status);
 
@@ -583,6 +616,18 @@ function WaitlistActions({
 
   return (
     <div className="flex min-w-[13rem] flex-wrap gap-1.5">
+      {entry.status === "invited" ? (
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => void onConvert(entry)}
+          className="focus-ring inline-flex min-h-8 items-center gap-1.5 rounded-md border border-jam-success/24 px-2.5 text-xs font-semibold text-jam-success transition hover:bg-jam-success/10 disabled:cursor-not-allowed disabled:opacity-40"
+          title={language === "tr" ? "Hesaba donustur" : "Convert to account"}
+        >
+          {loading ? <Loader2 size={13} className="animate-spin" /> : <UserCheck size={13} />}
+          {language === "tr" ? "Donustur" : "Convert"}
+        </button>
+      ) : null}
       {transitions.map((nextStatus) => {
         const Icon = actionIcon(nextStatus);
         return (

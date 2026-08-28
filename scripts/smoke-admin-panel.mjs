@@ -43,6 +43,7 @@ let smokeUserId = null;
 let betaSmokeUserId = null;
 let waitlistSmokeEntryId = null;
 let waitlistSmokeEmail = null;
+let waitlistConversionUserId = null;
 
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
@@ -302,6 +303,54 @@ try {
     inviteVisibleResponse.ok() && inviteVisibleEntry?.launch_invite?.inviteCode === inviteBody.inviteCode,
     `HTTP ${inviteVisibleResponse.status()}`
   );
+  const conversionUser = await createWaitlistConversionUser(waitlistSmokeEmail);
+  waitlistConversionUserId = conversionUser.id;
+  const convertResponse = await context.request.post(
+    `${baseUrl}/api/admin/waitlist/${waitlistSmokeEntryId}/convert`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        reason: "Smoke test converts an invited waitlist entry to beta access."
+      },
+      timeout: 30000
+    }
+  );
+  const convertBody = await convertResponse.json().catch(() => ({}));
+  record(
+    "admin waitlist convert action grants beta access",
+    convertResponse.ok() &&
+      convertBody.status === "converted" &&
+      convertBody.profileId === waitlistConversionUserId &&
+      convertBody.betaAccess === true,
+    `HTTP ${convertResponse.status()}`
+  );
+  const [{ data: convertedEntry }, { data: redeemedInvite }, { data: betaAccess }] = await Promise.all([
+    supabase
+      .from("waitlist_entries")
+      .select("status,converted_profile_id")
+      .eq("id", waitlistSmokeEntryId)
+      .maybeSingle(),
+    supabase
+      .from("launch_invites")
+      .select("redeemed_by,redeemed_at")
+      .eq("entry_id", waitlistSmokeEntryId)
+      .eq("invite_code", inviteBody.inviteCode)
+      .maybeSingle(),
+    supabase
+      .from("profile_beta_access")
+      .select("profile_id,is_active")
+      .eq("profile_id", waitlistConversionUserId)
+      .maybeSingle()
+  ]);
+  record(
+    "waitlist conversion persists converted status and redeemed invite",
+    convertedEntry?.status === "converted" &&
+      convertedEntry?.converted_profile_id === waitlistConversionUserId &&
+      redeemedInvite?.redeemed_by === waitlistConversionUserId &&
+      typeof redeemedInvite?.redeemed_at === "string" &&
+      betaAccess?.is_active === true,
+    convertedEntry?.status ?? "missing"
+  );
 
   const preRegisterAdminResponse = await context.request.get(`${preRegisterUrl}/api/admin/overview`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -317,6 +366,9 @@ try {
   record("browser saw no page errors or 5xx", bad.length === 0, bad.slice(0, 5).join(" | "));
 } finally {
   await browser.close();
+  if (waitlistConversionUserId) await cleanupWaitlistConversionUser(waitlistConversionUserId).catch((error) => {
+    console.error(`Temporary waitlist conversion user cleanup failed: ${error.message}`);
+  });
   if (waitlistSmokeEmail) await cleanupWaitlistSmokeEntry(waitlistSmokeEmail).catch((error) => {
     console.error(`Temporary waitlist smoke cleanup failed: ${error.message}`);
   });
@@ -477,6 +529,27 @@ async function seedWaitlistSmokeEntry() {
 async function cleanupWaitlistSmokeEntry(email) {
   await supabase.from("email_outbox").delete().eq("to_email", email);
   const { error } = await supabase.from("waitlist_entries").delete().eq("email", email);
+  if (error) throw error;
+}
+
+async function createWaitlistConversionUser(email) {
+  const { data, error } = await supabase.auth.admin.createUser({
+    email,
+    password: `JamlyConvert-${randomBytes(12).toString("base64url")}!1`,
+    email_confirm: true,
+    user_metadata: {
+      handle: "waitlist-convert-smoke",
+      full_name: "Jamly Waitlist Convert Smoke"
+    }
+  });
+  if (error) throw error;
+  return data.user;
+}
+
+async function cleanupWaitlistConversionUser(userId) {
+  await supabase.from("profile_beta_access").delete().eq("profile_id", userId);
+  await supabase.from("profiles").delete().eq("id", userId);
+  const { error } = await supabase.auth.admin.deleteUser(userId);
   if (error) throw error;
 }
 

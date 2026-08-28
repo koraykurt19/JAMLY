@@ -96,6 +96,8 @@ const mailerSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/server/mailer.ts"), "utf8");
 const adminWaitlistStatusRouteSource = () =>
   readFileSync(resolve(process.cwd(), "src/app/api/admin/waitlist/[id]/status/route.ts"), "utf8");
+const adminWaitlistConvertRouteSource = () =>
+  readFileSync(resolve(process.cwd(), "src/app/api/admin/waitlist/[id]/convert/route.ts"), "utf8");
 const adminWaitlistRouteSource = () =>
   readFileSync(resolve(process.cwd(), "src/app/api/admin/waitlist/route.ts"), "utf8");
 const adminWaitlistPanelSource = () =>
@@ -790,6 +792,24 @@ const tests: TestCase[] = [
       assert.ok(panel.includes("LaunchInvitePill"));
       assert.ok(panel.includes("Beta code"));
       assert.ok(panel.includes("entry.launch_invite.inviteCode"));
+    }
+  },
+  {
+    name: "admin waitlist conversion links existing accounts without creating auth users",
+    run() {
+      const route = adminWaitlistConvertRouteSource();
+      const panel = adminWaitlistPanelSource();
+
+      assert.ok(route.includes("matching_account_not_found"));
+      assert.ok(route.includes("client.auth.admin.listUsers"));
+      assert.ok(!route.includes("auth.admin.createUser"));
+      assert.ok(route.includes("admin_set_beta_access"));
+      assert.ok(route.includes('status: "converted"'));
+      assert.ok(route.includes("converted_profile_id"));
+      assert.ok(route.includes("redeemed_at"));
+      assert.ok(route.includes("waitlist.converted"));
+      assert.ok(panel.includes("/convert"));
+      assert.ok(panel.includes("Convert to account"));
     }
   },
   {
