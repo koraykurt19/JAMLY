@@ -87,6 +87,16 @@ async function launchGate(
   const allowed = await isBetaAllowed(context);
   if (allowed) return response;
 
+  if (path.startsWith("/api/")) {
+    return Response.json(
+      {
+        error: "beta_access_required",
+        message: "This account is pre-registered but does not have beta access yet."
+      },
+      { status: 403, headers: { "Cache-Control": "no-store" } }
+    );
+  }
+
   return redirectToPreRegister(request, preRegisterHosts, response);
 }
 

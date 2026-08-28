@@ -102,6 +102,8 @@ const accountProfilePageSource = () =>
   readFileSync(resolve(process.cwd(), "src/app/account/profile/page.tsx"), "utf8");
 const currentAccountHookSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/use-current-account.ts"), "utf8");
+const supabaseMiddlewareSource = () =>
+  readFileSync(resolve(process.cwd(), "src/lib/supabase-middleware.ts"), "utf8");
 const mailerSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/server/mailer.ts"), "utf8");
 const adminWaitlistStatusRouteSource = () =>
@@ -921,6 +923,21 @@ const tests: TestCase[] = [
       assert.ok(api.includes("isBetaHandleAllowed"));
       assert.ok(hook.includes("/api/account/status"));
       assert.ok(!hook.includes("NEXT_PUBLIC_BETA_ALLOWED_HANDLES"));
+    }
+  },
+  {
+    name: "beta gate returns API errors instead of cross-origin redirects",
+    run() {
+      const source = supabaseMiddlewareSource();
+
+      assert.ok(source.includes('path.startsWith("/api/")'));
+      assert.ok(source.includes("beta_access_required"));
+      assert.ok(source.includes("status: 403"));
+      assert.ok(
+        /const allowed = await isBetaAllowed\(context\);[\s\S]+path\.startsWith\("\/api\/"\)[\s\S]+beta_access_required[\s\S]+return redirectToPreRegister/.test(
+          source
+        )
+      );
     }
   },
   {
