@@ -1,6 +1,10 @@
 import { execFileSync } from "node:child_process";
 
-const requiredTasks = ["Jamly Retention Cleanup", "Jamly Smoke Artifact Cleanup"];
+const requiredTasks = [
+  "Jamly Retention Cleanup",
+  "Jamly Storage Audit",
+  "Jamly Smoke Artifact Cleanup"
+];
 
 const serviceState = readJson(
   "Get-Service Jamly,W3SVC | Select-Object Name,Status,StartType | ConvertTo-Json -Compress"

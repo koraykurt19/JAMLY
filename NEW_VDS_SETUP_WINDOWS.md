@@ -342,6 +342,17 @@ npm run retention:execute
 Reports are written under `C:\jamly\work\retention-runs\`. That folder is
 ignored by Git and may be rotated separately.
 
+Audit Supabase Storage references separately. This command does not delete
+files; it compares `storage.objects` with profile, listing, order, and collab
+references and reports old orphan candidates:
+
+```powershell
+Set-Location C:\jamly
+npm run storage:audit
+```
+
+Reports are written under `C:\jamly\work\storage-retention-runs\`.
+
 Live smoke tests and retention audits write screenshots and JSON reports under
 `C:\jamly\work\`. Inspect local artifact cleanup with:
 
@@ -372,6 +383,17 @@ $action = New-ScheduledTaskAction -Execute "C:\Program Files\nodejs\npm.cmd" `
 $trigger = New-ScheduledTaskTrigger -Daily -At 03:35
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -RunLevel Highest
 Register-ScheduledTask -TaskName "Jamly Retention Cleanup" `
+  -Action $action -Trigger $trigger -Principal $principal
+```
+
+To audit Supabase Storage nightly without deleting files:
+
+```powershell
+$action = New-ScheduledTaskAction -Execute "C:\Program Files\nodejs\npm.cmd" `
+  -Argument "run storage:audit" -WorkingDirectory "C:\jamly"
+$trigger = New-ScheduledTaskTrigger -Daily -At 03:42
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -RunLevel Highest
+Register-ScheduledTask -TaskName "Jamly Storage Audit" `
   -Action $action -Trigger $trigger -Principal $principal
 ```
 
