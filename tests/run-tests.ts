@@ -166,11 +166,15 @@ const tests: TestCase[] = [
       const layout = appLayoutSource();
       const logo = jamlyLogoSource();
       const manifest = readFileSync(resolve(process.cwd(), "public/site.webmanifest"), "utf8");
+      const envExample = readFileSync(resolve(process.cwd(), ".env.example"), "utf8");
+      const runbook = readFileSync(resolve(process.cwd(), "NEW_VDS_SETUP_WINDOWS.md"), "utf8");
 
       assert.ok(logo.includes("JAMLY"));
       assert.ok(logo.includes("bg-gradient-to-r"));
       assert.ok(!/export function JamlyWordmark[\s\S]+<JamlyLogoMark/.test(logo));
       assert.ok(layout.includes("GOOGLE_SITE_VERIFICATION"));
+      assert.ok(envExample.includes("GOOGLE_SITE_VERIFICATION="));
+      assert.ok(runbook.includes("GOOGLE_SITE_VERIFICATION="));
       assert.ok(layout.includes("/favicon-v13.svg?v=20260829-1"));
       assert.ok(layout.includes("/favicon-v13.ico?v=20260829-1"));
       assert.ok(layout.includes("/apple-touch-icon-v13.png?v=20260829-1"));
