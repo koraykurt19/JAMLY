@@ -107,6 +107,14 @@ const accountProfilePageSource = () =>
   readFileSync(resolve(process.cwd(), "src/app/account/profile/page.tsx"), "utf8");
 const currentAccountHookSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/use-current-account.ts"), "utf8");
+const appLayoutSource = () =>
+  readFileSync(resolve(process.cwd(), "src/app/layout.tsx"), "utf8");
+const jamlyLogoSource = () =>
+  readFileSync(resolve(process.cwd(), "src/components/jamly-logo.tsx"), "utf8");
+const robotsSource = () =>
+  readFileSync(resolve(process.cwd(), "src/app/robots.ts"), "utf8");
+const sitemapSource = () =>
+  readFileSync(resolve(process.cwd(), "src/app/sitemap.ts"), "utf8");
 const supabaseMiddlewareSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/supabase-middleware.ts"), "utf8");
 const applySupabaseMigrationSource = () =>
@@ -150,6 +158,41 @@ const tests: TestCase[] = [
         createMailto(JAMLY_EMAILS.payment, { subject: "Order #42" }),
         "mailto:payment@getjamly.com?subject=Order+%2342"
       );
+    }
+  },
+  {
+    name: "Jamly brand metadata uses wordmark UI and v13 favicon assets",
+    run() {
+      const layout = appLayoutSource();
+      const logo = jamlyLogoSource();
+      const manifest = readFileSync(resolve(process.cwd(), "public/site.webmanifest"), "utf8");
+
+      assert.ok(logo.includes("JAMLY"));
+      assert.ok(logo.includes("bg-gradient-to-r"));
+      assert.ok(!/export function JamlyWordmark[\s\S]+<JamlyLogoMark/.test(logo));
+      assert.ok(layout.includes("GOOGLE_SITE_VERIFICATION"));
+      assert.ok(layout.includes("/favicon-v13.svg?v=20260829-1"));
+      assert.ok(layout.includes("/favicon-v13.ico?v=20260829-1"));
+      assert.ok(layout.includes("/apple-touch-icon-v13.png?v=20260829-1"));
+      assert.ok(manifest.includes("/icon-192-v13.png?v=20260829-1"));
+      assert.ok(manifest.includes("/icon-512-v13.png?v=20260829-1"));
+    }
+  },
+  {
+    name: "Google discovery files expose only public Jamly routes",
+    run() {
+      const robots = robotsSource();
+      const sitemap = sitemapSource();
+      const middleware = supabaseMiddlewareSource();
+
+      assert.ok(robots.includes("https://getjamly.com/sitemap.xml"));
+      assert.ok(robots.includes('"/admin"'));
+      assert.ok(robots.includes('"/api"'));
+      assert.ok(sitemap.includes("https://getjamly.com"));
+      assert.ok(sitemap.includes('"/discover"'));
+      assert.ok(!sitemap.includes('"/admin"'));
+      assert.ok(middleware.includes('path === "/robots.txt"'));
+      assert.ok(middleware.includes('path === "/sitemap.xml"'));
     }
   },
   {
@@ -380,6 +423,7 @@ const tests: TestCase[] = [
     name: "admin and pre-register UI sources do not contain UTF-8 mojibake",
     run() {
       const files = [
+        resolve(process.cwd(), "src", "app", "layout.tsx"),
         ...uiSourceFiles(resolve(process.cwd(), "src", "components", "admin")),
         ...uiSourceFiles(resolve(process.cwd(), "src", "app", "admin")),
         ...uiSourceFiles(resolve(process.cwd(), "src", "app", "early-access"))

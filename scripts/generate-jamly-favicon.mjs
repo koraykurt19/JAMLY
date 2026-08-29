@@ -4,7 +4,7 @@ import sharp from "sharp";
 
 const root = process.cwd();
 const publicDir = resolve(root, "public");
-const faviconVersion = "v12";
+const faviconVersion = "v13";
 const sourcePath = resolve(publicDir, "brand/jamly-logo-20260730.png");
 const source = await readFile(sourcePath);
 

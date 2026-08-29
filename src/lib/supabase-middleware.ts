@@ -191,6 +191,8 @@ function isPublicAssetPath(path: string) {
     path === "/icon-192.png" ||
     path === "/icon-512.png" ||
     path === "/site.webmanifest" ||
+    path === "/robots.txt" ||
+    path === "/sitemap.xml" ||
     path.startsWith("/brand/")
   );
 }

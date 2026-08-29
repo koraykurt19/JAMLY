@@ -27,9 +27,15 @@ export function JamlyLogoMark({
 
 export function JamlyWordmark({ className }: { className?: string }) {
   return (
-    <div className={cn("flex items-center gap-3.5", className)}>
-      <JamlyLogoMark priority />
-      <span className="text-xl font-semibold tracking-tight text-white">Jamly</span>
+    <div className={cn("inline-flex items-center", className)} aria-label="Jamly">
+      <span
+        aria-hidden="true"
+        className="bg-gradient-to-r from-[#2d8cff] via-[#37b7f2] to-[#52e0db] bg-clip-text text-[1.72rem] font-black italic leading-none tracking-[0.08em] text-transparent sm:text-[1.9rem]"
+        style={{ textShadow: "0 0 26px rgb(45 140 255 / 0.22)" }}
+      >
+        JAMLY
+      </span>
+      <span className="sr-only">Jamly</span>
     </div>
   );
 }
