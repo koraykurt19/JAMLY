@@ -193,6 +193,11 @@ const tests: TestCase[] = [
       assert.ok(!sitemap.includes('"/admin"'));
       assert.ok(middleware.includes('path === "/robots.txt"'));
       assert.ok(middleware.includes('path === "/sitemap.xml"'));
+      assert.ok(
+        /function isMainPublicPath[\s\S]+path === "\/robots\.txt"[\s\S]+path === "\/sitemap\.xml"/.test(
+          middleware
+        )
+      );
     }
   },
   {

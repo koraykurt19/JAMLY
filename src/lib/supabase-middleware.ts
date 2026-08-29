@@ -162,6 +162,8 @@ function isMainPublicPath(path: string) {
     path === "/auth/forgot-password" ||
     path === "/auth/reset-password" ||
     path === "/api/health" ||
+    path === "/robots.txt" ||
+    path === "/sitemap.xml" ||
     path.startsWith("/api/admin/") ||
     path === "/api/admin" ||
     path === "/api/payments/webhook"
