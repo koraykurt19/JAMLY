@@ -18,7 +18,12 @@ export function getSupabaseBrowserClient(): SupabaseClient<Database> | null {
   }
 
   if (!browserClient) {
-    browserClient = createBrowserClient<Database>(config.url, config.anonKey);
+    browserClient = createBrowserClient<Database>(config.url, config.anonKey, {
+      auth: {
+        detectSessionInUrl: true,
+        flowType: "implicit"
+      }
+    });
     migrateLegacyBrowserSession(browserClient, config.url);
   }
 

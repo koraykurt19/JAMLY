@@ -102,18 +102,30 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
     }
 
     let active = true;
+    let sessionCheckComplete = false;
     const applySession = (hasSession: boolean) => {
       if (active) setAvailability(hasSession ? "ready" : "missing");
     };
 
     void establishPasswordSession(client)
-      .then(applySession)
+      .then((hasSession) => {
+        sessionCheckComplete = true;
+        applySession(hasSession);
+      })
       .catch((error) => {
         console.error("password_recovery_session_failed", error);
+        sessionCheckComplete = true;
         applySession(false);
       });
-    const { data } = client.auth.onAuthStateChange((_event, session) => {
-      applySession(Boolean(session));
+    const { data } = client.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
+      if (session || event === "PASSWORD_RECOVERY") {
+        applySession(true);
+        return;
+      }
+      if (sessionCheckComplete) {
+        applySession(false);
+      }
     });
 
     return () => {
@@ -243,7 +255,7 @@ export function PasswordUpdateForm({ mode }: { mode: PasswordFormMode }) {
 }
 
 async function establishPasswordSession(client: JamlyPasswordClient) {
-  return withTimeout(establishPasswordSessionUnsafe(client), 8000);
+  return withTimeout(establishPasswordSessionUnsafe(client), 12000);
 }
 
 async function establishPasswordSessionUnsafe(client: JamlyPasswordClient) {
@@ -253,8 +265,22 @@ async function establishPasswordSessionUnsafe(client: JamlyPasswordClient) {
     return false;
   }
 
+  if (params.tokenHash && (!params.type || params.type === "recovery")) {
+    const { error } = await client.auth.verifyOtp({
+      token_hash: params.tokenHash,
+      type: "recovery"
+    });
+    if (!error) {
+      clearPasswordRecoveryParams();
+      return true;
+    }
+  }
+
   if (params.code) {
-    const { error } = await client.auth.exchangeCodeForSession(params.code);
+    const { error } = await client.auth.exchangeCodeForSession(
+      params.code,
+      params.flowId ? { flowId: params.flowId } : undefined
+    );
     if (!error) {
       clearPasswordRecoveryParams();
       return true;
@@ -297,6 +323,9 @@ function readPasswordRecoveryParams() {
 
   return {
     code: search.get("code") ?? hash.get("code"),
+    flowId: search.get("sb_flow_id") ?? hash.get("sb_flow_id"),
+    tokenHash: search.get("token_hash") ?? hash.get("token_hash"),
+    type: search.get("type") ?? hash.get("type"),
     accessToken: hash.get("access_token") ?? search.get("access_token"),
     refreshToken: hash.get("refresh_token") ?? search.get("refresh_token"),
     error: search.get("error") ?? hash.get("error") ?? search.get("error_code") ?? hash.get("error_code")

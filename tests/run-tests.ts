@@ -117,6 +117,8 @@ const sitemapSource = () =>
   readFileSync(resolve(process.cwd(), "src/app/sitemap.ts"), "utf8");
 const supabaseMiddlewareSource = () =>
   readFileSync(resolve(process.cwd(), "src/lib/supabase-middleware.ts"), "utf8");
+const supabaseClientSource = () =>
+  readFileSync(resolve(process.cwd(), "src/lib/supabase.ts"), "utf8");
 const applySupabaseMigrationSource = () =>
   readFileSync(resolve(process.cwd(), "scripts/apply-supabase-migration.mjs"), "utf8");
 const smokeBetaGateSource = () =>
@@ -1027,11 +1029,20 @@ const tests: TestCase[] = [
     name: "password recovery accepts Supabase code and hash-token callbacks",
     run() {
       const form = passwordFormsSource();
+      const client = supabaseClientSource();
 
-      assert.ok(form.includes("exchangeCodeForSession(params.code)"));
+      assert.ok(client.includes('flowType: "implicit"'));
+      assert.ok(client.includes("detectSessionInUrl: true"));
+      assert.ok(form.includes("exchangeCodeForSession("));
+      assert.ok(form.includes("params.flowId ? { flowId: params.flowId } : undefined"));
+      assert.ok(form.includes("client.auth.verifyOtp"));
+      assert.ok(form.includes('token_hash: params.tokenHash'));
+      assert.ok(form.includes('type: "recovery"'));
       assert.ok(form.includes("client.auth.setSession"));
       assert.ok(form.includes('hash.get("access_token")'));
       assert.ok(form.includes('search.get("code")'));
+      assert.ok(form.includes('search.get("token_hash")'));
+      assert.ok(form.includes('search.get("sb_flow_id")'));
       assert.ok(form.includes("clearPasswordRecoveryParams"));
       assert.ok(form.includes("window.clearTimeout(timer)"));
     }
